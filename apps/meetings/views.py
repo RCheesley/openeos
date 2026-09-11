@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.db.models import Q
 
-from .models import Meeting, SegueEntry, Headline, MeetingRating, SEGMENT_NAMES, SEGMENT_DURATIONS, SEGMENT_TEMPLATES
+from .models import Meeting, MeetingNote, SegueEntry, Headline, MeetingRating, SEGMENT_NAMES, SEGMENT_DURATIONS, SEGMENT_TEMPLATES
 from .forms import MeetingCreateForm, SegueEntryForm, HeadlineForm, MeetingRatingForm, CascadingMessagesForm
 from apps.accounts.views import get_user_org, get_active_team
 
@@ -94,6 +94,13 @@ def _build_runner_context(meeting, user):
             .order_by('created_at')
         )
 
+    # Notes
+    all_notes = {n.segment: n for n in meeting.notes.select_related('updated_by').all()}
+    current_note = all_notes.get(meeting.current_segment)
+    segment_notes = [
+        all_notes[i] for i in range(len(SEGMENT_NAMES)) if i in all_notes
+    ]
+
     return {
         'meeting': meeting,
         'team': team,
@@ -103,6 +110,8 @@ def _build_runner_context(meeting, user):
         'segment_template': f"meetings/segments/{SEGMENT_TEMPLATES[meeting.current_segment]}",
         'is_last_segment': meeting.is_last_segment,
         'segments': list(enumerate(zip(SEGMENT_NAMES, SEGMENT_DURATIONS))),
+        'current_note': current_note,
+        'segment_notes': segment_notes,
         # Segment data
         'scorecards': scorecards,
         'week_entries': week_entries,
@@ -315,4 +324,30 @@ class MeetingRateView(LoginRequiredMixin, View):
             rating.participant = request.user
             rating.save()
             messages.success(request, f'Rating saved: {rating.score}/10')
+        return redirect('meetings:detail', pk=pk)
+
+
+# ---------------------------------------------------------------------------
+# Meeting notes
+# ---------------------------------------------------------------------------
+
+class MeetingNoteSaveView(LoginRequiredMixin, View):
+    """POST: create or update the notes block for the current segment."""
+
+    def post(self, request, pk):
+        org = _get_org(request.user)
+        if not org:
+            return redirect('accounts:org_setup')
+        meeting = get_object_or_404(Meeting, pk=pk, team__organization=org)
+        if not meeting.is_active:
+            return redirect('meetings:detail', pk=pk)
+        text = request.POST.get('notes', '').strip()
+        if text:
+            MeetingNote.objects.update_or_create(
+                meeting=meeting,
+                segment=meeting.current_segment,
+                defaults={'text': text, 'updated_by': request.user},
+            )
+        else:
+            MeetingNote.objects.filter(meeting=meeting, segment=meeting.current_segment).delete()
         return redirect('meetings:detail', pk=pk)

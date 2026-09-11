@@ -14,4 +14,5 @@ urlpatterns = [
     path('<int:pk>/headlines/add/', views.HeadlineAddView.as_view(), name='headline_add'),
     path('<int:pk>/headlines/<int:hpk>/escalate/', views.HeadlineEscalateView.as_view(), name='headline_escalate'),
     path('<int:pk>/rate/', views.MeetingRateView.as_view(), name='rate'),
+    path('<int:pk>/notes/', views.MeetingNoteSaveView.as_view(), name='note_save'),
 ]

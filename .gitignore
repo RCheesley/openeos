@@ -31,6 +31,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # IDE
 .idea/
 .vscode/

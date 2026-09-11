@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Meeting, SegueEntry, Headline, MeetingRating
+from .models import Meeting, MeetingNote, SegueEntry, Headline, MeetingRating
 
 
 class SegueInline(admin.TabularInline):
@@ -17,13 +17,19 @@ class RatingInline(admin.TabularInline):
     extra = 0
 
 
+class MeetingNoteInline(admin.TabularInline):
+    model = MeetingNote
+    extra = 0
+    readonly_fields = ['segment', 'updated_by', 'updated_at']
+
+
 @admin.register(Meeting)
 class MeetingAdmin(admin.ModelAdmin):
     list_display = ['team', 'scheduled_date', 'status', 'current_segment', 'created_by', 'started_at', 'ended_at']
     list_filter = ['status', 'team__organization']
     search_fields = ['team__name', 'team__organization__name', 'created_by__username']
     readonly_fields = ['started_at', 'ended_at', 'created_at']
-    inlines = [SegueInline, HeadlineInline, RatingInline]
+    inlines = [MeetingNoteInline, SegueInline, HeadlineInline, RatingInline]
 
 
 @admin.register(Headline)

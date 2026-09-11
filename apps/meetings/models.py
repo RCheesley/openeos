@@ -116,6 +116,28 @@ class Meeting(models.Model):
         return None
 
 
+class MeetingNote(models.Model):
+    """One editable notes block per segment per meeting."""
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='notes')
+    segment = models.PositiveSmallIntegerField()
+    text = models.TextField()
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='meeting_notes'
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [['meeting', 'segment']]
+        ordering = ['segment']
+
+    def __str__(self):
+        return f'{self.meeting} — {SEGMENT_NAMES[self.segment]} notes'
+
+    @property
+    def segment_name(self):
+        return SEGMENT_NAMES[self.segment]
+
+
 class SegueEntry(models.Model):
     meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='segue_entries')
     participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='segue_entries')
