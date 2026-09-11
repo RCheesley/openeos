@@ -25,7 +25,7 @@ Built with Django, Bootstrap 5, PostgreSQL, and Docker. No JavaScript frameworks
 **Requirements:** Docker and Docker Compose v2.
 
 ```bash
-git clone https://github.com/your-org/eos-app.git
+git clone https://github.com/drikusb/eos-app.git
 cd eos-app
 cp .env.example .env
 docker compose up
