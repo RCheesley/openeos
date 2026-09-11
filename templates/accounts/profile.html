@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}My Profile — EOS App{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0">My Profile</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline-dark">
+            <i class="bi bi-pencil me-1"></i> Edit profile
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" class="rounded-circle mx-auto mb-3" width="96" height="96" alt="">
+            {% else %}
+            <div class="rounded-circle bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center mx-auto mb-3" style="width:96px;height:96px">
+                <i class="bi bi-person text-secondary" style="font-size:3rem"></i>
+            </div>
+            {% endif %}
+            <h4 class="mb-0">{{ profile.display_name }}</h4>
+            <p class="text-muted mb-1">{{ request.user.email|default:"No email set" }}</p>
+            <span class="badge bg-light text-dark border">{{ profile.get_role_display }}</span>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="bi bi-building me-2"></i>Organisation</h5>
+            </div>
+            <div class="card-body">
+                {% if profile.organization %}
+                <p class="mb-0 fw-semibold">{{ profile.organization.name }}</p>
+                {% else %}
+                <p class="text-muted mb-0">Not assigned to an organisation.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="bi bi-people me-2"></i>My Teams</h5>
+            </div>
+            <div class="card-body">
+                {% if teams %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for team in teams %}
+                    <a href="{{ team.get_absolute_url }}" class="badge bg-light text-dark border text-decoration-none fs-6 fw-normal px-3 py-2">
+                        {{ team.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Not assigned to any teams yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

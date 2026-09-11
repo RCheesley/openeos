@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Invite User — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="mb-4">
+            <a href="{% url 'accounts:user_list' %}" class="text-muted text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i> Users
+            </a>
+            <h1 class="h3 mt-2 mb-0">Invite a user</h1>
+            <p class="text-muted mt-1">Add a new user to <strong>{{ org.name }}</strong>. They'll set their own password via the login page.</p>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="id_first_name" class="form-label fw-semibold">First name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="id_last_name" class="form-label fw-semibold">Last name</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label fw-semibold">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                        <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label fw-semibold">Email <span class="text-muted fw-normal">(used for password reset)</span></label>
+                        {{ form.email }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_role" class="form-label fw-semibold">Role</label>
+                        {{ form.role }}
+                    </div>
+                    {% if form.teams.queryset.exists %}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Add to teams <span class="text-muted fw-normal">(optional)</span></label>
+                        <div class="border rounded p-3">
+                            {{ form.teams }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-light border small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        The user will be created with a random password. Share the app URL and ask them to use
+                        <strong>"Forgot password?"</strong> to set their own password.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-person-plus me-1"></i> Create user
+                        </button>
+                        <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

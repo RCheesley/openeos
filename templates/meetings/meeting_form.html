@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Schedule Meeting — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'meetings:list' %}" class="btn btn-sm btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h3 mb-0">Schedule Level 10 Meeting</h1>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.team.id_for_label }}" class="form-label fw-semibold">
+                            Team <span class="text-danger">*</span>
+                        </label>
+                        <select name="{{ form.team.html_name }}" id="{{ form.team.id_for_label }}"
+                                class="form-select {% if form.team.errors %}is-invalid{% endif %}">
+                            <option value="">— Select team —</option>
+                            {% for val, label in form.team.field.choices %}
+                            {% if val %}
+                            <option value="{{ val }}" {% if form.team.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                        {% for e in form.team.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.scheduled_date.id_for_label }}" class="form-label fw-semibold">
+                            Date <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="{{ form.scheduled_date.html_name }}"
+                               id="{{ form.scheduled_date.id_for_label }}"
+                               value="{{ form.scheduled_date.value|default:'' }}"
+                               class="form-control {% if form.scheduled_date.errors %}is-invalid{% endif %}">
+                        {% for e in form.scheduled_date.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+
+                    <div class="bg-light rounded p-3 mb-4 small text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        A Level 10 Meeting runs 90 minutes with 7 structured segments.
+                        Schedule it for the same day and time every week.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-calendar-plus me-1"></i>Schedule Meeting
+                        </button>
+                        <a href="{% url 'meetings:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

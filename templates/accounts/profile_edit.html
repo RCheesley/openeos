@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="mb-4">
+            <a href="{% url 'accounts:profile' %}" class="text-muted text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i> Profile
+            </a>
+            <h1 class="h3 mt-2 mb-0">Edit profile</h1>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="id_first_name" class="form-label fw-semibold">First name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="id_last_name" class="form-label fw-semibold">Last name</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label fw-semibold">Email</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="mb-4">
+                        <label for="id_avatar" class="form-label fw-semibold">
+                            Avatar <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        {% if object.avatar %}
+                        <div class="mb-2">
+                            <img src="{{ object.avatar.url }}" class="rounded-circle" width="48" height="48" alt="">
+                            <span class="text-muted small ms-2">Current avatar</span>
+                        </div>
+                        {% endif %}
+                        {{ form.avatar }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i> Save changes
+                        </button>
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

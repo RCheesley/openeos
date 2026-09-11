@@ -1,0 +1,93 @@
+{% comment %}Recursive tree node — included by chart.html and itself{% endcomment %}
+<div class="chart-branch d-flex flex-column align-items-center">
+
+    <div class="node-card card border-0 shadow-sm {% if node.is_vacant %}border-warning{% endif %}"
+         style="min-width:160px;max-width:200px;{% if node.is_vacant %}border: 2px dashed #ffc107 !important;{% endif %}">
+
+        <div class="card-body p-2">
+            {% if node.node_type == 'department' %}
+            <div class="mb-1">
+                <span class="badge bg-secondary" style="font-size:.6rem">Department</span>
+            </div>
+            {% endif %}
+
+            <div class="fw-semibold small lh-sm">{{ node.name }}</div>
+
+            {% if node.owner %}
+            <div class="text-muted mt-1" style="font-size:.7rem">
+                <i class="bi bi-person-fill me-1"></i>{{ node.owner.get_full_name|default:node.owner.username }}
+            </div>
+            {% else %}
+            <div class="mt-1">
+                <span class="badge bg-warning text-dark" style="font-size:.6rem">Vacant</span>
+            </div>
+            {% endif %}
+
+            {% with roles=node.roles.all %}
+            {% if roles %}
+            <ul class="list-unstyled mt-2 mb-0">
+                {% for role in roles|slice:":4" %}
+                <li class="text-muted d-flex align-items-baseline gap-1" style="font-size:.65rem;">
+                    <span class="flex-shrink-0">•</span>
+                    <span>{{ role.description }}</span>
+                    <a href="{% url 'accountability:role_edit' role.pk %}"
+                       class="text-muted ms-auto flex-shrink-0" style="font-size:.55rem">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'accountability:role_delete' role.pk %}"
+                       class="text-danger flex-shrink-0" style="font-size:.55rem">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </li>
+                {% endfor %}
+                {% if roles.count > 4 %}
+                <li class="text-muted" style="font-size:.65rem">
+                    +{{ roles.count|add:"-4" }} more
+                </li>
+                {% endif %}
+            </ul>
+            {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="card-footer bg-transparent p-1 d-flex gap-1 flex-wrap border-top border-light">
+            <a href="{% url 'accountability:role_add' node.pk %}"
+               class="btn btn-sm btn-outline-secondary border-0 py-0 px-1 flex-shrink-0"
+               title="Add accountability"><i class="bi bi-list-check" style="font-size:.75rem"></i></a>
+            <a href="{% url 'accountability:node_add' %}?parent={{ node.pk }}"
+               class="btn btn-sm btn-outline-secondary border-0 py-0 px-1 flex-shrink-0"
+               title="Add child seat"><i class="bi bi-diagram-2" style="font-size:.75rem"></i></a>
+            <form method="post" action="{% url 'accountability:node_move' node.pk %}" class="d-inline">
+                {% csrf_token %}<input type="hidden" name="direction" value="up">
+                <button type="submit" class="btn btn-sm btn-outline-secondary border-0 py-0 px-1" title="Move left">
+                    <i class="bi bi-arrow-left" style="font-size:.75rem"></i>
+                </button>
+            </form>
+            <form method="post" action="{% url 'accountability:node_move' node.pk %}" class="d-inline">
+                {% csrf_token %}<input type="hidden" name="direction" value="down">
+                <button type="submit" class="btn btn-sm btn-outline-secondary border-0 py-0 px-1" title="Move right">
+                    <i class="bi bi-arrow-right" style="font-size:.75rem"></i>
+                </button>
+            </form>
+            <a href="{% url 'accountability:node_edit' node.pk %}"
+               class="btn btn-sm btn-outline-secondary border-0 py-0 px-1"
+               title="Edit seat"><i class="bi bi-pencil" style="font-size:.75rem"></i></a>
+            <a href="{% url 'accountability:node_delete' node.pk %}"
+               class="btn btn-sm btn-outline-danger border-0 py-0 px-1"
+               title="Remove seat"><i class="bi bi-trash" style="font-size:.75rem"></i></a>
+        </div>
+    </div>
+
+    {% if node.child_nodes %}
+    <div class="chart-connector-v"></div>
+    <div class="chart-children d-flex gap-3 flex-wrap justify-content-center position-relative">
+        {% if node.child_nodes|length > 1 %}
+        <div class="chart-connector-h"></div>
+        {% endif %}
+        {% for child in node.child_nodes %}
+        {% include "accountability/_tree_node.html" with node=child %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>

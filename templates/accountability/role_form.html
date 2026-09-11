@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Accountability — {{ node.name }} — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'accountability:chart' %}" class="btn btn-sm btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="h3 mb-0">{{ action }} Accountability</h1>
+                <div class="text-muted small">{{ node.name }}</div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">
+                            Accountability <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" name="{{ form.description.html_name }}" id="{{ form.description.id_for_label }}"
+                               value="{{ form.description.value|default:'' }}"
+                               class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                               placeholder="e.g. Own the P&L, Drive revenue, Hire and fire the team">
+                        <div class="form-text">A specific responsibility owned by the person in this seat.</div>
+                        {% for e in form.description.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.order.id_for_label }}" class="form-label fw-semibold">Display Order</label>
+                        <input type="number" name="{{ form.order.html_name }}" id="{{ form.order.id_for_label }}"
+                               value="{{ form.order.value|default:'0' }}"
+                               class="form-control {% if form.order.errors %}is-invalid{% endif %}"
+                               min="0" style="max-width:120px;">
+                        <div class="form-text">Lower numbers appear first.</div>
+                        {% for e in form.order.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i>{{ action }} Accountability
+                        </button>
+                        <a href="{% url 'accountability:chart' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

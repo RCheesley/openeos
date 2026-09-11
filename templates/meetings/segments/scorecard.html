@@ -1,0 +1,36 @@
+{# Segment 2: Scorecard Review — check metrics, escalate off-track to Issues #}
+<p class="text-muted small mb-3">
+    Review each metric. Off-track items go straight to the Issues list — no discussion here.
+</p>
+
+{% if scorecards %}
+{% for sc in scorecards %}
+<div class="mb-3">
+    <div class="fw-semibold small mb-2">{{ sc.name }}</div>
+    {% for metric in sc.active_metrics %}
+    <div class="d-flex align-items-center gap-2 py-1 border-bottom small">
+        <div class="flex-grow-1">
+            <span>{{ metric.name }}</span>
+            <span class="text-muted ms-1">({{ metric.get_goal_direction_display }} {{ metric.goal_value }})</span>
+        </div>
+        <a href="{% url 'scorecards:detail' sc.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Enter value">
+            <i class="bi bi-pencil" style="font-size:.7rem"></i>
+        </a>
+    </div>
+    {% empty %}
+    <p class="text-muted small">No active metrics.</p>
+    {% endfor %}
+</div>
+{% endfor %}
+{% else %}
+<div class="text-center py-4 text-muted">
+    <i class="bi bi-bar-chart-line" style="font-size:2rem;"></i>
+    <p class="mt-2 small">No scorecards for {{ team.name }}. <a href="{% url 'scorecards:list' %}">Add one.</a></p>
+</div>
+{% endif %}
+
+<div class="alert alert-info py-2 small mt-3">
+    <i class="bi bi-info-circle me-1"></i>
+    Enter this week's numbers in the <a href="{% url 'scorecards:list' %}">Scorecards</a> module,
+    then come back to review. Off-track items go to <a href="{% url 'issues:list' %}">Issues</a>.
+</div>

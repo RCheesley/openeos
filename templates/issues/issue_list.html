@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Issues — EOS App{% endblock %}
+
+{% block content %}
+{# ── Header ── #}
+<div class="row mb-3 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Issues</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'issues:create' %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg me-1"></i>New Issue
+        </a>
+    </div>
+</div>
+
+{# ── Filters ── #}
+<div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
+
+    {# Status tabs #}
+    <a href="?" class="btn btn-sm {% if not status_filter %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        Open
+    </a>
+    {% for val, label in status_choices %}
+    <a href="?status={{ val }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if team_filter %}&team={{ team_filter }}{% endif %}"
+       class="btn btn-sm {% if status_filter == val %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        {{ label }}
+    </a>
+    {% endfor %}
+    <a href="?status=all{% if type_filter %}&type={{ type_filter }}{% endif %}{% if team_filter %}&team={{ team_filter }}{% endif %}"
+       class="btn btn-sm {% if status_filter == 'all' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        All
+    </a>
+
+    {# Type filter #}
+    <div class="ms-auto d-flex gap-2">
+        <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if team_filter %}team={{ team_filter }}&{% endif %}"
+           class="btn btn-sm {% if not type_filter %}btn-outline-dark{% else %}btn-outline-secondary{% endif %}">
+            All types
+        </a>
+        {% for val, label in type_choices %}
+        <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if team_filter %}team={{ team_filter }}&{% endif %}type={{ val }}"
+           class="btn btn-sm {% if type_filter == val %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            {{ label }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{# Team filter dropdown #}
+{% if teams %}
+<div class="d-flex justify-content-end mb-4">
+    <form method="get" class="d-flex gap-2 align-items-center">
+        {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+        {% if type_filter %}<input type="hidden" name="type" value="{{ type_filter }}">{% endif %}
+        <select name="team" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto">
+            <option value="">All teams</option>
+            {% for team in teams %}
+            <option value="{{ team.pk }}" {% if team_filter == team.pk|stringformat:"s" %}selected{% endif %}>
+                {{ team.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+{% endif %}
+
+{# ── Issue list ── #}
+{% if issues %}
+<div class="card border-0 shadow-sm">
+    <ul class="list-group list-group-flush">
+        {% for issue in issues %}
+        <li class="list-group-item px-3 py-3">
+            <div class="d-flex align-items-start gap-3">
+
+                {# Type + Status badges #}
+                <div class="d-flex flex-column gap-1 mt-1" style="min-width:90px">
+                    {% if issue.issue_type == 'long_term' %}
+                    <span class="badge" style="background:#7c3aed">Long-term</span>
+                    {% else %}
+                    <span class="badge bg-info text-dark">Short-term</span>
+                    {% endif %}
+                    <span class="badge bg-{{ issue.status_badge_class }}">{{ issue.get_status_display }}</span>
+                </div>
+
+                {# Title + teams #}
+                <div class="flex-grow-1">
+                    <a href="{{ issue.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold">
+                        {{ issue.title }}
+                    </a>
+                    <div class="text-muted small mt-1 d-flex gap-2 flex-wrap align-items-center">
+                        <span>
+                            <i class="bi bi-people me-1"></i>{{ issue.originating_team.name }}
+                        </span>
+                        {% if issue.is_delegated %}
+                        <span class="text-primary">
+                            <i class="bi bi-arrow-right me-1"></i>{{ issue.delegated_to_team.name }}
+                        </span>
+                        {% endif %}
+                        {% if issue.linked_rocks.exists %}
+                        <span><i class="bi bi-gem me-1 text-success"></i>{{ issue.linked_rocks.count }} Rock{{ issue.linked_rocks.count|pluralize }}</span>
+                        {% endif %}
+                        {% if issue.issue_type == 'long_term' and issue.target_quarter %}
+                        <span class="text-muted"><i class="bi bi-calendar3 me-1"></i>Target Q{{ issue.target_quarter }} {{ issue.target_year }}</span>
+                        {% endif %}
+                    </div>
+                    {% if issue.description %}
+                    <div class="text-muted small mt-1 border-start border-2 ps-2">
+                        {{ issue.description|truncatewords:20 }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {# Created by + date #}
+                <div class="text-muted small text-nowrap d-none d-md-block text-end">
+                    {% if issue.created_by %}
+                    {{ issue.created_by.get_full_name|default:issue.created_by.username }}
+                    {% endif %}
+                    <div>{{ issue.created_at|date:"M j" }}</div>
+                </div>
+
+                {# Actions #}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ issue.get_absolute_url }}"><i class="bi bi-eye me-2"></i>View</a></li>
+                        <li><a class="dropdown-item" href="{% url 'issues:update' issue.pk %}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                        {% if issue.is_open %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'issues:status' issue.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <input type="hidden" name="status" value="in_ids">
+                                <input type="hidden" name="resolution_notes" value="">
+                                <button type="submit" class="dropdown-item text-warning">
+                                    <i class="bi bi-arrow-repeat me-2"></i>Move to IDS
+                                </button>
+                            </form>
+                        </li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'issues:delete' issue.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                    </ul>
+                </div>
+
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-exclamation-triangle display-3 d-block mb-3 text-warning opacity-25"></i>
+    <h4>No Issues found</h4>
+    <p class="mb-4">Issues capture problems and opportunities. Resolve them using the IDS process.</p>
+    <a href="{% url 'issues:create' %}" class="btn btn-dark">
+        <i class="bi bi-plus-lg me-1"></i>Create first Issue
+    </a>
+</div>
+{% endif %}
+{% endblock %}

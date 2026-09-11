@@ -1,0 +1,49 @@
+{# Segment 5: To-Do List Review — mark complete, escalate overdue #}
+<p class="text-muted small mb-3">
+    Review open To-Dos for team members. Mark complete or escalate incomplete items to Issues.
+</p>
+
+{% if todos %}
+<div class="list-group list-group-flush">
+    {% for todo in todos %}
+    <div class="list-group-item px-0 py-2 d-flex align-items-center gap-2 {% if todo.escalation_level == 2 %}list-group-item-danger{% elif todo.escalation_level == 1 %}list-group-item-warning{% endif %}">
+        <div class="flex-grow-1 small">
+            <div class="fw-semibold">{{ todo.title }}</div>
+            <div class="text-muted" style="font-size:.7rem">
+                {{ todo.owner.get_full_name|default:todo.owner.username }}
+                · Due {{ todo.due_date|date:"N j" }}
+                · {{ todo.days_open }} day{{ todo.days_open|pluralize }} open
+            </div>
+        </div>
+        <form method="post" action="{% url 'todos:complete' todo.pk %}" class="flex-shrink-0">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Mark complete">
+                <i class="bi bi-check-lg" style="font-size:.75rem"></i>
+            </button>
+        </form>
+        {% if todo.escalation_level > 0 %}
+        <a href="{% url 'todos:escalate' todo.pk %}" class="btn btn-sm btn-outline-warning py-0 px-2 flex-shrink-0" title="Escalate to Issues">
+            <i class="bi bi-arrow-up-circle" style="font-size:.75rem"></i>
+        </a>
+        {% endif %}
+        <a href="{{ todo.get_absolute_url }}" class="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0">
+            <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+<div class="mt-2 small">
+    <a href="{% url 'todos:create' %}?next={{ request.path }}" class="btn btn-sm btn-outline-dark">
+        <i class="bi bi-plus me-1"></i>Add To-Do
+    </a>
+</div>
+{% else %}
+<div class="text-center py-4 text-muted">
+    <i class="bi bi-check2-square" style="font-size:2rem;"></i>
+    <p class="mt-2 small">No open To-Dos for the team. Great work!</p>
+    <a href="{% url 'todos:create' %}?next={{ request.path }}" class="btn btn-sm btn-outline-dark">
+        <i class="bi bi-plus me-1"></i>Add To-Do
+    </a>
+</div>
+{% endif %}

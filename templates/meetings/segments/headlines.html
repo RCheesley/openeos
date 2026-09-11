@@ -1,0 +1,53 @@
+{# Segment 4: Customer / Employee Headlines #}
+<p class="text-muted small mb-3">
+    Share short good news or concerns. No discussion — flag for IDS if needed.
+</p>
+
+<form method="post" action="{% url 'meetings:headline_add' meeting.pk %}" class="mb-3">
+    {% csrf_token %}
+    <div class="row g-2 align-items-end">
+        <div class="col-sm-3">
+            {{ headline_form.headline_type }}
+        </div>
+        <div class="col-sm-7">
+            {{ headline_form.text }}
+        </div>
+        <div class="col-sm-2">
+            <button type="submit" class="btn btn-dark w-100">Add</button>
+        </div>
+    </div>
+</form>
+
+{% if headlines %}
+<div class="list-group list-group-flush">
+    {% for h in headlines %}
+    <div class="list-group-item px-0 py-2 d-flex align-items-center gap-2">
+        {% if h.headline_type == 'good' %}
+        <i class="bi bi-check-circle-fill text-success flex-shrink-0"></i>
+        {% else %}
+        <i class="bi bi-exclamation-circle-fill text-danger flex-shrink-0"></i>
+        {% endif %}
+        <div class="flex-grow-1 small">
+            {{ h.text }}
+            <span class="text-muted ms-1" style="font-size:.7rem">
+                — {{ h.author.get_full_name|default:h.author.username|default:"Anonymous" }}
+            </span>
+        </div>
+        {% if not h.escalated_issue %}
+        <form method="post" action="{% url 'meetings:headline_escalate' meeting.pk h.pk %}" class="flex-shrink-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-warning py-0 px-2" title="Escalate to Issues">
+                <i class="bi bi-arrow-up-circle" style="font-size:.75rem"></i>
+            </button>
+        </form>
+        {% else %}
+        <a href="{{ h.escalated_issue.get_absolute_url }}" class="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0" title="View issue">
+            <i class="bi bi-link-45deg" style="font-size:.75rem"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-muted small fst-italic">No headlines yet. Add one above.</div>
+{% endif %}

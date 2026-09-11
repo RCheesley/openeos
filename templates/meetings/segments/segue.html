@@ -1,0 +1,46 @@
+{# Segment 1: Segue — personal best + business best #}
+<p class="text-muted small mb-3">
+    Each person shares one personal best and one business best from the past week.
+    No discussion — just share and listen.
+</p>
+
+{# My entry form #}
+<div class="card border-light mb-3">
+    <div class="card-header bg-transparent py-2 small fw-semibold">
+        My Segue — {{ request.user.get_full_name|default:request.user.username }}
+    </div>
+    <div class="card-body pb-3">
+        <form method="post" action="{% url 'meetings:segue' meeting.pk %}">
+            {% csrf_token %}
+            <div class="mb-2">
+                <label class="form-label small fw-semibold">Personal Best</label>
+                {{ segue_form.personal_best }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Business Best</label>
+                {{ segue_form.business_best }}
+            </div>
+            <button type="submit" class="btn btn-sm btn-dark">
+                <i class="bi bi-check-lg me-1"></i>Save
+            </button>
+        </form>
+    </div>
+</div>
+
+{# Others' entries #}
+{% if segue_entries %}
+<div class="fw-semibold small text-muted mb-2">Team</div>
+{% for entry in segue_entries %}
+{% if entry.participant.pk != request.user.pk %}
+<div class="border rounded p-2 mb-2 small">
+    <div class="fw-semibold">{{ entry.participant.get_full_name|default:entry.participant.username }}</div>
+    {% if entry.personal_best %}
+    <div class="text-muted mt-1"><i class="bi bi-person me-1 text-primary"></i><strong>Personal:</strong> {{ entry.personal_best }}</div>
+    {% endif %}
+    {% if entry.business_best %}
+    <div class="text-muted mt-1"><i class="bi bi-briefcase me-1 text-success"></i><strong>Business:</strong> {{ entry.business_best }}</div>
+    {% endif %}
+</div>
+{% endif %}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Issue — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'issues:list' %}" class="btn btn-sm btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-exclamation-triangle me-2 text-warning"></i>{{ action }} Issue
+            </h1>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {# Title #}
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold">
+                            Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               name="{{ form.title.html_name }}"
+                               id="{{ form.title.id_for_label }}"
+                               value="{{ form.title.value|default:'' }}"
+                               class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                               placeholder="The presenting issue — concise, 1 sentence">
+                        {% for error in form.title.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Description #}
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">Description</label>
+                        <textarea name="{{ form.description.html_name }}"
+                                  id="{{ form.description.id_for_label }}"
+                                  rows="4"
+                                  class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                  placeholder="Context, root cause, impact…">{{ form.description.value|default:'' }}</textarea>
+                        {% for error in form.description.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Issue type #}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Issue Type <span class="text-danger">*</span></label>
+                        <div class="d-flex gap-3">
+                            {% for val, label in form.issue_type.field.choices %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio"
+                                       name="{{ form.issue_type.html_name }}"
+                                       id="type_{{ val }}" value="{{ val }}"
+                                       {% if form.issue_type.value == val %}checked{% endif %}
+                                       onchange="toggleLongTermFields()">
+                                <label class="form-check-label" for="type_{{ val }}">{{ label }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">Short-term: resolve within 90 days. Long-term: strategic, added to VTO Issues List.</div>
+                        {% for error in form.issue_type.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Long-term fields (target quarter/year) #}
+                    <div id="long-term-fields" class="mb-3" style="display:none">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label for="{{ form.target_quarter.id_for_label }}" class="form-label fw-semibold">
+                                    Target Quarter
+                                </label>
+                                <select name="{{ form.target_quarter.html_name }}"
+                                        id="{{ form.target_quarter.id_for_label }}"
+                                        class="form-select {% if form.target_quarter.errors %}is-invalid{% endif %}">
+                                    <option value="">— Select —</option>
+                                    {% for val, label in form.target_quarter.field.choices %}
+                                    {% if val %}
+                                    <option value="{{ val }}" {% if form.target_quarter.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                                {% for error in form.target_quarter.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="{{ form.target_year.id_for_label }}" class="form-label fw-semibold">
+                                    Target Year
+                                </label>
+                                <input type="number"
+                                       name="{{ form.target_year.html_name }}"
+                                       id="{{ form.target_year.id_for_label }}"
+                                       value="{{ form.target_year.value|default:'' }}"
+                                       class="form-control {% if form.target_year.errors %}is-invalid{% endif %}"
+                                       min="2020" max="2099">
+                                {% for error in form.target_year.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Originating team + Delegate to #}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="{{ form.originating_team.id_for_label }}" class="form-label fw-semibold">
+                                Originating Team <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.originating_team.html_name }}"
+                                    id="{{ form.originating_team.id_for_label }}"
+                                    class="form-select {% if form.originating_team.errors %}is-invalid{% endif %}">
+                                <option value="">— Select team —</option>
+                                {% for val, label in form.originating_team.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.originating_team.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">The team that raised this issue. Cannot be changed later.</div>
+                            {% for error in form.originating_team.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="{{ form.delegated_to_team.id_for_label }}" class="form-label fw-semibold">
+                                Delegate To
+                            </label>
+                            <select name="{{ form.delegated_to_team.html_name }}"
+                                    id="{{ form.delegated_to_team.id_for_label }}"
+                                    class="form-select {% if form.delegated_to_team.errors %}is-invalid{% endif %}">
+                                <option value="">— None (keep with originating team) —</option>
+                                {% for val, label in form.delegated_to_team.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.delegated_to_team.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Optional — assign to another team to resolve.</div>
+                            {% for error in form.delegated_to_team.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Linked rocks #}
+                    {% if form.linked_rocks.field.queryset.exists %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Linked Rocks</label>
+                        <div class="border rounded p-2" style="max-height:160px;overflow-y:auto">
+                            {% for rock in form.linked_rocks.field.queryset %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="{{ form.linked_rocks.html_name }}"
+                                       id="rock_{{ rock.pk }}" value="{{ rock.pk }}"
+                                       {% if rock.pk in form.linked_rocks.value %}checked{% endif %}>
+                                <label class="form-check-label small" for="rock_{{ rock.pk }}">
+                                    <span class="badge bg-{{ rock.status_badge_class }} me-1">{{ rock.get_status_display }}</span>
+                                    {{ rock.title }}
+                                    <span class="text-muted">— {{ rock.team.name }}</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">Which active Rocks does this issue affect?</div>
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i>{{ action }} Issue
+                        </button>
+                        <a href="{% url 'issues:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleLongTermFields() {
+    const isLongTerm = document.getElementById('type_long_term').checked;
+    document.getElementById('long-term-fields').style.display = isLongTerm ? '' : 'none';
+}
+// Run on page load to restore state after form errors
+document.addEventListener('DOMContentLoaded', toggleLongTermFields);
+</script>
+{% endblock %}

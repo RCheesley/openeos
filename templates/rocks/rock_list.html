@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Rocks — {{ quarter_label }} — EOS App{% endblock %}
+
+{% block content %}
+{# ── Header ── #}
+<div class="row mb-3 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0"><i class="bi bi-gem me-2 text-success"></i>Rocks</h1>
+    </div>
+    <div class="col-auto d-flex gap-2">
+        <a href="{% url 'rocks:archive' %}?quarter={{ quarter }}&year={{ year }}" class="btn btn-outline-secondary">
+            <i class="bi bi-clock-history me-1"></i>Archive
+        </a>
+        <a href="{% url 'rocks:create' %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg me-1"></i>New Rock
+        </a>
+    </div>
+</div>
+
+{# ── Quarter nav ── #}
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <a href="?quarter={{ prev_q.0 }}&year={{ prev_q.1 }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-chevron-left"></i>
+    </a>
+
+    {% for opt in quarter_options %}
+    <a href="?quarter={{ opt.quarter }}&year={{ opt.year }}"
+       class="btn btn-sm {% if opt.selected %}btn-dark{% elif opt.is_current %}btn-outline-dark{% else %}btn-outline-secondary{% endif %}">
+        {{ opt.label }}{% if opt.is_current %} <span class="badge bg-success ms-1" style="font-size:.6rem">NOW</span>{% endif %}
+    </a>
+    {% endfor %}
+
+    <a href="?quarter={{ next_q.0 }}&year={{ next_q.1 }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-chevron-right"></i>
+    </a>
+</div>
+
+{# ── Filters ── #}
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="?quarter={{ quarter }}&year={{ year }}"
+       class="btn btn-sm {% if not status_filter %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        All
+    </a>
+    {% for val, label in status_choices %}
+    <a href="?quarter={{ quarter }}&year={{ year }}&status={{ val }}"
+       class="btn btn-sm {% if status_filter == val %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        {{ label }}
+    </a>
+    {% endfor %}
+
+    {% if teams %}
+    <div class="ms-auto">
+        <form method="get" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="quarter" value="{{ quarter }}">
+            <input type="hidden" name="year" value="{{ year }}">
+            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            <select name="team" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto">
+                <option value="">All teams</option>
+                {% for team in teams %}
+                <option value="{{ team.pk }}" {% if request.GET.team == team.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ team.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+{# ── Rocks grouped by team ── #}
+{% if teams_rocks %}
+    {% for team, team_rocks in teams_rocks %}
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-2">
+            <h5 class="mb-0 me-2">{{ team.name }}</h5>
+            <span class="badge bg-light text-dark border">{{ team_rocks|length }} Rock{{ team_rocks|length|pluralize }}</span>
+            {% if team_rocks|length < 3 %}
+            <span class="badge bg-warning text-dark ms-2" title="EOS recommends 3–7 Rocks per team">
+                <i class="bi bi-exclamation-triangle me-1"></i>Below minimum
+            </span>
+            {% elif team_rocks|length > 7 %}
+            <span class="badge bg-danger ms-2" title="EOS recommends 3–7 Rocks per team">
+                <i class="bi bi-exclamation-triangle me-1"></i>Above maximum
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <ul class="list-group list-group-flush">
+                {% for rock in team_rocks %}
+                <li class="list-group-item px-3 py-3">
+                    <div class="d-flex align-items-center gap-3">
+
+                        {# Status toggle form #}
+                        {% if rock.is_active %}
+                        <form method="post" action="{% url 'rocks:status' rock.pk %}" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="status"
+                                   value="{% if rock.is_on_track %}off_track{% else %}on_track{% endif %}">
+                            <button type="submit"
+                                    class="btn btn-sm border-0 p-0"
+                                    title="Click to mark {% if rock.is_on_track %}off track{% else %}on track{% endif %}">
+                                <span class="badge bg-{{ rock.status_badge_class }} fs-6 px-3">
+                                    {{ rock.get_status_display }}
+                                </span>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="badge bg-{{ rock.status_badge_class }} fs-6 px-3">
+                            {{ rock.get_status_display }}
+                        </span>
+                        {% endif %}
+
+                        {# Title + owner #}
+                        <div class="flex-grow-1">
+                            <a href="{{ rock.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold">
+                                {{ rock.title }}
+                            </a>
+                            {% if rock.child_rocks.exists %}
+                            <i class="bi bi-diagram-2 text-muted ms-1" title="Has child Rocks"></i>
+                            {% endif %}
+                            {% if rock.dependencies.exists %}
+                            <i class="bi bi-link text-muted ms-1" title="Has cross-team dependencies"></i>
+                            {% endif %}
+                        </div>
+
+                        {# Owner #}
+                        <div class="text-muted small text-nowrap">
+                            {% if rock.owner.profile.avatar %}
+                            <img src="{{ rock.owner.profile.avatar.url }}" class="rounded-circle me-1" width="20" height="20" alt="">
+                            {% else %}
+                            <i class="bi bi-person-circle me-1"></i>
+                            {% endif %}
+                            {{ rock.owner.get_full_name|default:rock.owner.username }}
+                        </div>
+
+                        {# Due date #}
+                        <div class="text-muted small text-nowrap d-none d-md-block">
+                            <i class="bi bi-calendar3 me-1"></i>{{ rock.due_date|date:"M j" }}
+                        </div>
+
+                        {# Actions #}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ rock.get_absolute_url }}"><i class="bi bi-eye me-2"></i>View</a></li>
+                                <li><a class="dropdown-item" href="{% url 'rocks:update' rock.pk %}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                {% if rock.is_active %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'rocks:status' rock.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <input type="hidden" name="status" value="complete">
+                                        <button type="submit" class="dropdown-item text-success">
+                                            <i class="bi bi-check-circle me-2"></i>Mark Complete
+                                        </button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="post" action="{% url 'rocks:status' rock.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <input type="hidden" name="status" value="dropped">
+                                        <button type="submit" class="dropdown-item text-muted">
+                                            <i class="bi bi-x-circle me-2"></i>Drop
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'rocks:delete' rock.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {# Description preview #}
+                    {% if rock.description %}
+                    <div class="text-muted small mt-1 ms-1 ps-1 border-start border-2">
+                        {{ rock.description|truncatewords:20 }}
+                    </div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endfor %}
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-gem display-3 d-block mb-3 text-success opacity-25"></i>
+    <h4>No Rocks for {{ quarter_label }}</h4>
+    <p class="mb-4">EOS recommends 3–7 Rocks per team each quarter.</p>
+    <a href="{% url 'rocks:create' %}" class="btn btn-dark">
+        <i class="bi bi-plus-lg me-1"></i>Create first Rock
+    </a>
+</div>
+{% endif %}
+{% endblock %}

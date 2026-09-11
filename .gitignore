@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.Python
+.venv/
+venv/
+env/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+/staticfiles/
+/mediafiles/
+
+# Test & coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Environment
+.env
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# BrainTree (brain knowledge files — not part of the app source)
+BRAIN-INDEX.md
+CLAUDE.md
+Execution-Plan.md
+Architecture/
+Assets/
+Build/
+DevOps/
+Go-To-Market/
+Handoffs/
+Modules/
+Templates/
+Vision/

@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}{{ issue.title }} — EOS App{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    {# ── Main column ── #}
+    <div class="col-lg-8">
+
+        {# Header #}
+        <div class="d-flex align-items-start gap-3 mb-4">
+            <a href="{% url 'issues:list' %}" class="btn btn-sm btn-outline-secondary mt-1">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    {% if issue.issue_type == 'long_term' %}
+                    <span class="badge" style="background:#7c3aed">Long-term</span>
+                    {% else %}
+                    <span class="badge bg-info text-dark">Short-term</span>
+                    {% endif %}
+                    <span class="badge bg-{{ issue.status_badge_class }}">{{ issue.get_status_display }}</span>
+                    {% if issue.is_delegated %}
+                    <span class="badge bg-primary"><i class="bi bi-arrow-right me-1"></i>{{ issue.delegated_to_team.name }}</span>
+                    {% endif %}
+                </div>
+                <h1 class="h3 mb-1">{{ issue.title }}</h1>
+                <div class="text-muted small">
+                    <i class="bi bi-people me-1"></i>{{ issue.originating_team.name }}
+                    {% if issue.created_by %}
+                    <span class="mx-2">·</span>
+                    {{ issue.created_by.get_full_name|default:issue.created_by.username }}
+                    {% endif %}
+                    <span class="mx-2">·</span>
+                    {{ issue.created_at|date:"N j, Y" }}
+                </div>
+            </div>
+            {% if can_edit %}
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'issues:update' issue.pk %}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'issues:delete' issue.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Description #}
+        {% if issue.description %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.05em">Description</h6>
+                <p class="mb-0">{{ issue.description|linebreaksbr }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Resolution notes (if resolved) #}
+        {% if issue.is_resolved and issue.resolution_notes %}
+        <div class="card border-0 shadow-sm mb-4 border-start border-success border-3">
+            <div class="card-body">
+                <h6 class="text-success text-uppercase fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-check-circle me-1"></i>Resolution
+                </h6>
+                <p class="mb-0">{{ issue.resolution_notes|linebreaksbr }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Linked rocks #}
+        {% if linked_rocks %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-gem me-1 text-success"></i>Linked Rocks
+                </h6>
+                <ul class="list-group list-group-flush">
+                    {% for rock in linked_rocks %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-{{ rock.status_badge_class }}">{{ rock.get_status_display }}</span>
+                            <a href="{{ rock.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold flex-grow-1">
+                                {{ rock.title }}
+                            </a>
+                            <span class="text-muted small">{{ rock.team.name }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {# To-Dos linked to this Issue #}
+        {% if issue.todos.exists %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-0" style="font-size:.7rem;letter-spacing:.05em">
+                        <i class="bi bi-check2-square me-1 text-primary"></i>To-Dos
+                    </h6>
+                    <a href="{% url 'todos:create' %}?issue={{ issue.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+                        <i class="bi bi-plus"></i>
+                    </a>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for todo in issue.todos.all %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if todo.is_complete %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                            <i class="bi bi-circle text-secondary"></i>
+                            {% endif %}
+                            <span class="flex-grow-1 small {% if todo.is_complete %}text-decoration-line-through text-muted{% endif %}">
+                                {{ todo.title }}
+                            </span>
+                            <span class="text-muted small">{{ todo.owner.get_full_name|default:todo.owner.username }}</span>
+                            <span class="text-muted" style="font-size:.7rem">{{ todo.due_date|date:"M j" }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% elif issue.is_open and can_edit %}
+        <div class="mb-4">
+            <a href="{% url 'todos:create' %}?issue={{ issue.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-plus me-1"></i>Add To-Do
+            </a>
+        </div>
+        {% endif %}
+
+        {# ── Activity log ── #}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">Activity</h6>
+                {% if activity %}
+                <ul class="list-unstyled mb-0">
+                    {% for entry in activity %}
+                    <li class="d-flex gap-3 mb-3">
+                        <div class="mt-1" style="width:18px;text-align:center">
+                            <i class="bi {{ entry.icon }} small"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="small">
+                                <strong>{{ entry.actor.get_full_name|default:entry.actor.username|default:"System" }}</strong>
+                                — {{ entry.get_action_display }}
+                            </div>
+                            {% if entry.notes %}
+                            <div class="text-muted small">{{ entry.notes }}</div>
+                            {% endif %}
+                            <div class="text-muted" style="font-size:.7rem">{{ entry.created_at|date:"N j, Y g:i A" }}</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">No activity yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Add comment #}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">Add Comment</h6>
+                <form method="post" action="{% url 'issues:comment' issue.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <textarea name="{{ comment_form.notes.html_name }}"
+                                  class="form-control form-control-sm"
+                                  rows="2"
+                                  placeholder="Add a comment…"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-chat-left me-1"></i>Post Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    {# ── Sidebar ── #}
+    <div class="col-lg-4">
+
+        {# Meta card #}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">Details</h6>
+                <dl class="row g-0 mb-0" style="font-size:.875rem">
+                    <dt class="col-6 text-muted fw-normal">Status</dt>
+                    <dd class="col-6"><span class="badge bg-{{ issue.status_badge_class }}">{{ issue.get_status_display }}</span></dd>
+
+                    <dt class="col-6 text-muted fw-normal">Type</dt>
+                    <dd class="col-6">{{ issue.get_issue_type_display }}</dd>
+
+                    <dt class="col-6 text-muted fw-normal">Raised by</dt>
+                    <dd class="col-6">{{ issue.originating_team.name }}</dd>
+
+                    {% if issue.is_delegated %}
+                    <dt class="col-6 text-muted fw-normal">Delegated to</dt>
+                    <dd class="col-6 text-primary">{{ issue.delegated_to_team.name }}</dd>
+                    {% endif %}
+
+                    {% if issue.issue_type == 'long_term' and issue.target_quarter %}
+                    <dt class="col-6 text-muted fw-normal">Target</dt>
+                    <dd class="col-6">Q{{ issue.target_quarter }} {{ issue.target_year }}</dd>
+                    {% endif %}
+
+                    <dt class="col-6 text-muted fw-normal">Created</dt>
+                    <dd class="col-6">{{ issue.created_at|date:"N j, Y" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        {# Status controls #}
+        {% if can_edit and issue.is_open %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">Update Status</h6>
+
+                {# Quick status buttons #}
+                <div class="d-grid gap-2 mb-3">
+                    {% if issue.status == 'open' %}
+                    <form method="post" action="{% url 'issues:status' issue.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="in_ids">
+                        <input type="hidden" name="resolution_notes" value="">
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="bi bi-arrow-repeat me-1"></i>Move to IDS
+                        </button>
+                    </form>
+                    {% elif issue.status == 'in_ids' %}
+                    <form method="post" action="{% url 'issues:status' issue.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="open">
+                        <input type="hidden" name="resolution_notes" value="">
+                        <button type="submit" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Open
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                {# Resolve form #}
+                <form method="post" action="{% url 'issues:status' issue.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="resolved">
+                    <div class="mb-2">
+                        <textarea name="resolution_notes" class="form-control form-control-sm" rows="3"
+                                  placeholder="How was this resolved? (required)" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 mb-2">
+                        <i class="bi bi-check-circle me-1"></i>Mark Resolved
+                    </button>
+                </form>
+
+                <form method="post" action="{% url 'issues:status' issue.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="dropped">
+                    <input type="hidden" name="resolution_notes" value="Issue dropped.">
+                    <button type="submit" class="btn btn-outline-secondary w-100 btn-sm">
+                        <i class="bi bi-x-circle me-1"></i>Drop Issue
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Delegation controls #}
+        {% if can_edit and issue.is_open %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">Delegation</h6>
+                <form method="post" action="{% url 'issues:delegate' issue.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <select name="{{ delegate_form.delegated_to_team.html_name }}"
+                                class="form-select form-select-sm">
+                            <option value="">— Remove delegation —</option>
+                            {% for val, label in delegate_form.delegated_to_team.field.choices %}
+                            {% if val %}
+                            <option value="{{ val }}" {% if delegate_form.initial.delegated_to_team and delegate_form.initial.delegated_to_team.pk|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="bi bi-arrow-right-circle me-1"></i>Update Delegation
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

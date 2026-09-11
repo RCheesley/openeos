@@ -1,0 +1,101 @@
+{# Segment 7: Conclude — rate the meeting, cascading messages, wrap up #}
+<p class="text-muted small mb-3">
+    Recap To-Dos created, agree on cascading messages, then rate the meeting 1-10.
+</p>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+
+        {# Cascading messages #}
+        <div class="mb-3">
+            <div class="fw-semibold small mb-2">Cascading Messages</div>
+            <p class="text-muted small">What does the rest of the organisation need to know?</p>
+        </div>
+
+        {# Rating #}
+        <div class="fw-semibold small mb-2">Rate This Meeting</div>
+        <form method="post" action="{% url 'meetings:rate' meeting.pk %}" class="mb-3">
+            {% csrf_token %}
+            <div class="mb-2">
+                <label class="form-label small">Score (1–10) <span class="text-danger">*</span></label>
+                {{ rating_form.score }}
+                {% if my_rating %}
+                <div class="form-text text-success">Current: {{ my_rating.score }}/10</div>
+                {% endif %}
+            </div>
+            <div class="mb-2">
+                <label class="form-label small">What would make next week better?
+                    <span class="text-muted">(if score &lt; 8)</span>
+                </label>
+                {{ rating_form.improvement_note }}
+            </div>
+            <button type="submit" class="btn btn-sm btn-dark">
+                <i class="bi bi-star me-1"></i>Submit Rating
+            </button>
+        </form>
+
+        {# All ratings so far #}
+        {% if ratings %}
+        <div class="small">
+            <div class="fw-semibold mb-1">Ratings so far</div>
+            {% for r in ratings %}
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                <span>{{ r.participant.get_full_name|default:r.participant.username }}</span>
+                <span class="badge {% if r.score >= 8 %}bg-success{% elif r.score >= 6 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                    {{ r.score }}/10
+                </span>
+            </div>
+            {% endfor %}
+            {% if avg_rating %}
+            <div class="d-flex justify-content-between fw-semibold pt-1">
+                <span>Average</span>
+                <span class="{% if avg_rating >= 8 %}text-success{% elif avg_rating >= 6 %}text-warning{% else %}text-danger{% endif %}">
+                    {{ avg_rating }}/10
+                </span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="col-lg-6">
+
+        {# New To-Dos created this meeting #}
+        <div class="fw-semibold small mb-2">To-Dos Created This Meeting</div>
+        {% if new_todos %}
+        <ul class="list-unstyled small mb-3">
+            {% for todo in new_todos %}
+            <li class="d-flex gap-2 py-1 border-bottom">
+                <i class="bi bi-check2-square text-success mt-1 flex-shrink-0"></i>
+                <div>
+                    <div>{{ todo.title }}</div>
+                    <div class="text-muted" style="font-size:.7rem">{{ todo.owner.get_full_name|default:todo.owner.username }} · due {{ todo.due_date|date:"N j" }}</div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-muted small fst-italic mb-3">None yet — create To-Dos from the IDS segment or below.</div>
+        {% endif %}
+        <a href="{% url 'todos:create' %}?next={{ request.path }}" class="btn btn-sm btn-outline-dark mb-3">
+            <i class="bi bi-plus me-1"></i>Add To-Do
+        </a>
+
+    </div>
+</div>
+
+{# Complete button #}
+<div class="border-top pt-3 mt-2">
+    <form method="post" action="{% url 'meetings:complete' meeting.pk %}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Cascading Messages</label>
+            {{ cascading_form.cascading_messages }}
+        </div>
+        <button type="submit" class="btn btn-success"
+                onclick="return confirm('Complete this meeting? This cannot be undone.')">
+            <i class="bi bi-flag-fill me-1"></i>Complete Meeting
+        </button>
+    </form>
+</div>

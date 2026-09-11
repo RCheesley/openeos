@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} To-Do — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'todos:list' %}" class="btn btn-sm btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-check2-square me-2 text-primary"></i>{{ action }} To-Do
+            </h1>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {# Title #}
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold">
+                            Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               name="{{ form.title.html_name }}"
+                               id="{{ form.title.id_for_label }}"
+                               value="{{ form.title.value|default:'' }}"
+                               class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                               placeholder="Start with a verb — e.g. Send proposal to Acme">
+                        {% for error in form.title.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Description #}
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">Notes</label>
+                        <textarea name="{{ form.description.html_name }}"
+                                  id="{{ form.description.id_for_label }}"
+                                  rows="3"
+                                  class="form-control"
+                                  placeholder="Optional additional context">{{ form.description.value|default:'' }}</textarea>
+                    </div>
+
+                    {# Owner + Team #}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="{{ form.owner.id_for_label }}" class="form-label fw-semibold">
+                                Owner <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.owner.html_name }}"
+                                    id="{{ form.owner.id_for_label }}"
+                                    class="form-select {% if form.owner.errors %}is-invalid{% endif %}">
+                                <option value="">— Select —</option>
+                                {% for val, label in form.owner.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.owner.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% for error in form.owner.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="{{ form.team.id_for_label }}" class="form-label fw-semibold">
+                                Team <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.team.html_name }}"
+                                    id="{{ form.team.id_for_label }}"
+                                    class="form-select {% if form.team.errors %}is-invalid{% endif %}">
+                                <option value="">— Select —</option>
+                                {% for val, label in form.team.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.team.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% for error in form.team.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Due date #}
+                    <div class="mb-3">
+                        <label for="{{ form.due_date.id_for_label }}" class="form-label fw-semibold">
+                            Due Date <span class="text-danger">*</span>
+                        </label>
+                        <input type="date"
+                               name="{{ form.due_date.html_name }}"
+                               id="{{ form.due_date.id_for_label }}"
+                               value="{{ form.due_date.value|date:'Y-m-d'|default:'' }}"
+                               class="form-control {% if form.due_date.errors %}is-invalid{% endif %}">
+                        <div class="form-text">EOS standard: 7 days from today.</div>
+                        {% for error in form.due_date.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Links #}
+                    <div class="row g-3 mb-4">
+                        {% if form.linked_rock.field.queryset.exists %}
+                        <div class="col-sm-6">
+                            <label for="{{ form.linked_rock.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-gem me-1 text-success"></i>Linked Rock
+                            </label>
+                            <select name="{{ form.linked_rock.html_name }}"
+                                    id="{{ form.linked_rock.id_for_label }}"
+                                    class="form-select form-select-sm">
+                                <option value="">— None —</option>
+                                {% for val, label in form.linked_rock.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.linked_rock.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        {% if form.linked_issue.field.queryset.exists %}
+                        <div class="col-sm-6">
+                            <label for="{{ form.linked_issue.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-exclamation-triangle me-1 text-warning"></i>Linked Issue
+                            </label>
+                            <select name="{{ form.linked_issue.html_name }}"
+                                    id="{{ form.linked_issue.id_for_label }}"
+                                    class="form-select form-select-sm">
+                                <option value="">— None —</option>
+                                {% for val, label in form.linked_issue.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.linked_issue.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i>{{ action }} To-Do
+                        </button>
+                        <a href="{% url 'todos:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

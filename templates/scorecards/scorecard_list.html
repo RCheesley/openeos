@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Scorecards — EOS App{% endblock %}
+
+{% block content %}
+<div class="row mb-3 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0"><i class="bi bi-bar-chart-line me-2 text-info"></i>Scorecards</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'scorecards:create' %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg me-1"></i>New Scorecard
+        </a>
+    </div>
+</div>
+
+<p class="text-muted small mb-4">
+    Week of <strong>{{ current_week|date:"N j, Y" }}</strong>
+    &nbsp;·&nbsp; EOS recommends 5–15 metrics per scorecard.
+</p>
+
+{% if summaries %}
+<div class="row g-4">
+    {% for s in summaries %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent d-flex align-items-center justify-content-between py-2">
+                <div>
+                    <a href="{{ s.scorecard.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold">
+                        {{ s.scorecard.name }}
+                    </a>
+                    <div class="text-muted small">{{ s.scorecard.team.name }}</div>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ s.scorecard.get_absolute_url }}"><i class="bi bi-table me-2"></i>View 13-week table</a></li>
+                        <li><a class="dropdown-item" href="{% url 'scorecards:enter' s.scorecard.pk %}"><i class="bi bi-pencil-square me-2"></i>Enter this week's values</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'scorecards:update' s.scorecard.pk %}"><i class="bi bi-pencil me-2"></i>Edit scorecard</a></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'scorecards:delete' s.scorecard.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            {# Current week summary bar #}
+            {% if s.total %}
+            <div class="card-body pb-2">
+                <div class="d-flex gap-2 mb-2 small">
+                    <span class="text-success"><i class="bi bi-check-circle me-1"></i>{{ s.on_track }} on track</span>
+                    {% if s.off_track %}<span class="text-danger"><i class="bi bi-x-circle me-1"></i>{{ s.off_track }} off track</span>{% endif %}
+                    {% if s.missing %}<span class="text-muted"><i class="bi bi-dash-circle me-1"></i>{{ s.missing }} missing</span>{% endif %}
+                </div>
+                {% if s.total %}
+                <div class="progress mb-3" style="height:6px">
+                    {% if s.total %}
+                    <div class="progress-bar bg-success" style="width:{% widthratio s.on_track s.total 100 %}%"></div>
+                    <div class="progress-bar bg-danger" style="width:{% widthratio s.off_track s.total 100 %}%"></div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {# Metric rows — current week status #}
+                <ul class="list-unstyled mb-0">
+                    {% for metric in s.metrics %}
+                    {% with entry=s.entries|dictsort:"pk" %}
+                    {% endwith %}
+                    {% with entry=s.entries|default_if_none:"" %}
+                    {% endwith %}
+                    <li class="d-flex align-items-center gap-2 py-1 border-bottom border-light">
+                        {% with entry=s.entries %}
+                        {# Django template can't do dict lookups by variable key — use the entry_map from view #}
+                        {% endwith %}
+                        <span class="flex-grow-1 small text-truncate">{{ metric.name }}</span>
+                        <span class="text-muted small">{{ metric.format_goal }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% else %}
+            <div class="card-body text-center text-muted py-4">
+                <i class="bi bi-bar-chart display-5 opacity-25 d-block mb-2"></i>
+                <div class="small">No metrics yet.</div>
+                <a href="{% url 'scorecards:metric_add' s.scorecard.pk %}" class="btn btn-sm btn-outline-secondary mt-2">Add first metric</a>
+            </div>
+            {% endif %}
+
+            <div class="card-footer bg-transparent py-2 d-flex gap-2">
+                <a href="{% url 'scorecards:enter' s.scorecard.pk %}" class="btn btn-sm btn-primary flex-fill">
+                    <i class="bi bi-pencil-square me-1"></i>Enter values
+                </a>
+                <a href="{{ s.scorecard.get_absolute_url }}" class="btn btn-sm btn-outline-secondary flex-fill">
+                    <i class="bi bi-table me-1"></i>13-week view
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-bar-chart-line display-3 d-block mb-3 text-info opacity-25"></i>
+    <h4>No Scorecards yet</h4>
+    <p class="mb-4">Scorecards track 5–15 weekly numbers that show your team's health at a glance.</p>
+    <a href="{% url 'scorecards:create' %}" class="btn btn-dark">
+        <i class="bi bi-plus-lg me-1"></i>Create first Scorecard
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Edit Milestone — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a href="{{ milestone.rock.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <div class="text-muted small">{{ milestone.rock.title }}</div>
+                <h1 class="h4 mb-0">Edit Milestone</h1>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control"
+                               value="{{ milestone.title }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="4"
+                                  placeholder="Add context, success criteria, or notes…">{{ milestone.description }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Due Date</label>
+                        <input type="date" name="due_date" class="form-control"
+                               value="{{ milestone.due_date|date:'Y-m-d' }}">
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a href="{{ milestone.rock.get_absolute_url }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

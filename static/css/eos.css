@@ -1,0 +1,54 @@
+/* EOS App — custom styles */
+/* Keep this minimal. Use Bootstrap 5 utility classes wherever possible. */
+
+/* Meeting timer display */
+.meeting-timer {
+    font-size: 3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+}
+
+.meeting-timer.warning {
+    color: var(--bs-warning);
+}
+
+.meeting-timer.danger {
+    color: var(--bs-danger);
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Accountability chart tree layout */
+.accountability-tree {
+    overflow-x: auto;
+}
+
+.accountability-node {
+    min-width: 180px;
+    max-width: 220px;
+}
+
+.accountability-node.vacant {
+    border-style: dashed !important;
+    opacity: 0.7;
+}
+
+/* Rock status badges */
+.rock-on-track  { --bs-badge-color: #fff; background-color: var(--bs-success); }
+.rock-off-track { --bs-badge-color: #fff; background-color: var(--bs-danger); }
+.rock-complete  { --bs-badge-color: #fff; background-color: var(--bs-secondary); }
+
+/* Scorecard on/off track cells */
+.scorecard-on-track  { background-color: rgba(var(--bs-success-rgb), 0.1); }
+.scorecard-off-track { background-color: rgba(var(--bs-danger-rgb), 0.1); }
+.scorecard-missing   { background-color: rgba(var(--bs-secondary-rgb), 0.1); color: var(--bs-secondary); }
+
+/* IDS columns */
+.ids-identify { border-left: 4px solid var(--bs-warning); }
+.ids-discuss  { border-left: 4px solid var(--bs-info); }
+.ids-solve    { border-left: 4px solid var(--bs-success); }

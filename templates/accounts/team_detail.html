@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} — EOS App{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'accounts:team_list' %}" class="text-muted">Teams</a></li>
+                <li class="breadcrumb-item active">{{ team.name }}</li>
+            </ol>
+        </nav>
+        <h1 class="h3 mb-0">{{ team.name }}</h1>
+        {% if team.description %}<p class="text-muted mt-1 mb-0">{{ team.description }}</p>{% endif %}
+    </div>
+    {% if is_admin %}
+    <div class="col-auto">
+        <a href="{% url 'accounts:team_update' team.pk %}" class="btn btn-outline-dark">
+            <i class="bi bi-pencil me-1"></i> Edit team
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    <!-- Members -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>Members</h5>
+                <span class="badge bg-secondary">{{ members|length }}</span>
+            </div>
+
+            {% if members %}
+            <ul class="list-group list-group-flush">
+                {% for profile in members %}
+                <li class="list-group-item d-flex align-items-center gap-3">
+                    {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" class="rounded-circle" width="36" height="36" alt="">
+                    {% else %}
+                    <div class="rounded-circle bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center" style="width:36px;height:36px">
+                        <i class="bi bi-person text-secondary"></i>
+                    </div>
+                    {% endif %}
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">{{ profile.display_name }}</div>
+                        <div class="text-muted small">{{ profile.get_role_display }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="card-body text-center text-muted">
+                <i class="bi bi-person display-6 d-block mb-2"></i>
+                No members yet.
+            </div>
+            {% endif %}
+
+            {% if is_admin %}
+            <div class="card-footer bg-white border-top">
+                <p class="fw-semibold mb-2 small text-uppercase text-muted">Update members</p>
+                <form method="post" action="{% url 'accounts:team_members' team.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ member_form.users }}
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-dark w-100">Save members</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Future: Rocks, Meetings, Scorecard links -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="bi bi-grid me-2"></i>Team modules</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="p-3 border rounded text-muted text-center small">
+                            <i class="bi bi-gem d-block fs-4 mb-1"></i>
+                            Rocks <span class="badge bg-secondary ms-1">Phase 3</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 border rounded text-muted text-center small">
+                            <i class="bi bi-calendar3 d-block fs-4 mb-1"></i>
+                            Meetings <span class="badge bg-secondary ms-1">Phase 9</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 border rounded text-muted text-center small">
+                            <i class="bi bi-bar-chart d-block fs-4 mb-1"></i>
+                            Scorecard <span class="badge bg-secondary ms-1">Phase 6</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 border rounded text-muted text-center small">
+                            <i class="bi bi-exclamation-triangle d-block fs-4 mb-1"></i>
+                            Issues <span class="badge bg-secondary ms-1">Phase 4</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

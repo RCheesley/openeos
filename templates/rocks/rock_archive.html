@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Rocks Archive — {{ quarter_label }} — EOS App{% endblock %}
+
+{% block content %}
+{# ── Header ── #}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'rocks:list' %}?quarter={{ quarter }}&year={{ year }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+        <h1 class="h3 mb-0"><i class="bi bi-clock-history me-2 text-secondary"></i>Archive</h1>
+        <div class="text-muted small">{{ quarter_label }} — read-only snapshot</div>
+    </div>
+</div>
+
+{# ── Quarter nav ── #}
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+    {% for opt in quarter_options %}
+    <a href="?quarter={{ opt.quarter }}&year={{ opt.year }}"
+       class="btn btn-sm {% if opt.selected %}btn-dark{% elif opt.is_current %}btn-outline-dark{% else %}btn-outline-secondary{% endif %}">
+        {{ opt.label }}{% if opt.is_current %} <span class="badge bg-success ms-1" style="font-size:.6rem">NOW</span>{% endif %}
+    </a>
+    {% endfor %}
+</div>
+
+{# ── Summary stats ── #}
+{% if total %}
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold">{{ total }}</div>
+            <div class="text-muted small">Total Rocks</div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold text-success">{{ complete }}</div>
+            <div class="text-muted small">Completed</div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold {% if completion_pct >= 80 %}text-success{% elif completion_pct >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                {{ completion_pct }}%
+            </div>
+            <div class="text-muted small">Completion Rate</div>
+        </div>
+    </div>
+</div>
+
+{# Progress bar #}
+<div class="mb-4">
+    <div class="progress" style="height:12px">
+        <div class="progress-bar bg-success" role="progressbar"
+             style="width:{{ completion_pct }}%"
+             aria-valuenow="{{ completion_pct }}" aria-valuemin="0" aria-valuemax="100">
+        </div>
+    </div>
+    <div class="text-muted small mt-1">{{ complete }} of {{ total }} Rocks completed</div>
+</div>
+{% endif %}
+
+{# ── Rocks grouped by team ── #}
+{% if teams_rocks %}
+    {% for team, team_rocks in teams_rocks %}
+    <div class="mb-4">
+        {% with complete_count=team_rocks|length %}
+        <div class="d-flex align-items-center mb-2 gap-2">
+            <h5 class="mb-0">{{ team.name }}</h5>
+            <span class="badge bg-light text-dark border">{{ team_rocks|length }} Rock{{ team_rocks|length|pluralize }}</span>
+        </div>
+        {% endwith %}
+
+        <div class="card border-0 shadow-sm">
+            <ul class="list-group list-group-flush">
+                {% for rock in team_rocks %}
+                <li class="list-group-item px-3 py-3">
+                    <div class="d-flex align-items-center gap-3">
+
+                        {# Status badge — read-only in archive #}
+                        <span class="badge bg-{{ rock.status_badge_class }} fs-6 px-3">
+                            {{ rock.get_status_display }}
+                        </span>
+
+                        {# Title #}
+                        <div class="flex-grow-1">
+                            <a href="{{ rock.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold">
+                                {{ rock.title }}
+                            </a>
+                        </div>
+
+                        {# Owner #}
+                        <div class="text-muted small text-nowrap">
+                            {% if rock.owner.profile.avatar %}
+                            <img src="{{ rock.owner.profile.avatar.url }}" class="rounded-circle me-1" width="20" height="20" alt="">
+                            {% else %}
+                            <i class="bi bi-person-circle me-1"></i>
+                            {% endif %}
+                            {{ rock.owner.get_full_name|default:rock.owner.username }}
+                        </div>
+
+                        {# Due date #}
+                        <div class="text-muted small text-nowrap d-none d-md-block">
+                            <i class="bi bi-calendar3 me-1"></i>{{ rock.due_date|date:"M j" }}
+                        </div>
+
+                    </div>
+
+                    {% if rock.description %}
+                    <div class="text-muted small mt-1 ms-1 ps-1 border-start border-2">
+                        {{ rock.description|truncatewords:20 }}
+                    </div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endfor %}
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-clock-history display-3 d-block mb-3 opacity-25"></i>
+    <h4>No Rocks for {{ quarter_label }}</h4>
+    <p>No Rocks were recorded for this quarter.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}VTO — {{ vto.organization.name }} — EOS App{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="h3 mb-0"><i class="bi bi-map me-2 text-success"></i>Vision / Traction Organizer</h1>
+        <div class="text-muted small">{{ vto.organization.name }}</div>
+    </div>
+    <a href="{% url 'vto:print' %}" class="btn btn-outline-secondary" target="_blank">
+        <i class="bi bi-printer me-1"></i>Print view
+    </a>
+</div>
+
+<div class="row g-4">
+
+{# ═══════════════ PAGE 1 — VISION ═══════════════ #}
+<div class="col-lg-6">
+    <p class="text-uppercase fw-bold text-muted mb-3" style="font-size:.7rem;letter-spacing:.08em">
+        <i class="bi bi-eye me-1"></i>Page 1 — Vision
+    </p>
+
+    {# Core Values #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+            <div>
+                <span class="fw-semibold small">Core Values</span>
+                <div class="text-muted" style="font-size:.7rem">3–7 timeless guiding principles</div>
+            </div>
+            <a href="{% url 'vto:cv_add' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+                <i class="bi bi-plus"></i>
+            </a>
+        </div>
+        <div class="card-body py-3">
+            {% if core_values %}
+            <div class="d-flex flex-wrap gap-2">
+                {% for cv in core_values %}
+                <div class="border rounded p-2 position-relative" style="min-width:150px;max-width:210px">
+                    <div class="fw-semibold small">{{ cv.name }}</div>
+                    {% if cv.description %}
+                    <div class="text-muted" style="font-size:.72rem">{{ cv.description|truncatewords:12 }}</div>
+                    {% endif %}
+                    <div class="position-absolute top-0 end-0 p-1 d-flex gap-1">
+                        <a href="{% url 'vto:cv_edit' cv.pk %}" class="text-muted" style="font-size:.7rem"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'vto:cv_delete' cv.pk %}" class="text-danger" style="font-size:.7rem"><i class="bi bi-x-lg"></i></a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small fst-italic mb-0">No core values yet. <a href="{% url 'vto:cv_add' %}">Add the first one.</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Core Focus #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent py-2">
+            <span class="fw-semibold small">Core Focus</span>
+        </div>
+        <div class="card-body py-2">
+            <div class="mb-3">
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Purpose / Passion / Cause</div>
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1 small">
+                        {% if sections.core_focus_purpose and sections.core_focus_purpose.content %}
+                            {{ sections.core_focus_purpose.content }}
+                        {% else %}
+                            <span class="text-muted fst-italic">Not set.</span>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'vto:section_edit' 'core_focus_purpose' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                </div>
+                {% if sections.core_focus_purpose.last_edited_by %}
+                <div class="text-muted mt-1" style="font-size:.65rem">
+                    Updated by {{ sections.core_focus_purpose.last_edited_by.get_full_name|default:sections.core_focus_purpose.last_edited_by.username }}
+                    on {{ sections.core_focus_purpose.last_edited_at|date:"N j" }}
+                </div>
+                {% endif %}
+            </div>
+            <hr class="my-2">
+            <div>
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Niche</div>
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1 small">
+                        {% if sections.core_focus_niche and sections.core_focus_niche.content %}
+                            {{ sections.core_focus_niche.content }}
+                        {% else %}
+                            <span class="text-muted fst-italic">Not set.</span>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'vto:section_edit' 'core_focus_niche' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# 10-Year Target #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+            <div>
+                <span class="fw-semibold small">10-Year Target</span>
+                <div class="text-muted" style="font-size:.7rem">One big, audacious, measurable goal</div>
+            </div>
+            <a href="{% url 'vto:section_edit' 'ten_year_target' %}" class="btn btn-sm btn-outline-secondary border-0 py-0"><i class="bi bi-pencil"></i></a>
+        </div>
+        <div class="card-body py-3">
+            {% if sections.ten_year_target and sections.ten_year_target.content %}
+            <p class="fw-semibold mb-0">{{ sections.ten_year_target.content }}</p>
+            {% if sections.ten_year_target.last_edited_by %}
+            <div class="text-muted mt-1" style="font-size:.65rem">Updated by {{ sections.ten_year_target.last_edited_by.get_full_name|default:sections.ten_year_target.last_edited_by.username }} on {{ sections.ten_year_target.last_edited_at|date:"N j" }}</div>
+            {% endif %}
+            {% else %}
+            <p class="text-muted fst-italic mb-0 small">Not set.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Marketing Strategy #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent py-2">
+            <span class="fw-semibold small">Marketing Strategy</span>
+        </div>
+        <div class="card-body py-2">
+            {% for mkey, mlabel in section_keys.CHOICES %}
+            {% if mkey == 'target_market' or mkey == 'three_uniques' or mkey == 'proven_process' or mkey == 'guarantee' %}
+            <div class="mb-2">
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">{{ mlabel|cut:"Marketing — " }}</div>
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1 small" style="white-space:pre-line">
+                        {% if mkey == 'target_market' %}{% if sections.target_market and sections.target_market.content %}{{ sections.target_market.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
+                        {% elif mkey == 'three_uniques' %}{% if sections.three_uniques and sections.three_uniques.content %}{{ sections.three_uniques.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
+                        {% elif mkey == 'proven_process' %}{% if sections.proven_process and sections.proven_process.content %}{{ sections.proven_process.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
+                        {% elif mkey == 'guarantee' %}{% if sections.guarantee and sections.guarantee.content %}{{ sections.guarantee.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'vto:section_edit' mkey %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                </div>
+            </div>
+            {% if not forloop.last and mkey != 'guarantee' %}<hr class="my-1">{% endif %}
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{# ═══════════════ PAGE 2 — TRACTION ═══════════════ #}
+<div class="col-lg-6">
+    <p class="text-uppercase fw-bold text-muted mb-3" style="font-size:.7rem;letter-spacing:.08em">
+        <i class="bi bi-lightning me-1"></i>Page 2 — Traction
+    </p>
+
+    {# 3-Year Picture #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent py-2">
+            <span class="fw-semibold small">3-Year Picture</span>
+            <div class="text-muted" style="font-size:.7rem">Vivid description + measurable goals</div>
+        </div>
+        <div class="card-body py-2">
+            <div class="mb-2">
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Description</div>
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1 small" style="white-space:pre-line">
+                        {% if sections.three_year_picture and sections.three_year_picture.content %}{{ sections.three_year_picture.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
+                    </div>
+                    <a href="{% url 'vto:section_edit' 'three_year_picture' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                </div>
+            </div>
+            <hr class="my-2">
+            <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Measurable Goals (one per line)</div>
+            <div class="d-flex gap-2">
+                <div class="flex-grow-1">
+                    {% if sections.three_year_goals and sections.three_year_goals.content %}
+                    <ul class="mb-0 ps-3 small">{% for line in sections.three_year_goals.content.splitlines %}{% if line.strip %}<li>{{ line }}</li>{% endif %}{% endfor %}</ul>
+                    {% else %}<p class="text-muted small fst-italic mb-0">Not set.</p>{% endif %}
+                </div>
+                <a href="{% url 'vto:section_edit' 'three_year_goals' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+            </div>
+        </div>
+    </div>
+
+    {# 1-Year Plan #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent py-2">
+            <span class="fw-semibold small">1-Year Plan</span>
+        </div>
+        <div class="card-body py-2">
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Revenue Target</div>
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="small fw-semibold flex-grow-1">{% if sections.one_year_revenue and sections.one_year_revenue.content %}{{ sections.one_year_revenue.content }}{% else %}<span class="text-muted fst-italic">Not set</span>{% endif %}</span>
+                        <a href="{% url 'vto:section_edit' 'one_year_revenue' %}" class="btn btn-sm btn-outline-secondary border-0 py-0"><i class="bi bi-pencil"></i></a>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Profit Target</div>
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="small fw-semibold flex-grow-1">{% if sections.one_year_profit and sections.one_year_profit.content %}{{ sections.one_year_profit.content }}{% else %}<span class="text-muted fst-italic">Not set</span>{% endif %}</span>
+                        <a href="{% url 'vto:section_edit' 'one_year_profit' %}" class="btn btn-sm btn-outline-secondary border-0 py-0"><i class="bi bi-pencil"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-2">
+            <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Critical Goals — 3–7 (one per line)</div>
+            <div class="d-flex gap-2">
+                <div class="flex-grow-1">
+                    {% if sections.one_year_goals and sections.one_year_goals.content %}
+                    <ul class="mb-0 ps-3 small">{% for line in sections.one_year_goals.content.splitlines %}{% if line.strip %}<li>{{ line }}</li>{% endif %}{% endfor %}</ul>
+                    {% else %}<p class="text-muted small fst-italic mb-0">Not set.</p>{% endif %}
+                </div>
+                <a href="{% url 'vto:section_edit' 'one_year_goals' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+            </div>
+            {% if sections.one_year_goals and sections.one_year_goals.last_edited_by %}
+            <div class="text-muted mt-2" style="font-size:.65rem">Updated by {{ sections.one_year_goals.last_edited_by.get_full_name|default:sections.one_year_goals.last_edited_by.username }} on {{ sections.one_year_goals.last_edited_at|date:"N j" }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Quarterly Rocks (live) #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+            <div>
+                <span class="fw-semibold small"><i class="bi bi-gem me-1 text-success"></i>Quarterly Rocks</span>
+                <div class="text-muted" style="font-size:.7rem">{{ rock_quarter }} · live from Rocks module</div>
+            </div>
+            <a href="{% url 'rocks:list' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+                <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
+            </a>
+        </div>
+        <div class="card-body py-2">
+            {% if rocks %}
+            <ul class="list-unstyled mb-0">
+                {% for rock in rocks %}
+                <li class="d-flex align-items-center gap-2 py-1 {% if not forloop.last %}border-bottom{% endif %}">
+                    <span class="badge bg-{{ rock.status_badge_class }} small">{{ rock.get_status_display }}</span>
+                    <span class="small flex-grow-1 text-truncate">{{ rock.title }}</span>
+                    <span class="text-muted text-nowrap" style="font-size:.7rem">{{ rock.team.name }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted small fst-italic mb-0">No active Rocks for {{ rock_quarter }}. <a href="{% url 'rocks:create' %}">Create one.</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Long-Term Issues (live) #}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+            <div>
+                <span class="fw-semibold small"><i class="bi bi-exclamation-triangle me-1 text-warning"></i>Issues List</span>
+                <div class="text-muted" style="font-size:.7rem">Long-term strategic issues · live from Issues module</div>
+            </div>
+            <a href="{% url 'issues:create' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+                <i class="bi bi-plus" style="font-size:.8rem"></i>
+            </a>
+        </div>
+        <div class="card-body py-2">
+            {% if long_term_issues %}
+            <ul class="list-unstyled mb-0">
+                {% for issue in long_term_issues %}
+                <li class="d-flex align-items-start gap-2 py-1 {% if not forloop.last %}border-bottom{% endif %}">
+                    <span class="badge bg-{{ issue.status_badge_class }} mt-1 small">{{ issue.get_status_display }}</span>
+                    <div class="flex-grow-1">
+                        <a href="{{ issue.get_absolute_url }}" class="text-decoration-none text-dark small">{{ issue.title }}</a>
+                        {% if issue.target_quarter %}
+                        <div class="text-muted" style="font-size:.65rem">Target Q{{ issue.target_quarter }} {{ issue.target_year }}</div>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted small fst-italic mb-0">No long-term issues. <a href="{% url 'issues:create' %}">Add one.</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+</div><!-- /row -->
+{% endblock %}

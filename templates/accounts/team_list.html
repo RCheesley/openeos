@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Teams — EOS App{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0"><i class="bi bi-people me-2"></i>Teams</h1>
+        <p class="text-muted mt-1 mb-0">Departments and leadership groups in your organisation</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'accounts:team_create' %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg me-1"></i> New team
+        </a>
+    </div>
+</div>
+
+{% if teams %}
+<div class="row g-3">
+    {% for team in teams %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">
+                        <a href="{{ team.get_absolute_url }}" class="text-decoration-none text-dark">
+                            {{ team.name }}
+                        </a>
+                    </h5>
+                    <span class="badge bg-light text-dark border">
+                        {{ team.member_count }} member{{ team.member_count|pluralize }}
+                    </span>
+                </div>
+                {% if team.description %}
+                <p class="card-text text-muted small">{{ team.description }}</p>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-white border-top-0 d-flex gap-2">
+                <a href="{{ team.get_absolute_url }}" class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-eye me-1"></i>View
+                </a>
+                <a href="{% url 'accounts:team_update' team.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i>Edit
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-people display-3 d-block mb-3"></i>
+    <h4>No teams yet</h4>
+    <p>Create your first team to start assigning Rocks and running meetings.</p>
+    <a href="{% url 'accounts:team_create' %}" class="btn btn-dark">
+        <i class="bi bi-plus-lg me-1"></i> Create first team
+    </a>
+</div>
+{% endif %}
+{% endblock %}

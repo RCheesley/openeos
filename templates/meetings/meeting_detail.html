@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ meeting }} — Level 10 Meeting — EOS App{% endblock %}
+
+{% block extra_css %}
+<style>
+.segment-sidebar .segment-item { padding: .4rem .75rem; border-radius: .375rem; cursor: default; }
+.segment-sidebar .segment-item.active { background: #212529; color: #fff; font-weight: 600; }
+.segment-sidebar .segment-item.done { color: #6c757d; text-decoration: line-through; }
+.timer-box { background: #212529; color: #fff; border-radius: .5rem; }
+@media print { nav.navbar, footer, .no-print { display: none !important; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Header ─────────────────────────────────────────────────────────────── #}
+<div class="d-flex align-items-start justify-content-between mb-3 no-print">
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'meetings:list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="h4 mb-0">{{ meeting }}</h1>
+            <div class="text-muted small">
+                Level 10 Meeting
+                {% if meeting.is_active %}
+                <span class="badge bg-success ms-1"><i class="bi bi-record-fill me-1"></i>Live</span>
+                {% elif meeting.is_complete %}
+                <span class="badge bg-dark ms-1">Complete</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% if meeting.is_scheduled %}
+    <form method="post" action="{% url 'meetings:start' meeting.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-success">
+            <i class="bi bi-play-fill me-1"></i>Start Meeting
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+{% if meeting.is_scheduled %}
+{# ── Not started yet ─────────────────────────────────────────────────────── #}
+<div class="row justify-content-center">
+    <div class="col-lg-6 text-center py-4">
+        <i class="bi bi-calendar3 text-muted" style="font-size:3rem;"></i>
+        <h5 class="mt-3">Ready to start</h5>
+        <p class="text-muted">{{ meeting.team.name }} · {{ meeting.scheduled_date|date:"N j, Y" }}</p>
+        <div class="bg-light rounded p-3 text-start mb-4 small">
+            <div class="fw-semibold mb-2">Today's agenda:</div>
+            {% for i, seg in segments %}
+            <div class="d-flex justify-content-between">
+                <span>{{ seg.0 }}</span>
+                <span class="text-muted">{{ seg.1 }} min</span>
+            </div>
+            {% endfor %}
+            <div class="border-top mt-2 pt-1 d-flex justify-content-between fw-semibold">
+                <span>Total</span><span>90 min</span>
+            </div>
+        </div>
+        <form method="post" action="{% url 'meetings:start' meeting.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-dark btn-lg">
+                <i class="bi bi-play-fill me-2"></i>Start Level 10 Meeting
+            </button>
+        </form>
+    </div>
+</div>
+
+{% elif meeting.is_complete %}
+{# ── Completed ─────────────────────────────────────────────────────────── #}
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body p-3 text-center">
+                {% if avg_rating %}
+                <div style="font-size:2.5rem" class="fw-bold {% if avg_rating >= 8 %}text-success{% elif avg_rating >= 6 %}text-warning{% else %}text-danger{% endif %}">
+                    {{ avg_rating }}/10
+                </div>
+                <div class="text-muted small">Average rating</div>
+                {% else %}
+                <div class="text-muted">No ratings yet</div>
+                {% endif %}
+                {% if meeting.duration_minutes %}
+                <div class="text-muted small mt-1">{{ meeting.duration_minutes }} minutes</div>
+                {% endif %}
+            </div>
+        </div>
+        {% if ratings %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent py-2"><span class="small fw-semibold">Ratings</span></div>
+            <div class="card-body py-2">
+                {% for r in ratings %}
+                <div class="d-flex justify-content-between align-items-center py-1 {% if not forloop.last %}border-bottom{% endif %}">
+                    <span class="small">{{ r.participant.get_full_name|default:r.participant.username }}</span>
+                    <span class="badge {% if r.score >= 8 %}bg-success{% elif r.score >= 6 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ r.score }}/10</span>
+                </div>
+                {% if r.improvement_note %}
+                <div class="text-muted small fst-italic px-1 pb-1">{{ r.improvement_note }}</div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-8">
+        {% if meeting.cascading_messages %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent py-2"><span class="small fw-semibold">Cascading Messages</span></div>
+            <div class="card-body py-2 small" style="white-space:pre-line">{{ meeting.cascading_messages }}</div>
+        </div>
+        {% endif %}
+        {% if new_todos %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent py-2"><span class="small fw-semibold">To-Dos Created This Meeting</span></div>
+            <div class="card-body py-2">
+                {% for todo in new_todos %}
+                <div class="d-flex justify-content-between py-1 {% if not forloop.last %}border-bottom{% endif %} small">
+                    <span>{{ todo.title }}</span>
+                    <span class="text-muted">{{ todo.owner.get_full_name|default:todo.owner.username }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% if segue_entries %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent py-2"><span class="small fw-semibold">Segue Entries</span></div>
+            <div class="card-body py-2">
+                {% for entry in segue_entries %}
+                <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div class="fw-semibold small">{{ entry.participant.get_full_name|default:entry.participant.username }}</div>
+                    {% if entry.personal_best %}<div class="small text-muted"><i class="bi bi-person me-1"></i>{{ entry.personal_best }}</div>{% endif %}
+                    {% if entry.business_best %}<div class="small text-muted"><i class="bi bi-briefcase me-1"></i>{{ entry.business_best }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
+{# ── Active Meeting Runner ─────────────────────────────────────────────── #}
+<div class="row g-3">
+
+    {# Left: Agenda sidebar + Timer #}
+    <div class="col-lg-3 no-print">
+
+        {# Timer #}
+        <div class="timer-box p-3 mb-3" id="meeting-timer"
+             data-duration-minutes="{{ segment_duration }}"
+             data-meeting-started="{{ meeting.started_at|date:'c' }}">
+            <div class="small text-white-50 mb-1">{{ segment_name }}</div>
+            <div id="timer-segment-remaining" class="fw-bold text-success" style="font-size:1.8rem;">{{ segment_duration }}:00</div>
+            <div class="progress mb-2" style="height:4px;background:rgba(255,255,255,.2)">
+                <div id="timer-progress" class="progress-bar bg-success" style="width:0%"></div>
+            </div>
+            <div class="small text-white-50">Total: <span id="timer-total-elapsed">0:00</span></div>
+            <div class="d-flex gap-1 mt-2">
+                <button id="timer-btn-pause" class="btn btn-sm btn-outline-secondary" style="color:#fff;border-color:rgba(255,255,255,.3)">Pause</button>
+                <button id="timer-btn-reset" class="btn btn-sm btn-outline-secondary" style="color:#fff;border-color:rgba(255,255,255,.3)">Reset</button>
+            </div>
+            <div id="timer-alert" class="alert alert-danger py-1 px-2 small mt-2 d-none">
+                <i class="bi bi-alarm me-1"></i>Time's up! Move to next segment.
+            </div>
+        </div>
+
+        {# Agenda progress #}
+        <div class="card border-0 shadow-sm segment-sidebar">
+            <div class="card-body py-2 px-2">
+                {% for i, seg in segments %}
+                <div class="segment-item {% if i == segment_idx %}active{% elif i < segment_idx %}done{% endif %} d-flex justify-content-between">
+                    <span>{{ seg.0 }}</span>
+                    <span class="opacity-75 small">{{ seg.1 }}m</span>
+                </div>
+                {% endfor %}
+                <div class="border-top mt-1 pt-1 px-2 d-flex justify-content-between small text-muted">
+                    <span>Total</span><span>90 min</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {# Right: Segment content #}
+    <div class="col-lg-9">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-semibold">{{ segment_name }}</span>
+                    <span class="text-muted small ms-2">{{ segment_duration }} minutes</span>
+                </div>
+                <span class="badge bg-secondary">{{ segment_idx|add:1 }}/7</span>
+            </div>
+            <div class="card-body">
+                {% include segment_template %}
+            </div>
+            <div class="card-footer bg-transparent d-flex justify-content-between align-items-center no-print">
+                <small class="text-muted">Segment {{ segment_idx|add:1 }} of 7</small>
+                {% if not is_last_segment %}
+                <form method="post" action="{% url 'meetings:advance' meeting.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-dark">
+                        Next: {% with next_idx=segment_idx|add:1 %}{% for i, seg in segments %}{% if i == next_idx %}{{ seg.0 }}{% endif %}{% endfor %}{% endwith %}
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/meeting-timer.js' %}"></script>
+{% endblock %}

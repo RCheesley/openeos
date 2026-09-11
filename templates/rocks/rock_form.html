@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Rock — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'rocks:list' %}" class="btn btn-sm btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-gem me-2 text-success"></i>{{ action }} Rock
+            </h1>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {# Title #}
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold">
+                            Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               name="{{ form.title.html_name }}"
+                               id="{{ form.title.id_for_label }}"
+                               value="{{ form.title.value|default:'' }}"
+                               class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                               placeholder="e.g. Launch beta to 50 customers"
+                               required>
+                        {% for error in form.title.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Description #}
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">Description</label>
+                        <textarea name="{{ form.description.html_name }}"
+                                  id="{{ form.description.id_for_label }}"
+                                  rows="3"
+                                  class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                  placeholder="Optional — what does success look like?">{{ form.description.value|default:'' }}</textarea>
+                        {% for error in form.description.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# Owner + Team row #}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="{{ form.owner.id_for_label }}" class="form-label fw-semibold">
+                                Owner <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.owner.html_name }}"
+                                    id="{{ form.owner.id_for_label }}"
+                                    class="form-select {% if form.owner.errors %}is-invalid{% endif %}">
+                                <option value="">— Select owner —</option>
+                                {% for val, label in form.owner.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.owner.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% for error in form.owner.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="{{ form.team.id_for_label }}" class="form-label fw-semibold">
+                                Team <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.team.html_name }}"
+                                    id="{{ form.team.id_for_label }}"
+                                    class="form-select {% if form.team.errors %}is-invalid{% endif %}">
+                                <option value="">— Select team —</option>
+                                {% for val, label in form.team.field.choices %}
+                                {% if val %}
+                                <option value="{{ val }}" {% if form.team.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% for error in form.team.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Quarter + Year + Due date row #}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-4">
+                            <label for="{{ form.quarter.id_for_label }}" class="form-label fw-semibold">
+                                Quarter <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.quarter.html_name }}"
+                                    id="{{ form.quarter.id_for_label }}"
+                                    class="form-select {% if form.quarter.errors %}is-invalid{% endif %}">
+                                {% for val, label in form.quarter.field.choices %}
+                                <option value="{{ val }}" {% if form.quarter.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.quarter.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="{{ form.year.id_for_label }}" class="form-label fw-semibold">
+                                Year <span class="text-danger">*</span>
+                            </label>
+                            <input type="number"
+                                   name="{{ form.year.html_name }}"
+                                   id="{{ form.year.id_for_label }}"
+                                   value="{{ form.year.value|default:'' }}"
+                                   class="form-control {% if form.year.errors %}is-invalid{% endif %}"
+                                   min="2020" max="2099">
+                            {% for error in form.year.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="{{ form.due_date.id_for_label }}" class="form-label fw-semibold">
+                                Due Date <span class="text-danger">*</span>
+                            </label>
+                            <input type="date"
+                                   name="{{ form.due_date.html_name }}"
+                                   id="{{ form.due_date.id_for_label }}"
+                                   value="{{ form.due_date.value|date:'Y-m-d'|default:'' }}"
+                                   class="form-control {% if form.due_date.errors %}is-invalid{% endif %}">
+                            {% for error in form.due_date.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Parent rock (optional) #}
+                    {% if form.parent_rock.field.queryset.exists %}
+                    <div class="mb-3">
+                        <label for="{{ form.parent_rock.id_for_label }}" class="form-label fw-semibold">Parent Rock</label>
+                        <select name="{{ form.parent_rock.html_name }}"
+                                id="{{ form.parent_rock.id_for_label }}"
+                                class="form-select {% if form.parent_rock.errors %}is-invalid{% endif %}">
+                            <option value="">— None (top-level Rock) —</option>
+                            {% for val, label in form.parent_rock.field.choices %}
+                            {% if val %}
+                            <option value="{{ val }}" {% if form.parent_rock.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Optional — link this to a higher-level Rock.</div>
+                        {% for error in form.parent_rock.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i>{{ action }} Rock
+                        </button>
+                        <a href="{% url 'rocks:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

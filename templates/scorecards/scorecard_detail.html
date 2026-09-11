@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ scorecard.name }} — Scorecard — EOS App{% endblock %}
+
+{% block content %}
+{# ── Header ── #}
+<div class="d-flex align-items-start gap-3 mb-4">
+    <a href="{% url 'scorecards:list' %}" class="btn btn-sm btn-outline-secondary mt-1">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="flex-grow-1">
+        <h1 class="h3 mb-0">{{ scorecard.name }}</h1>
+        <div class="text-muted small">{{ scorecard.team.name }} · {{ scorecard.metric_count }} active metric{{ scorecard.metric_count|pluralize }}
+            {% if not scorecard.count_ok %}
+            <span class="badge bg-warning text-dark ms-1" title="EOS recommends 5–15 metrics">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {% if scorecard.metric_count < 5 %}Below minimum{% else %}Above maximum{% endif %}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'scorecards:enter' scorecard.pk %}" class="btn btn-primary">
+            <i class="bi bi-pencil-square me-1"></i>Enter this week
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{% url 'scorecards:metric_add' scorecard.pk %}"><i class="bi bi-plus me-2"></i>Add metric</a></li>
+                <li><a class="dropdown-item" href="{% url 'scorecards:update' scorecard.pk %}"><i class="bi bi-pencil me-2"></i>Edit scorecard</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'scorecards:delete' scorecard.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% if scorecard.description %}
+<p class="text-muted mb-4">{{ scorecard.description }}</p>
+{% endif %}
+
+{# ── 13-week table ── #}
+{% if table %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0 align-middle" style="min-width:900px">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width:180px">Metric</th>
+                        <th class="text-center" style="min-width:60px">Goal</th>
+                        <th class="text-center text-muted small" style="min-width:40px">Owner</th>
+                        {% for period in periods %}
+                        <th class="text-center small {% if period == current_week %}table-primary{% endif %}" style="min-width:60px">
+                            {{ period|date:"M j" }}
+                            {% if period == current_week %}<div style="font-size:.6rem;font-weight:700">NOW</div>{% endif %}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table %}
+                    <tr>
+                        {# Metric name + actions #}
+                        <td>
+                            <div class="d-flex align-items-center justify-content-between gap-1">
+                                <span class="small fw-semibold">{{ row.metric.name }}</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm border-0 p-0 text-muted" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical" style="font-size:.7rem"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item small" href="{% url 'scorecards:metric_edit' row.metric.pk %}"><i class="bi bi-pencil me-2"></i>Edit metric</a></li>
+                                        <li>
+                                            <form method="post" action="{% url 'scorecards:metric_delete' row.metric.pk %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item small text-danger" onclick="return confirm('Remove this metric?')">
+                                                    <i class="bi bi-x-circle me-2"></i>Remove
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="text-muted" style="font-size:.65rem">{{ row.metric.get_metric_type_display }}</div>
+                        </td>
+
+                        {# Goal #}
+                        <td class="text-center small text-muted">{{ row.metric.format_goal }}</td>
+
+                        {# Owner avatar #}
+                        <td class="text-center">
+                            {% if row.metric.owner.profile.avatar %}
+                            <img src="{{ row.metric.owner.profile.avatar.url }}" class="rounded-circle" width="24" height="24"
+                                 title="{{ row.metric.owner.get_full_name|default:row.metric.owner.username }}" alt="">
+                            {% else %}
+                            <i class="bi bi-person-circle text-muted"
+                               title="{{ row.metric.owner.get_full_name|default:row.metric.owner.username }}"></i>
+                            {% endif %}
+                        </td>
+
+                        {# Weekly cells #}
+                        {% for cell in row.cells %}
+                        <td class="text-center small {% if cell %}{{ cell.cell_class }}{% else %}table-secondary{% endif %}"
+                            {% if period == current_week %}style="border-left:2px solid #0d6efd"{% endif %}>
+                            {% if cell %}
+                                <span title="{{ cell.notes|default:'' }}">
+                                    {{ row.metric.format_value|default:'' }}
+                                    {# Render value through metric's formatter #}
+                                    {% if row.metric.metric_type == 'integer' %}{{ cell.value|floatformat:0 }}
+                                    {% elif row.metric.metric_type == 'percentage' %}{{ cell.value|floatformat:1 }}%
+                                    {% else %}{{ cell.value|floatformat:2 }}
+                                    {% endif %}
+                                </span>
+                                {% if not cell.on_track %}
+                                <form method="post" action="{% url 'scorecards:entry_escalate' cell.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger border-0 p-0 ms-1"
+                                            title="Escalate to Issue" style="font-size:.6rem;line-height:1">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Legend #}
+<div class="d-flex gap-3 text-muted small mb-4">
+    <span><span class="badge bg-success">&nbsp;</span> On track</span>
+    <span><span class="badge bg-danger">&nbsp;</span> Off track — click <i class="bi bi-exclamation-triangle"></i> to escalate to Issues</span>
+    <span><span class="badge bg-secondary">&nbsp;</span> Not entered</span>
+</div>
+
+{% else %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-bar-chart display-3 opacity-25 d-block mb-3"></i>
+        <h5>No active metrics</h5>
+        <p class="mb-4">Add 5–15 metrics to start tracking your team's numbers.</p>
+        <a href="{% url 'scorecards:metric_add' scorecard.pk %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg me-1"></i>Add first metric
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{# ── Add metric shortcut ── #}
+<div class="d-flex justify-content-between align-items-center">
+    <a href="{% url 'scorecards:metric_add' scorecard.pk %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-plus me-1"></i>Add metric
+    </a>
+    <small class="text-muted">{{ scorecard.metric_count }}/15 metrics used</small>
+</div>
+{% endblock %}

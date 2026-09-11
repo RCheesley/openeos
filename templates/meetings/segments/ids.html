@@ -1,0 +1,49 @@
+{# Segment 6: IDS — Identify, Discuss, Solve #}
+<p class="text-muted small mb-3">
+    Work through the Issues list. For each: <strong>I</strong>dentify the real problem,
+    <strong>D</strong>iscuss briefly, <strong>S</strong>olve — create a To-Do and move on.
+</p>
+
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'issues:create' %}?next={{ request.path }}" class="btn btn-sm btn-outline-dark">
+        <i class="bi bi-plus me-1"></i>Add Issue
+    </a>
+    <a href="{% url 'todos:create' %}?next={{ request.path }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-check2-square me-1"></i>Create To-Do
+    </a>
+</div>
+
+{% if issues %}
+<div class="list-group list-group-flush">
+    {% for issue in issues %}
+    <div class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+        <span class="badge bg-{{ issue.status_badge_class }} mt-1 flex-shrink-0">{{ issue.get_status_display }}</span>
+        <div class="flex-grow-1">
+            <a href="{{ issue.get_absolute_url }}" class="text-dark text-decoration-none fw-semibold small">{{ issue.title }}</a>
+            {% if issue.description %}
+            <div class="text-muted small" style="white-space:pre-line">{{ issue.description|truncatechars:120 }}</div>
+            {% endif %}
+            <div class="text-muted mt-1" style="font-size:.7rem">
+                <span class="badge bg-{{ issue.type_badge_class }} me-1">{{ issue.get_issue_type_display }}</span>
+                {{ issue.originating_team.name }}
+            </div>
+        </div>
+        <div class="d-flex gap-1 flex-shrink-0">
+            <a href="{% url 'todos:create' %}?issue={{ issue.pk }}&next={{ request.path }}"
+               class="btn btn-sm btn-outline-success py-0 px-2" title="Create To-Do for this issue">
+                <i class="bi bi-check2-square" style="font-size:.75rem"></i>
+            </a>
+            <a href="{{ issue.get_absolute_url }}"
+               class="btn btn-sm btn-outline-secondary py-0 px-2" title="Open issue">
+                <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-4 text-muted">
+    <i class="bi bi-check-circle text-success" style="font-size:2rem;"></i>
+    <p class="mt-2 small">No open issues! Add any that come up during discussion.</p>
+</div>
+{% endif %}

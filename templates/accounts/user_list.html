@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Users — EOS App{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0"><i class="bi bi-person-lines-fill me-2"></i>Users</h1>
+        <p class="text-muted mt-1 mb-0">Everyone in {{ org.name }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'accounts:user_invite' %}" class="btn btn-dark">
+            <i class="bi bi-person-plus me-1"></i> Invite user
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        {% if profiles %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Teams</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profile in profiles %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if profile.avatar %}
+                                <img src="{{ profile.avatar.url }}" class="rounded-circle" width="32" height="32" alt="">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center" style="width:32px;height:32px">
+                                    <i class="bi bi-person text-secondary small"></i>
+                                </div>
+                                {% endif %}
+                                <span class="fw-semibold">{{ profile.display_name }}</span>
+                                {% if profile.user == request.user %}
+                                <span class="badge bg-light text-dark border small">You</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="text-muted">{{ profile.user.email|default:"—" }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ profile.get_role_display }}</span></td>
+                        <td>
+                            {% for team in profile.teams.all %}
+                            <span class="badge bg-light text-dark border me-1">{{ team.name }}</span>
+                            {% empty %}
+                            <span class="text-muted small">No teams</span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'admin:auth_user_change' profile.user.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit in admin">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="bi bi-person display-3 d-block mb-3"></i>
+            <h5>No users yet</h5>
+            <a href="{% url 'accounts:user_invite' %}" class="btn btn-dark mt-2">
+                <i class="bi bi-person-plus me-1"></i> Invite first user
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

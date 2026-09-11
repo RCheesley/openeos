@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+{% block title %}{{ rock.title }} — EOS App{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    {# ── Main column ── #}
+    <div class="col-lg-8">
+
+        {# Header #}
+        <div class="d-flex align-items-start gap-3 mb-4">
+            <a href="{% url 'rocks:list' %}?quarter={{ rock.quarter }}&year={{ rock.year }}" class="btn btn-sm btn-outline-secondary mt-1">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                    <span class="badge bg-{{ rock.status_badge_class }} fs-6 px-3">{{ rock.get_status_display }}</span>
+                    <span class="badge bg-light text-dark border">Q{{ rock.quarter }} {{ rock.year }}</span>
+                    <span class="badge bg-light text-dark border">{{ rock.team.name }}</span>
+                </div>
+                <h1 class="h3 mb-1">{{ rock.title }}</h1>
+                <div class="text-muted small">
+                    {% if rock.owner.profile.avatar %}
+                    <img src="{{ rock.owner.profile.avatar.url }}" class="rounded-circle me-1" width="18" height="18" alt="">
+                    {% else %}
+                    <i class="bi bi-person-circle me-1"></i>
+                    {% endif %}
+                    {{ rock.owner.get_full_name|default:rock.owner.username }}
+                    <span class="mx-2">·</span>
+                    <i class="bi bi-calendar3 me-1"></i>Due {{ rock.due_date|date:"N j, Y" }}
+                </div>
+            </div>
+            {% if can_edit %}
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'rocks:update' rock.pk %}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                    {% if rock.is_active %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form method="post" action="{% url 'rocks:status' rock.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="status" value="complete">
+                            <button type="submit" class="dropdown-item text-success">
+                                <i class="bi bi-check-circle me-2"></i>Mark Complete
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'rocks:status' rock.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="status" value="{% if rock.is_on_track %}off_track{% else %}on_track{% endif %}">
+                            <button type="submit" class="dropdown-item">
+                                {% if rock.is_on_track %}
+                                <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Mark Off Track
+                                {% else %}
+                                <i class="bi bi-arrow-up-circle me-2 text-success"></i>Mark On Track
+                                {% endif %}
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'rocks:status' rock.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="status" value="dropped">
+                            <button type="submit" class="dropdown-item text-muted">
+                                <i class="bi bi-x-circle me-2"></i>Drop
+                            </button>
+                        </form>
+                    </li>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'rocks:delete' rock.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        {# Description #}
+        {% if rock.description %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.05em">Description</h6>
+                <p class="mb-0">{{ rock.description|linebreaksbr }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Milestones #}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-0" style="font-size:.7rem;letter-spacing:.05em">
+                        <i class="bi bi-flag me-1"></i>Milestones
+                        {% if rock.milestone_count %}
+                        <span class="text-body fw-normal ms-1">({{ rock.milestones_complete }}/{{ rock.milestone_count }})</span>
+                        {% endif %}
+                    </h6>
+                </div>
+
+                {% if rock.milestone_count %}
+                <div class="progress mb-3" style="height:6px">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width:{{ rock.milestone_progress_pct }}%"
+                         aria-valuenow="{{ rock.milestone_progress_pct }}"
+                         aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <ul class="list-group list-group-flush mb-3">
+                    {% for ms in rock.milestones.all %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start gap-2">
+                            <form method="post" action="{% url 'rocks:milestone_toggle' ms.pk %}" class="mt-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" title="Toggle complete">
+                                    {% if ms.is_complete %}
+                                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    {% else %}
+                                    <i class="bi bi-circle text-secondary fs-5"></i>
+                                    {% endif %}
+                                </button>
+                            </form>
+                            <div class="flex-grow-1 min-w-0">
+                                <span class="small {% if ms.is_complete %}text-decoration-line-through text-muted{% endif %}">
+                                    {{ ms.title }}
+                                </span>
+                                {% if ms.description %}
+                                <p class="text-muted mb-0 mt-1" style="font-size:.8rem;white-space:pre-line">{{ ms.description }}</p>
+                                {% endif %}
+                            </div>
+                            {% if ms.due_date %}
+                            <span class="text-nowrap mt-1 {% if not ms.is_complete and ms.due_date < today %}text-danger{% else %}text-muted{% endif %}" style="font-size:.7rem">
+                                {{ ms.due_date|date:"M j" }}
+                            </span>
+                            {% endif %}
+                            {% if can_edit %}
+                            <a href="{% url 'rocks:milestone_edit' ms.pk %}" class="btn btn-sm btn-outline-secondary border-0 p-0 px-1 mt-1" title="Edit milestone">
+                                <i class="bi bi-pencil" style="font-size:.75rem"></i>
+                            </a>
+                            <form method="post" action="{% url 'rocks:milestone_delete' ms.pk %}" class="mt-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger border-0 p-0 px-1" title="Remove milestone">
+                                    <i class="bi bi-x-lg" style="font-size:.75rem"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if can_edit %}
+                <form method="post" action="{% url 'rocks:milestone_add' rock.pk %}">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2 align-items-start mb-2">
+                        <input type="text" name="title" class="form-control form-control-sm" placeholder="Add a milestone…" required>
+                        <input type="date" name="due_date" class="form-control form-control-sm" style="max-width:140px">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">
+                            <i class="bi bi-plus"></i> Add
+                        </button>
+                    </div>
+                    <textarea name="description" class="form-control form-control-sm" rows="2"
+                              placeholder="Description (optional)…"></textarea>
+                </form>
+                {% elif not rock.milestone_count %}
+                <p class="text-muted small mb-0">No milestones yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Linked Issues #}
+        {% if linked_issues %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-exclamation-circle me-1"></i>Linked Issues ({{ linked_issues|length }})
+                </h6>
+                <ul class="list-group list-group-flush">
+                    {% for issue in linked_issues %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="badge bg-{{ issue.status_badge_class }} mt-1 text-nowrap">{{ issue.get_status_display }}</span>
+                            <div class="flex-grow-1 min-w-0">
+                                <a href="{{ issue.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold small">
+                                    {{ issue.title }}
+                                </a>
+                                <div class="text-muted" style="font-size:.75rem">{{ issue.originating_team.name }}</div>
+                            </div>
+                            {% if can_edit %}
+                            <form method="post" action="{% url 'rocks:issue_unlink' rock.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="issue_id" value="{{ issue.pk }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger border-0 p-0 px-1" title="Unlink issue">
+                                    <i class="bi bi-x-lg" style="font-size:.75rem"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Parent rock #}
+        {% if rock.parent_rock %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-diagram-2 me-1"></i>Parent Rock
+                </h6>
+                <a href="{{ rock.parent_rock.get_absolute_url }}" class="text-decoration-none">
+                    <span class="badge bg-{{ rock.parent_rock.status_badge_class }} me-2">{{ rock.parent_rock.get_status_display }}</span>
+                    {{ rock.parent_rock.title }}
+                </a>
+                <span class="text-muted small ms-2">{{ rock.parent_rock.team.name }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Child rocks #}
+        {% if child_rocks %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-diagram-2 me-1"></i>Child Rocks ({{ child_rocks|length }})
+                </h6>
+                <ul class="list-group list-group-flush">
+                    {% for child in child_rocks %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-{{ child.status_badge_class }}">{{ child.get_status_display }}</span>
+                            <a href="{{ child.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold flex-grow-1">
+                                {{ child.title }}
+                            </a>
+                            <span class="text-muted small">{{ child.owner.get_full_name|default:child.owner.username }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Dependencies — rocks this one depends on #}
+        {% if dependencies %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-link me-1"></i>Depends On
+                </h6>
+                <ul class="list-group list-group-flush">
+                    {% for dep in dependencies %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="badge bg-{{ dep.depends_on_rock.status_badge_class }} mt-1">{{ dep.depends_on_rock.get_status_display }}</span>
+                            <div class="flex-grow-1">
+                                <a href="{{ dep.depends_on_rock.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold">
+                                    {{ dep.depends_on_rock.title }}
+                                </a>
+                                <div class="text-muted small">{{ dep.depends_on_rock.team.name }} · {{ dep.depends_on_rock.owner.get_full_name|default:dep.depends_on_rock.owner.username }}</div>
+                                {% if dep.description %}
+                                <div class="text-muted small fst-italic mt-1">{{ dep.description }}</div>
+                                {% endif %}
+                            </div>
+                            {% if can_edit %}
+                            <form method="post" action="{% url 'rocks:dependency_remove' dep.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Remove dependency">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Rocks that depend on this one #}
+        {% if dependents %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-link me-1"></i>Blocking
+                </h6>
+                <ul class="list-group list-group-flush">
+                    {% for dep in dependents %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-{{ dep.rock.status_badge_class }}">{{ dep.rock.get_status_display }}</span>
+                            <a href="{{ dep.rock.get_absolute_url }}" class="text-decoration-none text-dark fw-semibold flex-grow-1">
+                                {{ dep.rock.title }}
+                            </a>
+                            <span class="text-muted small">{{ dep.rock.team.name }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        {# To-Dos linked to this Rock #}
+        {% if rock.todos.exists %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-0" style="font-size:.7rem;letter-spacing:.05em">
+                        <i class="bi bi-check2-square me-1 text-primary"></i>To-Dos
+                    </h6>
+                    <a href="{% url 'todos:create' %}?rock={{ rock.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+                        <i class="bi bi-plus"></i>
+                    </a>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for todo in rock.todos.all %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if todo.is_complete %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                            <i class="bi bi-circle text-secondary"></i>
+                            {% endif %}
+                            <span class="flex-grow-1 small {% if todo.is_complete %}text-decoration-line-through text-muted{% endif %}">
+                                {{ todo.title }}
+                            </span>
+                            <span class="text-muted" style="font-size:.7rem">{{ todo.due_date|date:"M j" }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% else %}
+        <div class="mb-4">
+            <a href="{% url 'todos:create' %}?rock={{ rock.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-plus me-1"></i>Add To-Do
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+
+    {# ── Sidebar ── #}
+    <div class="col-lg-4">
+
+        {# Meta card #}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">Details</h6>
+                <dl class="row g-0 mb-0" style="font-size:.875rem">
+                    <dt class="col-5 text-muted fw-normal">Status</dt>
+                    <dd class="col-7"><span class="badge bg-{{ rock.status_badge_class }}">{{ rock.get_status_display }}</span></dd>
+
+                    <dt class="col-5 text-muted fw-normal">Quarter</dt>
+                    <dd class="col-7">Q{{ rock.quarter }} {{ rock.year }}</dd>
+
+                    <dt class="col-5 text-muted fw-normal">Due</dt>
+                    <dd class="col-7">{{ rock.due_date|date:"N j, Y" }}</dd>
+
+                    <dt class="col-5 text-muted fw-normal">Owner</dt>
+                    <dd class="col-7">{{ rock.owner.get_full_name|default:rock.owner.username }}</dd>
+
+                    <dt class="col-5 text-muted fw-normal">Team</dt>
+                    <dd class="col-7">{{ rock.team.name }}</dd>
+
+                    <dt class="col-5 text-muted fw-normal">Created</dt>
+                    <dd class="col-7">{{ rock.created_at|date:"N j, Y" }}</dd>
+
+                    {% if rock.updated_at != rock.created_at %}
+                    <dt class="col-5 text-muted fw-normal">Updated</dt>
+                    <dd class="col-7">{{ rock.updated_at|date:"N j, Y" }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        {# Add dependency (owner/admin only) #}
+        {% if can_edit and rock.is_active %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    Add Dependency
+                </h6>
+                <form method="post" action="{% url 'rocks:dependency_add' rock.pk %}">
+                    {% csrf_token %}
+                    {% if dependency_form.depends_on_rock.field.queryset.exists %}
+                    <div class="mb-2">
+                        <select name="{{ dependency_form.depends_on_rock.html_name }}"
+                                class="form-select form-select-sm {% if dependency_form.depends_on_rock.errors %}is-invalid{% endif %}">
+                            <option value="">— Select a Rock —</option>
+                            {% for val, label in dependency_form.depends_on_rock.field.choices %}
+                            {% if val %}
+                            <option value="{{ val }}">{{ label }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                        {% for error in dependency_form.depends_on_rock.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-2">
+                        <input type="text"
+                               name="{{ dependency_form.description.html_name }}"
+                               class="form-control form-control-sm"
+                               placeholder="Why does this depend on it? (optional)">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                        <i class="bi bi-link me-1"></i>Add Dependency
+                    </button>
+                    {% else %}
+                    <p class="text-muted small mb-0">No other Rocks available to link.</p>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Link Issue (owner/admin only) #}
+        {% if can_edit and rock.is_active %}
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    Link Issue
+                </h6>
+                {% if linkable_issues %}
+                <form method="post" action="{% url 'rocks:issue_link' rock.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <select name="issue_id" class="form-select form-select-sm">
+                            <option value="">— Select an Issue —</option>
+                            {% for issue in linkable_issues %}
+                            <option value="{{ issue.pk }}">[{{ issue.get_status_display }}] {{ issue.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                        <i class="bi bi-link me-1"></i>Link Issue
+                    </button>
+                </form>
+                {% else %}
+                <p class="text-muted small mb-0">No open issues available to link.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

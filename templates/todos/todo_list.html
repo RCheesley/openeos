@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}To-Dos — EOS App{% endblock %}
+
+{% block content %}
+{# ── Header ── #}
+<div class="row mb-3 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-check2-square me-2 text-primary"></i>To-Dos
+            {% if overdue_count %}
+            <span class="badge bg-danger ms-2" title="{{ overdue_count }} overdue">{{ overdue_count }}</span>
+            {% endif %}
+        </h1>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'todos:create' %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg me-1"></i>New To-Do
+        </a>
+    </div>
+</div>
+
+{# ── View tabs (Mine / Team) ── #}
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if view_filter != 'team' %}active{% endif %}"
+           href="?view=mine{% if status_filter %}&status={{ status_filter }}{% endif %}">
+            <i class="bi bi-person me-1"></i>My To-Dos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if view_filter == 'team' %}active{% endif %}"
+           href="?view=team{% if status_filter %}&status={{ status_filter }}{% endif %}">
+            <i class="bi bi-people me-1"></i>Team To-Dos
+        </a>
+    </li>
+</ul>
+
+{# ── Status filters + team selector ── #}
+<div class="d-flex gap-2 mb-4 flex-wrap align-items-center">
+    <a href="?view={{ view_filter }}"
+       class="btn btn-sm {% if not status_filter or status_filter == 'open' %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+        Open
+    </a>
+    <a href="?view={{ view_filter }}&status=overdue"
+       class="btn btn-sm {% if status_filter == 'overdue' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+        Overdue
+    </a>
+    <a href="?view={{ view_filter }}&status=complete"
+       class="btn btn-sm {% if status_filter == 'complete' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+        Complete
+    </a>
+
+    {% if view_filter == 'team' and teams %}
+    <div class="ms-auto">
+        <form method="get" class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="view" value="team">
+            {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+            <select name="team" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto">
+                <option value="">My teams</option>
+                {% for team in teams %}
+                <option value="{{ team.pk }}" {% if team_filter == team.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ team.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+{# ── To-Do list ── #}
+{% if todos %}
+<div class="card border-0 shadow-sm">
+    <ul class="list-group list-group-flush">
+        {% for todo in todos %}
+        {% with escalation=todo.escalation_level %}
+        <li class="list-group-item px-3 py-3
+            {% if todo.is_overdue %}bg-danger-subtle{% elif escalation == 1 %}bg-warning-subtle{% endif %}">
+            <div class="d-flex align-items-center gap-3">
+
+                {# Complete toggle #}
+                <form method="post" action="{% url 'todos:complete' todo.pk %}" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit"
+                            class="btn btn-sm border-0 p-0"
+                            title="{% if todo.is_complete %}Mark open{% else %}Mark complete{% endif %}">
+                        {% if todo.is_complete %}
+                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        {% else %}
+                        <i class="bi bi-circle text-secondary fs-5"></i>
+                        {% endif %}
+                    </button>
+                </form>
+
+                {# Title + badges #}
+                <div class="flex-grow-1">
+                    <span class="fw-semibold {% if todo.is_complete %}text-decoration-line-through text-muted{% endif %}">
+                        {{ todo.title }}
+                    </span>
+                    <div class="d-flex gap-2 mt-1 flex-wrap align-items-center">
+                        {% if todo.linked_rock %}
+                        <a href="{{ todo.linked_rock.get_absolute_url }}" class="badge bg-success text-decoration-none">
+                            <i class="bi bi-gem me-1"></i>{{ todo.linked_rock.title|truncatechars:30 }}
+                        </a>
+                        {% endif %}
+                        {% if todo.linked_issue %}
+                        <a href="{{ todo.linked_issue.get_absolute_url }}" class="badge bg-warning text-dark text-decoration-none">
+                            <i class="bi bi-exclamation-triangle me-1"></i>{{ todo.linked_issue.title|truncatechars:30 }}
+                        </a>
+                        {% endif %}
+                        {% if escalation == 2 %}
+                        <span class="badge bg-danger">
+                            <i class="bi bi-clock me-1"></i>{{ todo.days_open }} days open — escalate
+                        </span>
+                        {% elif escalation == 1 %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-clock me-1"></i>{{ todo.days_open }} days open
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Owner (team view only) #}
+                {% if view_filter == 'team' %}
+                <div class="text-muted small text-nowrap d-none d-md-flex align-items-center gap-1">
+                    {% if todo.owner.profile.avatar %}
+                    <img src="{{ todo.owner.profile.avatar.url }}" class="rounded-circle" width="20" height="20" alt="">
+                    {% else %}
+                    <i class="bi bi-person-circle"></i>
+                    {% endif %}
+                    {{ todo.owner.get_full_name|default:todo.owner.username }}
+                </div>
+                {% endif %}
+
+                {# Due date #}
+                <div class="text-nowrap small {% if todo.is_overdue %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    {% if todo.is_complete and todo.completed_at %}
+                    Done {{ todo.completed_at|date:"M j" }}
+                    {% else %}
+                    {{ todo.due_date|date:"M j" }}
+                    {% if todo.is_overdue %}<i class="bi bi-exclamation-circle ms-1"></i>{% endif %}
+                    {% endif %}
+                </div>
+
+                {# Actions #}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'todos:update' todo.pk %}?next={{ request.get_full_path }}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                        {% if escalation == 2 and not todo.linked_issue %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'todos:escalate' todo.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-arrow-up-circle me-2"></i>Escalate to Issue
+                                </button>
+                            </form>
+                        </li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'todos:delete' todo.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                    </ul>
+                </div>
+
+            </div>
+
+            {% if todo.description %}
+            <div class="text-muted small mt-1 ms-4 ps-3 border-start border-2">
+                {{ todo.description|truncatewords:20 }}
+            </div>
+            {% endif %}
+        </li>
+        {% endwith %}
+        {% endfor %}
+    </ul>
+</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-check2-square display-3 d-block mb-3 text-primary opacity-25"></i>
+    {% if status_filter == 'complete' %}
+    <h4>No completed To-Dos</h4>
+    <p>Completed To-Dos will appear here.</p>
+    {% elif status_filter == 'overdue' %}
+    <h4>No overdue To-Dos</h4>
+    <p class="text-success"><i class="bi bi-check-circle me-1"></i>All caught up!</p>
+    {% else %}
+    <h4>No open To-Dos</h4>
+    <p class="mb-4">To-Dos are weekly action items. Create one to get started.</p>
+    <a href="{% url 'todos:create' %}" class="btn btn-dark">
+        <i class="bi bi-plus-lg me-1"></i>Create first To-Do
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{# Segment 3: Rock Review — each owner reports on/off track #}
+<p class="text-muted small mb-3">
+    Each Rock owner: are you on track to complete by quarter end? Off-track = escalate to Issues.
+</p>
+
+{% if rocks %}
+<div class="list-group list-group-flush">
+    {% for rock in rocks %}
+    <div class="list-group-item px-0 py-2">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-{{ rock.status_badge_class }} flex-shrink-0">{{ rock.get_status_display }}</span>
+            <div class="flex-grow-1">
+                <a href="{{ rock.get_absolute_url }}" class="text-dark text-decoration-none fw-semibold small">{{ rock.title }}</a>
+                <div class="text-muted" style="font-size:.7rem">{{ rock.owner.get_full_name|default:rock.owner.username }}</div>
+            </div>
+            {% if rock.status == 'off_track' %}
+            <a href="{% url 'issues:create' %}?rock={{ rock.pk }}&next={{ request.path }}"
+               class="btn btn-sm btn-outline-warning py-0 px-2 flex-shrink-0"
+               title="Escalate to Issues">
+                <i class="bi bi-exclamation-triangle" style="font-size:.75rem"></i>
+            </a>
+            {% endif %}
+            <a href="{{ rock.get_absolute_url }}"
+               class="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0"
+               title="Open rock">
+                <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-4 text-muted">
+    <i class="bi bi-gem" style="font-size:2rem;"></i>
+    <p class="mt-2 small">No active Rocks for {{ rock_quarter }} / {{ team.name }}. <a href="{% url 'rocks:create' %}">Add one.</a></p>
+</div>
+{% endif %}
