@@ -117,4 +117,4 @@ jobs:
           DB_PASSWORD: eos_password
           SECRET_KEY: ci-secret-key-not-used-in-production
           ALLOWED_HOSTS: localhost,127.0.0.1
-        run: python manage.py migrate --check
+        run: python manage.py makemigrations --check --dry-run
