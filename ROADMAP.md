@@ -30,11 +30,11 @@ A living checklist of what's been built and what's coming next. PRs welcome for 
 
 ---
 
-## 🚧 v0.3 — Open-Source Housekeeping
+## ✅ v0.3 — Open-Source Housekeeping
 
-- [ ] `CONTRIBUTING.md`: dev setup, PR process, coding standards
+- [x] `CONTRIBUTING.md`: dev setup, PR process, coding standards
 - [ ] GitHub Actions: build and publish Docker image to Docker Hub on merge to `main`
-- [ ] `docker-compose.prod.yml` smoke-test in CI
+- [x] `docker-compose.prod.yml` smoke-test in CI
 
 ---
 

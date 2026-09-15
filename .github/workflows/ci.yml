@@ -118,3 +118,58 @@ jobs:
           SECRET_KEY: ci-secret-key-not-used-in-production
           ALLOWED_HOSTS: localhost,127.0.0.1
         run: python manage.py makemigrations --check --dry-run
+
+  smoke-test:
+    name: Prod stack smoke-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write .env for prod compose
+        run: |
+          cat > .env <<'EOF'
+          SECRET_KEY=ci-smoke-test-secret-key-not-used-in-production
+          DEBUG=False
+          ALLOWED_HOSTS=localhost,127.0.0.1
+          DB_NAME=eos_db
+          DB_USER=eos_user
+          DB_PASSWORD=eos_password
+          DB_HOST=db
+          DB_PORT=5432
+          POSTGRES_DB=eos_db
+          POSTGRES_USER=eos_user
+          POSTGRES_PASSWORD=eos_password
+          EOF
+
+      - name: Build and start prod stack
+        run: docker compose -f docker-compose.prod.yml up -d --build
+
+      - name: Wait for stack to be healthy
+        run: |
+          echo "Waiting for nginx..."
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost | grep -qE "^[23]"; then
+              echo "Stack is up (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i: not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "Stack did not become healthy in time"
+          docker compose -f docker-compose.prod.yml logs
+          exit 1
+
+      - name: Verify login page responds
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/accounts/login/)
+          echo "Login page returned HTTP $STATUS"
+          if ! echo "$STATUS" | grep -qE "^[23]"; then
+            echo "Unexpected status code: $STATUS"
+            docker compose -f docker-compose.prod.yml logs
+            exit 1
+          fi
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
