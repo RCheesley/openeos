@@ -122,24 +122,54 @@
             <span class="fw-semibold small">Marketing Strategy</span>
         </div>
         <div class="card-body py-2">
-            {% for mkey, mlabel in section_keys.CHOICES %}
-            {% if mkey == 'target_market' or mkey == 'three_uniques' or mkey == 'proven_process' or mkey == 'guarantee' %}
+                {# Target Market #}
             <div class="mb-2">
-                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">{{ mlabel|cut:"Marketing — " }}</div>
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Target Market</div>
                 <div class="d-flex gap-2">
-                    <div class="flex-grow-1 small" style="white-space:pre-line">
-                        {% if mkey == 'target_market' %}{% if sections.target_market and sections.target_market.content %}{{ sections.target_market.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
-                        {% elif mkey == 'three_uniques' %}{% if sections.three_uniques and sections.three_uniques.content %}{{ sections.three_uniques.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
-                        {% elif mkey == 'proven_process' %}{% if sections.proven_process and sections.proven_process.content %}{{ sections.proven_process.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
-                        {% elif mkey == 'guarantee' %}{% if sections.guarantee and sections.guarantee.content %}{{ sections.guarantee.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}
-                        {% endif %}
-                    </div>
-                    <a href="{% url 'vto:section_edit' mkey %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                    <div class="flex-grow-1 small" style="white-space:pre-line">{% if sections.target_market and sections.target_market.content %}{{ sections.target_market.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}</div>
+                    <a href="{% url 'vto:section_edit' 'target_market' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
                 </div>
             </div>
-            {% if not forloop.last and mkey != 'guarantee' %}<hr class="my-1">{% endif %}
-            {% endif %}
-            {% endfor %}
+            <hr class="my-1">
+            {# Three Uniques — three separate blocks #}
+            <div class="mb-2">
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Three Uniques</div>
+                <div class="ms-1">
+                    <div class="d-flex gap-2 mb-1">
+                        <div class="text-muted small fw-semibold flex-shrink-0" style="min-width:4.5rem">Unique 1.</div>
+                        <div class="flex-grow-1 small" style="white-space:pre-line">{% if sections.three_uniques_1 and sections.three_uniques_1.content %}{{ sections.three_uniques_1.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}</div>
+                        <a href="{% url 'vto:section_edit' 'three_uniques_1' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                    </div>
+                    <div class="d-flex gap-2 mb-1">
+                        <div class="text-muted small fw-semibold flex-shrink-0" style="min-width:4.5rem">Unique 2.</div>
+                        <div class="flex-grow-1 small" style="white-space:pre-line">{% if sections.three_uniques_2 and sections.three_uniques_2.content %}{{ sections.three_uniques_2.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}</div>
+                        <a href="{% url 'vto:section_edit' 'three_uniques_2' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <div class="text-muted small fw-semibold flex-shrink-0" style="min-width:4.5rem">Unique 3.</div>
+                        <div class="flex-grow-1 small" style="white-space:pre-line">{% if sections.three_uniques_3 and sections.three_uniques_3.content %}{{ sections.three_uniques_3.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}</div>
+                        <a href="{% url 'vto:section_edit' 'three_uniques_3' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-1">
+            {# Proven Process #}
+            <div class="mb-2">
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Proven Process</div>
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1 small" style="white-space:pre-line">{% if sections.proven_process and sections.proven_process.content %}{{ sections.proven_process.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}</div>
+                    <a href="{% url 'vto:section_edit' 'proven_process' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                </div>
+            </div>
+            <hr class="my-1">
+            {# Guarantee #}
+            <div>
+                <div class="text-muted mb-1" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em">Guarantee</div>
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1 small" style="white-space:pre-line">{% if sections.guarantee and sections.guarantee.content %}{{ sections.guarantee.content }}{% else %}<span class="text-muted fst-italic">Not set.</span>{% endif %}</div>
+                    <a href="{% url 'vto:section_edit' 'guarantee' %}" class="btn btn-sm btn-outline-secondary border-0 py-0 flex-shrink-0"><i class="bi bi-pencil"></i></a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

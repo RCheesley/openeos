@@ -12,7 +12,7 @@ class SectionKeyTest(TestCase):
     def test_all_keys_present(self):
         self.assertIn(SectionKey.CORE_FOCUS_PURPOSE, SectionKey.ALL)
         self.assertIn(SectionKey.ONE_YEAR_GOALS, SectionKey.ALL)
-        self.assertEqual(len(SectionKey.ALL), 12)
+        self.assertEqual(len(SectionKey.ALL), 15)
 
     def test_labels_match_all(self):
         for key in SectionKey.ALL:

@@ -13,7 +13,9 @@ class SectionKey:
     CORE_FOCUS_NICHE   = 'core_focus_niche'
     TEN_YEAR_TARGET    = 'ten_year_target'
     TARGET_MARKET      = 'target_market'
-    THREE_UNIQUES      = 'three_uniques'
+    THREE_UNIQUES_1    = 'three_uniques_1'
+    THREE_UNIQUES_2    = 'three_uniques_2'
+    THREE_UNIQUES_3    = 'three_uniques_3'
     PROVEN_PROCESS     = 'proven_process'
     GUARANTEE          = 'guarantee'
     THREE_YEAR_PICTURE = 'three_year_picture'
@@ -27,7 +29,9 @@ class SectionKey:
         (CORE_FOCUS_NICHE,   'Core Focus — Niche'),
         (TEN_YEAR_TARGET,    '10-Year Target'),
         (TARGET_MARKET,      'Marketing — Target Market'),
-        (THREE_UNIQUES,      'Marketing — Three Uniques'),
+        (THREE_UNIQUES_1,    'Marketing — Three Uniques — 1'),
+        (THREE_UNIQUES_2,    'Marketing — Three Uniques — 2'),
+        (THREE_UNIQUES_3,    'Marketing — Three Uniques — 3'),
         (PROVEN_PROCESS,     'Marketing — Proven Process'),
         (GUARANTEE,          'Marketing — Guarantee'),
         (THREE_YEAR_PICTURE, '3-Year Picture'),
@@ -37,9 +41,13 @@ class SectionKey:
         (ONE_YEAR_GOALS,     '1-Year Plan — Critical Goals'),
     ]
 
-    ALL = [k for k, _ in CHOICES]
+    # Legacy key kept so existing DB rows and the data migration remain valid.
+    THREE_UNIQUES = 'three_uniques'
+
+    ALL = [k for k, _ in CHOICES] + [THREE_UNIQUES]
 
     LABELS = dict(CHOICES)
+    LABELS[THREE_UNIQUES] = 'Marketing — Three Uniques (legacy)'
 
     # Which sections render as single-line vs. multi-line
     SINGLE_LINE = {ONE_YEAR_REVENUE, ONE_YEAR_PROFIT, TEN_YEAR_TARGET,
