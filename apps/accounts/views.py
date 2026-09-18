@@ -3,7 +3,8 @@ from django.views.generic import (
     TemplateView, CreateView, UpdateView, ListView, DetailView, FormView, View,
 )
 from django.db import models
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404, render
+from django.db.models import Q
 from django.utils.crypto import get_random_string
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
@@ -374,3 +375,64 @@ class TeamSwitchView(LoginRequiredMixin, View):
             pass
         next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or '/'
         return redirect(next_url)
+
+
+# ---------------------------------------------------------------------------
+# Global search
+# ---------------------------------------------------------------------------
+
+class SearchView(LoginRequiredMixin, View):
+    template_name = 'search/results.html'
+
+    def get(self, request):
+        query = request.GET.get('q', '').strip()
+
+        if len(query) < 2:
+            return render(request, self.template_name, {'query': query, 'too_short': len(query) > 0})
+
+        # All teams the user belongs to — scope every query to this set
+        try:
+            user_teams = list(request.user.profile.teams.all())
+        except AttributeError:
+            user_teams = []
+
+        if not user_teams:
+            return render(request, self.template_name, {'query': query, 'no_teams': True})
+
+        from apps.rocks.models import Rock
+        from apps.issues.models import Issue
+        from apps.todos.models import ToDo
+
+        rocks = (
+            Rock.objects
+            .filter(team__in=user_teams)
+            .filter(Q(title__icontains=query) | Q(description__icontains=query))
+            .select_related('owner', 'team')
+            .order_by('status', 'title')[:10]
+        )
+
+        issues = (
+            Issue.objects
+            .filter(
+                Q(originating_team__in=user_teams) | Q(delegated_to_team__in=user_teams)
+            )
+            .filter(Q(title__icontains=query) | Q(description__icontains=query))
+            .select_related('originating_team')
+            .order_by('status', '-created_at')[:10]
+        )
+
+        todos = (
+            ToDo.objects
+            .filter(team__in=user_teams)
+            .filter(Q(title__icontains=query) | Q(description__icontains=query))
+            .select_related('owner', 'team')
+            .order_by('status', 'due_date')[:10]
+        )
+
+        return render(request, self.template_name, {
+            'query': query,
+            'rocks': rocks,
+            'issues': issues,
+            'todos': todos,
+            'total': rocks.count() + issues.count() + todos.count(),
+        })

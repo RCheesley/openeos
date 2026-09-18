@@ -80,6 +80,20 @@
                         </ul>
                     </li>
                 </ul>
+                {# Global search #}
+                <form method="get" action="{% url 'accounts:search' %}" class="d-flex me-2 my-1 my-lg-0" role="search">
+                    <div class="input-group input-group-sm" style="width:220px">
+                        <input type="search" name="q" id="global-search-input"
+                               class="form-control bg-dark text-white border-secondary"
+                               placeholder="Search… (/)"
+                               value="{{ request.GET.q|default:'' }}"
+                               style="color:#fff !important;">
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+
                 <ul class="navbar-nav ms-auto">
                     {% if user_teams %}
                     <li class="nav-item dropdown me-2">
@@ -165,5 +179,23 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
+    <script>
+    (function () {
+        var input = document.getElementById('global-search-input');
+        if (!input) return;
+        document.addEventListener('keydown', function (e) {
+            var tag = document.activeElement ? document.activeElement.tagName : '';
+            var inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+            if ((e.key === '/' && !inField) || ((e.ctrlKey || e.metaKey) && e.key === 'k')) {
+                e.preventDefault();
+                input.focus();
+                input.select();
+            }
+            if (e.key === 'Escape' && document.activeElement === input) {
+                input.blur();
+            }
+        });
+    }());
+    </script>
 </body>
 </html>

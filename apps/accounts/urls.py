@@ -16,4 +16,5 @@ urlpatterns = [
     path('users/', views.UserListView.as_view(), name='user_list'),
     path('users/invite/', views.UserInviteView.as_view(), name='user_invite'),
     path('teams/<int:pk>/switch/', views.TeamSwitchView.as_view(), name='team_switch'),
+    path('search/', views.SearchView.as_view(), name='search'),
 ]

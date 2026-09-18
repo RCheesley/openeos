@@ -38,11 +38,11 @@ A living checklist of what's been built and what's coming next. PRs welcome for 
 
 ---
 
-## 🗺️ v0.4 — Search & Discoverability
+## ✅ v0.4 — Search & Discoverability
 
-- [ ] Global search: find Rocks, Issues, and To-Dos from a single search bar
-- [ ] Search results page with module-grouped results
-- [ ] Keyboard shortcut to open search (`/` or `Cmd+K`)
+- [x] Global search: find Rocks, Issues, and To-Dos from a single search bar
+- [x] Search results page with module-grouped results, scoped to user's teams
+- [x] Keyboard shortcut to open search (`/` or `Ctrl+K` / `Cmd+K`)
 
 ---
 

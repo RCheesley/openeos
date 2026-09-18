@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Search{% if query %}: {{ query }}{% endif %} — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-9">
+
+    {# Search bar #}
+    <form method="get" action="{% url 'accounts:search' %}" class="mb-4">
+        <div class="input-group input-group-lg">
+            <span class="input-group-text bg-white border-end-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="search" name="q" id="search-page-input"
+                   class="form-control border-start-0 ps-0"
+                   value="{{ query }}"
+                   placeholder="Search rocks, issues, to-dos…"
+                   autofocus>
+            <button type="submit" class="btn btn-dark px-4">Search</button>
+        </div>
+        <div class="form-text ms-1">
+            Press <kbd>/</kbd> or <kbd>Ctrl+K</kbd> anywhere to open search.
+        </div>
+    </form>
+
+    {% if too_short %}
+    <p class="text-muted">Enter at least 2 characters to search.</p>
+
+    {% elif no_teams %}
+    <p class="text-muted">You are not a member of any team yet.</p>
+
+    {% elif query %}
+
+        {% if total == 0 %}
+        <div class="text-center py-5">
+            <i class="bi bi-search text-muted" style="font-size:2.5rem"></i>
+            <h5 class="mt-3">No results for "{{ query }}"</h5>
+            <p class="text-muted">Try a different keyword, or check you're on the right team.</p>
+        </div>
+
+        {% else %}
+        <p class="text-muted mb-4">
+            {{ total }} result{{ total|pluralize }} for <strong>"{{ query }}"</strong>
+        </p>
+
+        {# Rocks #}
+        {% if rocks %}
+        <div class="mb-4">
+            <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.05em">
+                <i class="bi bi-gem me-1"></i>Rocks ({{ rocks|length }})
+            </h6>
+            <div class="list-group list-group-flush border rounded">
+                {% for rock in rocks %}
+                <a href="{{ rock.get_absolute_url }}" class="list-group-item list-group-item-action py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-{{ rock.status_badge_class }} text-nowrap">{{ rock.get_status_display }}</span>
+                        <span class="fw-semibold flex-grow-1">{{ rock.title }}</span>
+                        <span class="text-muted small text-nowrap">{{ rock.team.name }} &middot; Q{{ rock.quarter }} {{ rock.year }}</span>
+                    </div>
+                    {% if rock.description %}
+                    <div class="text-muted small mt-1 text-truncate">{{ rock.description }}</div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Issues #}
+        {% if issues %}
+        <div class="mb-4">
+            <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.05em">
+                <i class="bi bi-exclamation-circle me-1"></i>Issues ({{ issues|length }})
+            </h6>
+            <div class="list-group list-group-flush border rounded">
+                {% for issue in issues %}
+                <a href="{{ issue.get_absolute_url }}" class="list-group-item list-group-item-action py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-{{ issue.status_badge_class }} text-nowrap">{{ issue.get_status_display }}</span>
+                        <span class="fw-semibold flex-grow-1">{{ issue.title }}</span>
+                        <span class="text-muted small text-nowrap">{{ issue.originating_team.name }}</span>
+                    </div>
+                    {% if issue.description %}
+                    <div class="text-muted small mt-1 text-truncate">{{ issue.description }}</div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# To-Dos #}
+        {% if todos %}
+        <div class="mb-4">
+            <h6 class="text-muted text-uppercase fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.05em">
+                <i class="bi bi-check2-square me-1"></i>To-Dos ({{ todos|length }})
+            </h6>
+            <div class="list-group list-group-flush border rounded">
+                {% for todo in todos %}
+                <a href="{% url 'todos:update' todo.pk %}" class="list-group-item list-group-item-action py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if todo.is_complete %}
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        {% else %}
+                        <i class="bi bi-circle text-secondary"></i>
+                        {% endif %}
+                        <span class="fw-semibold flex-grow-1 {% if todo.is_complete %}text-decoration-line-through text-muted{% endif %}">
+                            {{ todo.title }}
+                        </span>
+                        <span class="text-muted small text-nowrap">
+                            {{ todo.owner.get_full_name|default:todo.owner.username }}
+                            &middot; {{ todo.due_date|date:"M j" }}
+                        </span>
+                    </div>
+                    {% if todo.description %}
+                    <div class="text-muted small mt-1 text-truncate">{{ todo.description }}</div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% endif %}{# end total == 0 #}
+    {% endif %}{# end query #}
+
+</div>
+</div>
+{% endblock %}
