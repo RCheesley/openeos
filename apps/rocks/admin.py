@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Rock, RockDependency, RockMilestone
+from .models import Rock, RockCheckin, RockDependency, RockMilestone
 
 
 class RockDependencyInline(admin.TabularInline):
@@ -16,6 +16,14 @@ class RockMilestoneInline(admin.TabularInline):
     fields = ['title', 'due_date', 'order', 'is_complete', 'completed_at']
 
 
+class RockCheckinInline(admin.TabularInline):
+    model = RockCheckin
+    extra = 0
+    raw_id_fields = ['created_by']
+    readonly_fields = ['created_at']
+    fields = ['confidence', 'note', 'created_by', 'created_at']
+
+
 @admin.register(Rock)
 class RockAdmin(admin.ModelAdmin):
     list_display = ['title', 'owner', 'team', 'quarter_label', 'status', 'due_date']
@@ -23,7 +31,16 @@ class RockAdmin(admin.ModelAdmin):
     search_fields = ['title', 'owner__username', 'owner__first_name', 'team__name']
     raw_id_fields = ['owner', 'created_by', 'parent_rock']
     readonly_fields = ['created_at', 'updated_at']
-    inlines = [RockMilestoneInline, RockDependencyInline]
+    inlines = [RockMilestoneInline, RockCheckinInline, RockDependencyInline]
+
+
+@admin.register(RockCheckin)
+class RockCheckinAdmin(admin.ModelAdmin):
+    list_display = ['rock', 'confidence', 'created_by', 'created_at']
+    list_filter = ['confidence', 'rock__team']
+    search_fields = ['rock__title', 'note']
+    raw_id_fields = ['rock', 'created_by']
+    readonly_fields = ['created_at']
 
     def quarter_label(self, obj):
         return obj.quarter_label

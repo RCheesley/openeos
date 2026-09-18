@@ -1,8 +1,9 @@
 from datetime import date, timedelta
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.utils import timezone
 from apps.accounts.models import Organization, Team
-from apps.rocks.models import Rock
+from apps.rocks.models import Rock, RockCheckin
 
 
 def make_rock(title='Test Rock', status=Rock.STATUS_ON_TRACK, **kwargs):
@@ -108,3 +109,66 @@ class RockQuarterTest(TestCase):
         self.assertEqual((date(2026, 4, 1).month - 1) // 3 + 1, 2)
         self.assertEqual((date(2026, 7, 1).month - 1) // 3 + 1, 3)
         self.assertEqual((date(2026, 10, 1).month - 1) // 3 + 1, 4)
+
+
+class RockCheckinTest(TestCase):
+    def setUp(self):
+        self.rock = make_rock()
+        self.user = self.rock.owner
+
+    def test_not_overdue_when_freshly_created(self):
+        self.assertFalse(self.rock.is_checkin_overdue)
+
+    def test_overdue_when_rock_old_with_no_checkins(self):
+        Rock.objects.filter(pk=self.rock.pk).update(
+            created_at=timezone.now() - timedelta(days=8)
+        )
+        self.rock.refresh_from_db()
+        self.assertTrue(self.rock.is_checkin_overdue)
+
+    def test_not_overdue_when_recent_checkin_exists(self):
+        Rock.objects.filter(pk=self.rock.pk).update(
+            created_at=timezone.now() - timedelta(days=8)
+        )
+        self.rock.refresh_from_db()
+        RockCheckin.objects.create(
+            rock=self.rock, confidence=Rock.STATUS_ON_TRACK, created_by=self.user
+        )
+        self.assertFalse(self.rock.is_checkin_overdue)
+
+    def test_overdue_when_latest_checkin_is_stale(self):
+        checkin = RockCheckin.objects.create(
+            rock=self.rock, confidence=Rock.STATUS_ON_TRACK, created_by=self.user
+        )
+        RockCheckin.objects.filter(pk=checkin.pk).update(
+            created_at=timezone.now() - timedelta(days=8)
+        )
+        self.rock.refresh_from_db()
+        self.assertTrue(self.rock.is_checkin_overdue)
+
+    def test_not_overdue_when_complete(self):
+        self.rock.status = Rock.STATUS_COMPLETE
+        self.rock.save()
+        Rock.objects.filter(pk=self.rock.pk).update(
+            created_at=timezone.now() - timedelta(days=30)
+        )
+        self.rock.refresh_from_db()
+        self.assertFalse(self.rock.is_checkin_overdue)
+
+    def test_latest_checkin_returns_most_recent(self):
+        older = RockCheckin.objects.create(
+            rock=self.rock, confidence=Rock.STATUS_ON_TRACK, created_by=self.user
+        )
+        RockCheckin.objects.filter(pk=older.pk).update(
+            created_at=timezone.now() - timedelta(days=2)
+        )
+        newer = RockCheckin.objects.create(
+            rock=self.rock, confidence=Rock.STATUS_OFF_TRACK, created_by=self.user
+        )
+        self.assertEqual(self.rock.latest_checkin, newer)
+
+    def test_is_on_track_property(self):
+        checkin = RockCheckin.objects.create(
+            rock=self.rock, confidence=Rock.STATUS_OFF_TRACK, created_by=self.user
+        )
+        self.assertFalse(checkin.is_on_track)

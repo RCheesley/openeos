@@ -17,6 +17,11 @@
                     <span class="badge bg-{{ rock.status_badge_class }} fs-6 px-3">{{ rock.get_status_display }}</span>
                     <span class="badge bg-light text-dark border">Q{{ rock.quarter }} {{ rock.year }}</span>
                     <span class="badge bg-light text-dark border">{{ rock.team.name }}</span>
+                    {% if rock.is_checkin_overdue %}
+                    <span class="badge bg-warning text-dark" title="No check-in in 7+ days">
+                        <i class="bi bi-clock-history me-1"></i>Check-in overdue
+                    </span>
+                    {% endif %}
                 </div>
                 <h1 class="h3 mb-1">{{ rock.title }}</h1>
                 <div class="text-muted small">
@@ -169,6 +174,57 @@
                 </form>
                 {% elif not rock.milestone_count %}
                 <p class="text-muted small mb-0">No milestones yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Check-ins #}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase fw-semibold mb-3" style="font-size:.7rem;letter-spacing:.05em">
+                    <i class="bi bi-graph-up-arrow me-1"></i>Check-ins
+                </h6>
+
+                {% if can_edit and rock.is_active %}
+                <form method="post" action="{% url 'rocks:checkin_add' rock.pk %}" class="mb-3">
+                    {% csrf_token %}
+                    <div class="btn-group btn-group-sm mb-2" role="group">
+                        <input type="radio" class="btn-check" name="confidence" value="on_track" id="checkin-on-{{ rock.pk }}" checked>
+                        <label class="btn btn-outline-success" for="checkin-on-{{ rock.pk }}">On Track</label>
+                        <input type="radio" class="btn-check" name="confidence" value="off_track" id="checkin-off-{{ rock.pk }}">
+                        <label class="btn btn-outline-danger" for="checkin-off-{{ rock.pk }}">Off Track</label>
+                    </div>
+                    <textarea name="note" class="form-control form-control-sm mb-2" rows="2"
+                              placeholder="What's the progress this week? (optional)"></textarea>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-plus"></i> Add Check-in
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if checkins %}
+                <ul class="list-group list-group-flush">
+                    {% for checkin in checkins %}
+                    <li class="list-group-item px-0 py-2">
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="badge bg-{% if checkin.is_on_track %}success{% else %}danger{% endif %} mt-1">
+                                {{ checkin.get_confidence_display }}
+                            </span>
+                            <div class="flex-grow-1 min-w-0">
+                                {% if checkin.note %}
+                                <p class="mb-1 small" style="white-space:pre-line">{{ checkin.note }}</p>
+                                {% endif %}
+                                <div class="text-muted" style="font-size:.75rem">
+                                    {{ checkin.created_by.get_full_name|default:checkin.created_by.username }}
+                                    · {{ checkin.created_at|date:"N j, Y" }}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">No check-ins yet.</p>
                 {% endif %}
             </div>
         </div>

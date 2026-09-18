@@ -3,8 +3,11 @@ from datetime import date
 from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import Team
+
+CHECKIN_OVERDUE_DAYS = 7
 
 
 class Rock(models.Model):
@@ -123,6 +126,21 @@ class Rock(models.Model):
         total = self.milestone_count
         return round(self.milestones_complete / total * 100) if total else 0
 
+    # --- Check-in helpers ---
+
+    @property
+    def latest_checkin(self):
+        return self.checkins.first()
+
+    @property
+    def is_checkin_overdue(self):
+        """True if this Rock is active and hasn't had a check-in in CHECKIN_OVERDUE_DAYS."""
+        if not self.is_active():
+            return False
+        latest = self.latest_checkin
+        reference = latest.created_at if latest else self.created_at
+        return (timezone.now() - reference).days >= CHECKIN_OVERDUE_DAYS
+
     @staticmethod
     def current_quarter():
         return (date.today().month - 1) // 3 + 1
@@ -177,6 +195,37 @@ class RockMilestone(models.Model):
         self.is_complete = False
         self.completed_at = None
         self.save(update_fields=['is_complete', 'completed_at'])
+
+
+class RockCheckin(models.Model):
+    """A weekly progress update: a confidence read (on/off track) plus a note."""
+
+    rock = models.ForeignKey(Rock, on_delete=models.CASCADE, related_name='checkins')
+    confidence = models.CharField(
+        max_length=20,
+        choices=[
+            (Rock.STATUS_ON_TRACK, 'On Track'),
+            (Rock.STATUS_OFF_TRACK, 'Off Track'),
+        ],
+        default=Rock.STATUS_ON_TRACK,
+    )
+    note = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='rock_checkins'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Rock Check-in'
+        verbose_name_plural = 'Rock Check-ins'
+
+    def __str__(self):
+        return f'{self.rock.title} — {self.get_confidence_display()} ({self.created_at:%Y-%m-%d})'
+
+    @property
+    def is_on_track(self):
+        return self.confidence == Rock.STATUS_ON_TRACK
 
 
 class RockDependency(models.Model):

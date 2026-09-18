@@ -10,7 +10,7 @@ from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 
-from .models import Rock, RockDependency, RockMilestone
+from .models import Rock, RockCheckin, RockDependency, RockMilestone
 from .forms import RockForm, RockStatusForm, RockDependencyForm
 from apps.accounts.views import get_user_org, get_active_team
 from apps.issues.models import Issue, IssueActivity
@@ -168,6 +168,7 @@ class RockDetailView(LoginRequiredMixin, DetailView):
             .exclude(linked_rocks=rock)
             .order_by('-created_at')
         )
+        ctx['checkins'] = rock.checkins.select_related('created_by')
         return ctx
 
 
@@ -204,6 +205,37 @@ class RockStatusView(LoginRequiredMixin, View):
             rock.save(update_fields=['status', 'updated_at'])
         next_url = request.POST.get('next') or reverse('rocks:list')
         return redirect(next_url)
+
+
+# ---------------------------------------------------------------------------
+# Check-ins
+# ---------------------------------------------------------------------------
+
+class RockCheckinCreateView(LoginRequiredMixin, View):
+    """POST-only: log a weekly progress check-in (owner or admin only)."""
+
+    def post(self, request, pk):
+        rock = get_object_or_404(Rock, pk=pk)
+        is_owner = request.user == rock.owner
+        is_admin = request.user.is_superuser or getattr(
+            getattr(request.user, 'profile', None), 'is_admin', lambda: False
+        )()
+        if not (is_owner or is_admin):
+            return HttpResponseForbidden()
+
+        confidence = request.POST.get('confidence')
+        if confidence not in (Rock.STATUS_ON_TRACK, Rock.STATUS_OFF_TRACK):
+            messages.error(request, 'Please choose On Track or Off Track for the check-in.')
+            return redirect('rocks:detail', pk=pk)
+
+        RockCheckin.objects.create(
+            rock=rock,
+            confidence=confidence,
+            note=request.POST.get('note', '').strip(),
+            created_by=request.user,
+        )
+        messages.success(request, 'Check-in recorded.')
+        return redirect('rocks:detail', pk=pk)
 
 
 # ---------------------------------------------------------------------------

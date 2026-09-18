@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/edit/', views.RockUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.RockDeleteView.as_view(), name='delete'),
     path('<int:pk>/status/', views.RockStatusView.as_view(), name='status'),
+    path('<int:pk>/checkins/add/', views.RockCheckinCreateView.as_view(), name='checkin_add'),
     path('<int:pk>/dependency/add/', views.RockDependencyCreateView.as_view(), name='dependency_add'),
     path('dependency/<int:pk>/remove/', views.RockDependencyDeleteView.as_view(), name='dependency_remove'),
     path('<int:pk>/milestones/add/', views.MilestoneCreateView.as_view(), name='milestone_add'),

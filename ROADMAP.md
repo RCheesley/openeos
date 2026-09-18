@@ -46,12 +46,12 @@ A living checklist of what's been built and what's coming next. PRs welcome for 
 
 ---
 
-## 🗺️ v0.5 — Rock Check-ins
+## ✅ v0.5 — Rock Check-ins
 
-- [ ] Weekly check-in model: progress note + confidence (on/off track) per Rock
-- [ ] Check-in form on Rock detail page
-- [ ] Check-in history timeline on Rock detail
-- [ ] Overdue check-in warning (no update in 7 days)
+- [x] Weekly check-in model: progress note + confidence (on/off track) per Rock
+- [x] Check-in form on Rock detail page
+- [x] Check-in history timeline on Rock detail
+- [x] Overdue check-in warning (no update in 7 days)
 
 ---
 
