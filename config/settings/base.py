@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'apps.vto',
     'apps.accountability',
     'apps.meetings',
+    'apps.notifications',
     # 'apps.todos',
     # 'apps.vto',
     # 'apps.scorecards',
@@ -101,3 +102,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# ── Email ────────────────────────────────────────────────────────────────────
+# Set EMAIL_HOST to enable SMTP; otherwise emails print to the console (dev-friendly default).
+EMAIL_HOST = config('EMAIL_HOST', default='')
+if EMAIL_HOST:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='EOS App <noreply@example.com>')
+
+# Base URL used to build absolute links in emails (no trailing slash).
+SITE_URL = config('SITE_URL', default='http://localhost:8000')

@@ -112,6 +112,21 @@ docker compose -f docker-compose.prod.yml up -d
 
 Migrations and `collectstatic` run automatically on startup via `entrypoint.sh`.
 
+### 5. Daily email notifications
+
+The overdue To-Do digest and same-day meeting reminders are sent by a management command,
+not a background worker — schedule it to run once a day (mornings work well) with the
+host's cron:
+
+```
+0 7 * * * cd /path/to/eos && docker compose -f docker-compose.prod.yml exec -T web python manage.py send_daily_notifications
+```
+
+Rock off-track alerts and user-invite emails are sent immediately and need no scheduling.
+Configure SMTP via the `EMAIL_*` variables in `.env` (see `.env.example`) — without
+`EMAIL_HOST` set, emails print to the container logs instead of sending, which is fine for
+development.
+
 ---
 
 ## Running Tests

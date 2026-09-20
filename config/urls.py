@@ -16,6 +16,7 @@ urlpatterns = [
     path('vto/', include('apps.vto.urls', namespace='vto')),
     path('accountability/', include('apps.accountability.urls', namespace='accountability')),
     path('meetings/', include('apps.meetings.urls', namespace='meetings')),
+    path('notifications/', include('apps.notifications.urls', namespace='notifications')),
     path('', HomeView.as_view(), name='home'),
 ]
 

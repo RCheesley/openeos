@@ -201,8 +201,12 @@ class RockStatusView(LoginRequiredMixin, View):
             )()
             if not (is_owner or is_admin):
                 return HttpResponseForbidden()
+            was_off_track = rock.status == Rock.STATUS_OFF_TRACK
             rock.status = new_status
             rock.save(update_fields=['status', 'updated_at'])
+            if new_status == Rock.STATUS_OFF_TRACK and not was_off_track:
+                from apps.notifications.emails import send_rock_off_track_alert
+                send_rock_off_track_alert(rock)
         next_url = request.POST.get('next') or reverse('rocks:list')
         return redirect(next_url)
 

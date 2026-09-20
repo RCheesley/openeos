@@ -55,13 +55,13 @@ A living checklist of what's been built and what's coming next. PRs welcome for 
 
 ---
 
-## 🗺️ v0.6 — Email Notifications
+## ✅ v0.6 — Email Notifications
 
-- [ ] Overdue To-Do digest: daily email listing your overdue items
-- [ ] Meeting day reminder: email to team on the morning of a scheduled meeting
-- [ ] Rock off-track alert: email owner when a Rock is marked off-track
-- [ ] User invite email: send invite link when a user is added to an org
-- [ ] Configurable: users can opt out per notification type
+- [x] Overdue To-Do digest: daily email listing your overdue items
+- [x] Meeting day reminder: email to team on the morning of a scheduled meeting
+- [x] Rock off-track alert: email owner when a Rock is marked off-track
+- [x] User invite email: send invite link when a user is added to an org
+- [x] Configurable: users can opt out per notification type
 
 ---
 

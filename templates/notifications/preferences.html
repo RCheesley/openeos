@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Notification Preferences — EOS App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="mb-4">
+            <a href="{% url 'accounts:profile' %}" class="text-muted text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i> Profile
+            </a>
+            <h1 class="h3 mt-2 mb-0">Notification preferences</h1>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-check mb-3">
+                        {{ form.overdue_todo_digest }}
+                        <label class="form-check-label" for="{{ form.overdue_todo_digest.id_for_label }}">
+                            Overdue To-Do digest
+                        </label>
+                        <div class="text-muted small">{{ form.overdue_todo_digest.help_text }}</div>
+                    </div>
+                    <div class="form-check mb-3">
+                        {{ form.meeting_reminders }}
+                        <label class="form-check-label" for="{{ form.meeting_reminders.id_for_label }}">
+                            Meeting day reminders
+                        </label>
+                        <div class="text-muted small">{{ form.meeting_reminders.help_text }}</div>
+                    </div>
+                    <div class="form-check mb-4">
+                        {{ form.rock_off_track_alerts }}
+                        <label class="form-check-label" for="{{ form.rock_off_track_alerts.id_for_label }}">
+                            Rock off-track alerts
+                        </label>
+                        <div class="text-muted small">{{ form.rock_off_track_alerts.help_text }}</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-check-lg me-1"></i> Save changes
+                        </button>
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

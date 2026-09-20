@@ -1,0 +1,7 @@
+Hi {{ user.first_name|default:user.username }},
+
+You've been invited to join {{ organization.name }} on EOS App.
+
+Set your password to get started: {{ reset_url }}
+
+— EOS App

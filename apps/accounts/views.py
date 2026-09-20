@@ -347,12 +347,26 @@ class UserInviteView(LoginRequiredMixin, AdminRequiredMixin, FormView):
         for team in form.cleaned_data['teams']:
             profile.teams.add(team)
 
+        self._send_invite_email(user, org)
+
         messages.success(
             self.request,
             f'User "{user.username}" added. They can set their password via the '
             f'"Forgot password?" link on the login page — make sure their email is correct.',
         )
         return super().form_valid(form)
+
+    def _send_invite_email(self, user, org):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
+        from apps.notifications.emails import send_user_invite_email
+
+        reset_url = self.request.build_absolute_uri(reverse('password_reset_confirm', kwargs={
+            'uidb64': urlsafe_base64_encode(force_bytes(user.pk)),
+            'token': default_token_generator.make_token(user),
+        }))
+        send_user_invite_email(user, org, reset_url)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
