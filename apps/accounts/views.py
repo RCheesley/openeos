@@ -6,12 +6,14 @@ from django.db import models
 from django.shortcuts import redirect, get_object_or_404, render
 from django.db.models import Q
 from django.utils.crypto import get_random_string
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.contrib.auth.models import User
 
 from .models import Organization, Team, UserProfile
 from .forms import OrganizationForm, TeamForm, UserProfileForm, InviteUserForm, TeamMemberForm
+from .scoping import OrgScopedMixin, get_active_team, get_org_object_or_404, get_user_org
 
 
 class AdminRequiredMixin(UserPassesTestMixin):
@@ -25,31 +27,6 @@ class AdminRequiredMixin(UserPassesTestMixin):
             return user.profile.is_admin()
         except UserProfile.DoesNotExist:
             return False
-
-
-def get_active_team(request):
-    """Return the session-pinned team if valid, else the user's first team."""
-    try:
-        user_teams = request.user.profile.teams.all()
-    except AttributeError:
-        return None
-    if not user_teams.exists():
-        return None
-    stored_id = request.session.get('active_team_id')
-    if stored_id:
-        team = user_teams.filter(pk=stored_id).first()
-        if team:
-            return team
-    team = user_teams.first()
-    request.session['active_team_id'] = team.pk
-    return team
-
-
-def get_user_org(user):
-    try:
-        return user.profile.organization
-    except (UserProfile.DoesNotExist, AttributeError):
-        return None
 
 
 # ---------------------------------------------------------------------------
@@ -197,8 +174,9 @@ class TeamCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
         return ctx
 
 
-class TeamUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
+class TeamUpdateView(LoginRequiredMixin, AdminRequiredMixin, OrgScopedMixin, UpdateView):
     model = Team
+    org_lookup = 'organization'
     form_class = TeamForm
     template_name = 'accounts/team_form.html'
 
@@ -212,8 +190,9 @@ class TeamUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
         return ctx
 
 
-class TeamDetailView(LoginRequiredMixin, DetailView):
+class TeamDetailView(LoginRequiredMixin, OrgScopedMixin, DetailView):
     model = Team
+    org_lookup = 'organization'
     template_name = 'accounts/team_detail.html'
     context_object_name = 'team'
 
@@ -236,7 +215,9 @@ class TeamMembersUpdateView(LoginRequiredMixin, AdminRequiredMixin, FormView):
     form_class = TeamMemberForm
 
     def get_team(self):
-        return get_object_or_404(Team, pk=self.kwargs['pk'])
+        return get_org_object_or_404(
+            self.request, Team, org_lookup='organization', pk=self.kwargs['pk']
+        )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -378,17 +359,23 @@ class UserInviteView(LoginRequiredMixin, AdminRequiredMixin, FormView):
 # Team Switcher
 # ---------------------------------------------------------------------------
 
+def safe_next_url(request, fallback='/'):
+    """Return the POSTed ``next`` URL only if it stays on this host."""
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or ''
+    if url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return next_url
+    return fallback
+
+
 class TeamSwitchView(LoginRequiredMixin, View):
     """POST-only: switch the active team stored in the session."""
 
     def post(self, request, pk):
-        try:
-            team = request.user.profile.teams.get(pk=pk)
-            request.session['active_team_id'] = team.pk
-        except Exception:
-            pass
-        next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or '/'
-        return redirect(next_url)
+        team = get_object_or_404(request.user.profile.teams, pk=pk)
+        request.session['active_team_id'] = team.pk
+        return redirect(safe_next_url(request))
 
 
 # ---------------------------------------------------------------------------

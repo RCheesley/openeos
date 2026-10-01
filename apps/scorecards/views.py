@@ -3,13 +3,15 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 
 from .models import Scorecard, ScorecardMetric, ScorecardEntry, _current_week_start, _current_month_start
 from .forms import ScorecardForm, ScorecardMetricForm
-from apps.accounts.views import get_user_org, get_active_team
+from apps.accounts.scoping import (
+    OrgScopedMixin, get_active_team, get_org_object_or_404, get_user_org,
+)
 
 
 def _build_periods(n=13, frequency='weekly'):
@@ -100,7 +102,7 @@ class ScorecardCreateView(LoginRequiredMixin, CreateView):
         return ctx
 
 
-class ScorecardUpdateView(LoginRequiredMixin, UpdateView):
+class ScorecardUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
     model = Scorecard
     form_class = ScorecardForm
     template_name = 'scorecards/scorecard_form.html'
@@ -120,7 +122,7 @@ class ScorecardUpdateView(LoginRequiredMixin, UpdateView):
         return ctx
 
 
-class ScorecardDeleteView(LoginRequiredMixin, DeleteView):
+class ScorecardDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     model = Scorecard
     template_name = 'scorecards/scorecard_confirm_delete.html'
     success_url = reverse_lazy('scorecards:list')
@@ -134,7 +136,7 @@ class ScorecardDeleteView(LoginRequiredMixin, DeleteView):
 # Scorecard detail — 13-week table
 # ---------------------------------------------------------------------------
 
-class ScorecardDetailView(LoginRequiredMixin, DetailView):
+class ScorecardDetailView(LoginRequiredMixin, OrgScopedMixin, DetailView):
     model = Scorecard
     template_name = 'scorecards/scorecard_detail.html'
     context_object_name = 'scorecard'
@@ -181,7 +183,7 @@ class MetricCreateView(LoginRequiredMixin, CreateView):
     template_name = 'scorecards/metric_form.html'
 
     def get_scorecard(self):
-        return get_object_or_404(Scorecard, pk=self.kwargs['scorecard_pk'])
+        return get_org_object_or_404(self.request, Scorecard, pk=self.kwargs['scorecard_pk'])
 
     def get_form_kwargs(self):
         kw = super().get_form_kwargs()
@@ -203,8 +205,9 @@ class MetricCreateView(LoginRequiredMixin, CreateView):
         return ctx
 
 
-class MetricUpdateView(LoginRequiredMixin, UpdateView):
+class MetricUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
     model = ScorecardMetric
+    org_lookup = 'scorecard__team__organization'
     form_class = ScorecardMetricForm
     template_name = 'scorecards/metric_form.html'
 
@@ -231,7 +234,9 @@ class MetricDeleteView(LoginRequiredMixin, View):
     """Soft-delete a metric (sets is_active=False)."""
 
     def post(self, request, pk):
-        metric = get_object_or_404(ScorecardMetric, pk=pk)
+        metric = get_org_object_or_404(
+            request, ScorecardMetric, org_lookup='scorecard__team__organization', pk=pk
+        )
         scorecard_pk = metric.scorecard_id
         metric.is_active = False
         metric.save(update_fields=['is_active'])
@@ -261,12 +266,12 @@ class ScorecardEntryView(LoginRequiredMixin, View):
         return metrics, current_week, existing
 
     def get(self, request, pk):
-        scorecard = get_object_or_404(Scorecard, pk=pk)
+        scorecard = get_org_object_or_404(request, Scorecard, pk=pk)
         metrics, current_week, existing = self._get_data(scorecard)
         return self._render(request, scorecard, metrics, current_week, existing, errors={})
 
     def post(self, request, pk):
-        scorecard = get_object_or_404(Scorecard, pk=pk)
+        scorecard = get_org_object_or_404(request, Scorecard, pk=pk)
         metrics, current_week, existing = self._get_data(scorecard)
         errors = {}
         saved = 0
@@ -331,7 +336,10 @@ class MetricEscalateView(LoginRequiredMixin, View):
     """POST-only: create an Issue from an off-track metric entry."""
 
     def post(self, request, pk):
-        entry = get_object_or_404(ScorecardEntry, pk=pk)
+        entry = get_org_object_or_404(
+            request, ScorecardEntry,
+            org_lookup='metric__scorecard__team__organization', pk=pk,
+        )
         metric = entry.metric
 
         from apps.issues.models import Issue, IssueActivity

@@ -1,5 +1,4 @@
 from django import forms
-from django.db.models import Q
 
 from .models import Meeting, SegueEntry, Headline, MeetingRating
 from apps.accounts.models import Team
@@ -16,8 +15,10 @@ class MeetingCreateForm(forms.ModelForm):
 
     def __init__(self, *args, org=None, **kwargs):
         super().__init__(*args, **kwargs)
+        teams = Team.objects.none()
         if org:
-            self.fields['team'].queryset = Team.objects.filter(organization=org).order_by('name')
+            teams = Team.objects.filter(organization=org).order_by('name')
+        self.fields['team'].queryset = teams
 
 
 class SegueEntryForm(forms.ModelForm):

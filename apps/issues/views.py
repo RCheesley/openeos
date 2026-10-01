@@ -1,17 +1,25 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 
 from .models import Issue, IssueActivity
 from .forms import IssueForm, IssueStatusForm, IssueDelegateForm, IssueCommentForm
-from apps.accounts.views import get_user_org, get_active_team
+from apps.accounts.scoping import (
+    OrgScopedMixin, get_active_team, get_org_object_or_404, get_user_org,
+)
+
+ISSUE_ORG_LOOKUP = 'originating_team__organization'
 
 
 def _log(issue, actor, action, notes=''):
     IssueActivity.objects.create(issue=issue, actor=actor, action=action, notes=notes)
+
+
+def _get_issue(request, pk):
+    return get_org_object_or_404(request, Issue, org_lookup=ISSUE_ORG_LOOKUP, pk=pk)
 
 
 def _can_edit(user, issue):
@@ -110,8 +118,9 @@ class IssueCreateView(LoginRequiredMixin, CreateView):
         return ctx
 
 
-class IssueUpdateView(LoginRequiredMixin, UpdateView):
+class IssueUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
     model = Issue
+    org_lookup = ISSUE_ORG_LOOKUP
     form_class = IssueForm
     template_name = 'issues/issue_form.html'
 
@@ -130,8 +139,9 @@ class IssueUpdateView(LoginRequiredMixin, UpdateView):
         return ctx
 
 
-class IssueDetailView(LoginRequiredMixin, DetailView):
+class IssueDetailView(LoginRequiredMixin, OrgScopedMixin, DetailView):
     model = Issue
+    org_lookup = ISSUE_ORG_LOOKUP
     template_name = 'issues/issue_detail.html'
     context_object_name = 'issue'
 
@@ -151,8 +161,9 @@ class IssueDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
-class IssueDeleteView(LoginRequiredMixin, DeleteView):
+class IssueDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     model = Issue
+    org_lookup = ISSUE_ORG_LOOKUP
     template_name = 'issues/issue_confirm_delete.html'
     success_url = reverse_lazy('issues:list')
 
@@ -169,7 +180,7 @@ class IssueStatusView(LoginRequiredMixin, View):
     """POST-only: change an issue's status."""
 
     def post(self, request, pk):
-        issue = get_object_or_404(Issue, pk=pk)
+        issue = _get_issue(request, pk)
         if not _can_edit(request.user, issue):
             return HttpResponseForbidden()
         form = IssueStatusForm(request.POST)
@@ -201,7 +212,7 @@ class IssueDelegateView(LoginRequiredMixin, View):
     """POST-only: assign or recall delegation."""
 
     def post(self, request, pk):
-        issue = get_object_or_404(Issue, pk=pk)
+        issue = _get_issue(request, pk)
         if not _can_edit(request.user, issue):
             return HttpResponseForbidden()
         form = IssueDelegateForm(request.POST, organization=issue.originating_team.organization if issue.originating_team else get_user_org(request.user))
@@ -231,7 +242,7 @@ class IssueCommentView(LoginRequiredMixin, View):
     """POST-only: add a comment to the activity log."""
 
     def post(self, request, pk):
-        issue = get_object_or_404(Issue, pk=pk)
+        issue = _get_issue(request, pk)
         form = IssueCommentForm(request.POST)
         if form.is_valid():
             _log(issue, request.user, IssueActivity.ACTION_COMMENT,

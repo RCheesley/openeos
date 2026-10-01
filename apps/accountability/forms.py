@@ -1,6 +1,5 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.db.models import Q
 
 from .models import AccountabilityNode, AccountabilityRole
 
@@ -23,13 +22,14 @@ class NodeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['owner'].required = False
         self.fields['owner'].empty_label = '— Vacant —'
+        owners = User.objects.none()
         if org:
-            self.fields['owner'].queryset = (
+            owners = (
                 User.objects
-                .filter(Q(profile__organization=org) | Q(is_superuser=True))
-                .distinct()
+                .filter(profile__organization=org)
                 .order_by('first_name', 'last_name', 'username')
             )
+        self.fields['owner'].queryset = owners
 
 
 class RoleForm(forms.ModelForm):

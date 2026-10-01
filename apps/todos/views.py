@@ -2,13 +2,13 @@ from datetime import date
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 
 from .models import ToDo
 from .forms import ToDoForm
-from apps.accounts.views import get_user_org, get_active_team
+from apps.accounts.scoping import OrgScopedMixin, get_active_team, get_org_object_or_404
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ class ToDoCreateView(LoginRequiredMixin, CreateView):
         return ctx
 
 
-class ToDoUpdateView(LoginRequiredMixin, UpdateView):
+class ToDoUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
     model = ToDo
     form_class = ToDoForm
     template_name = 'todos/todo_form.html'
@@ -142,7 +142,7 @@ class ToDoUpdateView(LoginRequiredMixin, UpdateView):
         return ctx
 
 
-class ToDoDeleteView(LoginRequiredMixin, DeleteView):
+class ToDoDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     model = ToDo
     template_name = 'todos/todo_confirm_delete.html'
     success_url = reverse_lazy('todos:list')
@@ -160,7 +160,7 @@ class ToDoCompleteView(LoginRequiredMixin, View):
     """POST-only: toggle a To-Do between open and complete."""
 
     def post(self, request, pk):
-        todo = get_object_or_404(ToDo, pk=pk)
+        todo = get_org_object_or_404(request, ToDo, pk=pk)
         if todo.is_complete:
             todo.mark_open()
         else:
@@ -177,7 +177,7 @@ class ToDoEscalateView(LoginRequiredMixin, View):
     """POST-only: create an Issue from an overdue To-Do and link them."""
 
     def post(self, request, pk):
-        todo = get_object_or_404(ToDo, pk=pk)
+        todo = get_org_object_or_404(request, ToDo, pk=pk)
         from apps.issues.models import Issue, IssueActivity
 
         issue = Issue.objects.create(
