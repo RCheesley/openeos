@@ -131,3 +131,165 @@ class RockCompanyRockFormPermissionTest(TestCase):
         )
         self.rock.refresh_from_db()
         self.assertFalse(self.rock.is_company_rock)
+
+    def test_member_editing_an_already_company_rock_does_not_demote_it(self):
+        """is_company_rock is excluded from a non-admin's form entirely, so saving
+        other fields must leave the Rock's existing flag untouched either way."""
+        company_rock = Rock.objects.create(
+            title='Already Company', owner=self.member, team=self.team,
+            quarter=1, year=2026, due_date=date(2026, 3, 31), is_company_rock=True,
+        )
+        self.client.force_login(self.member)
+        self.client.post(
+            f'/rocks/{company_rock.pk}/edit/',
+            self._rock_post_data(title='Already Company (edited)'),
+        )
+        company_rock.refresh_from_db()
+        self.assertEqual(company_rock.title, 'Already Company (edited)')
+        self.assertTrue(company_rock.is_company_rock)
+
+
+class RockCompanyRockParentValidationTest(TestCase):
+    """A company-wide Rock needs a company-wide parent, or none at all."""
+
+    def setUp(self):
+        self.org = Organization.objects.create(name='Nesting Org')
+        self.team = Team.objects.create(organization=self.org, name='Nesting Team')
+
+        self.admin = User.objects.create_user(username='nestadmin', password='pw')
+        Membership.objects.create(
+            user=self.admin, organization=self.org, role=Membership.ROLE_ADMIN
+        )
+        self.admin.profile.teams.add(self.team)
+
+        self.member = User.objects.create_user(username='nestmember', password='pw')
+        Membership.objects.create(
+            user=self.member, organization=self.org, role=Membership.ROLE_MEMBER
+        )
+        self.member.profile.teams.add(self.team)
+
+        self.company_parent = Rock.objects.create(
+            title='Company Parent', owner=self.admin, team=self.team,
+            quarter=1, year=2026, due_date=date(2026, 3, 31), is_company_rock=True,
+        )
+        self.team_parent = Rock.objects.create(
+            title='Team Parent', owner=self.admin, team=self.team,
+            quarter=1, year=2026, due_date=date(2026, 3, 31), is_company_rock=False,
+        )
+
+    def _rock_post_data(self, **overrides):
+        data = {
+            'title': 'Child Rock',
+            'description': '',
+            'owner': self.admin.pk,
+            'quarter': 1,
+            'year': 2026,
+            'due_date': '2026-03-31',
+            'parent_rock': '',
+        }
+        data.update(overrides)
+        return data
+
+    def test_company_rock_rejects_non_company_parent(self):
+        self.client.force_login(self.admin)
+        resp = self.client.post('/rocks/new/', self._rock_post_data(
+            is_company_rock='on', parent_rock=self.team_parent.pk,
+        ))
+        self.assertEqual(resp.status_code, 200)
+        self.assertFormError(resp.context['form'], 'parent_rock',
+                              'A company-wide Rock needs a company-wide parent, or no parent at all.')
+        self.assertFalse(Rock.objects.filter(title='Child Rock').exists())
+
+    def test_company_rock_accepts_company_parent(self):
+        self.client.force_login(self.admin)
+        self.client.post('/rocks/new/', self._rock_post_data(
+            is_company_rock='on', parent_rock=self.company_parent.pk,
+        ))
+        child = Rock.objects.get(title='Child Rock')
+        self.assertTrue(child.is_company_rock)
+        self.assertEqual(child.parent_rock, self.company_parent)
+
+    def test_company_rock_accepts_no_parent(self):
+        self.client.force_login(self.admin)
+        self.client.post('/rocks/new/', self._rock_post_data(is_company_rock='on'))
+        child = Rock.objects.get(title='Child Rock')
+        self.assertTrue(child.is_company_rock)
+        self.assertIsNone(child.parent_rock)
+
+    def test_non_company_rock_accepts_non_company_parent(self):
+        self.client.force_login(self.admin)
+        self.client.post('/rocks/new/', self._rock_post_data(
+            parent_rock=self.team_parent.pk,
+        ))
+        child = Rock.objects.get(title='Child Rock')
+        self.assertFalse(child.is_company_rock)
+        self.assertEqual(child.parent_rock, self.team_parent)
+
+    def test_demoting_a_parent_with_company_children_requires_confirmation(self):
+        child = Rock.objects.create(
+            title='Company Child', owner=self.admin, team=self.team,
+            quarter=1, year=2026, due_date=date(2026, 3, 31),
+            is_company_rock=True, parent_rock=self.company_parent,
+        )
+        self.client.force_login(self.admin)
+        resp = self.client.post(
+            f'/rocks/{self.company_parent.pk}/edit/',
+            self._rock_post_data(title=self.company_parent.title),  # is_company_rock omitted = unchecked
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertFormError(
+            resp.context['form'], None,
+            'Demoting this Rock will also remove company-wide status from '
+            '1 child Rock: Company Child. Check "Also remove company-wide status '
+            'from this Rock’s company-wide child Rocks" below and save again to confirm.'
+        )
+        self.company_parent.refresh_from_db()
+        child.refresh_from_db()
+        self.assertTrue(self.company_parent.is_company_rock)
+        self.assertTrue(child.is_company_rock)
+
+    def test_demoting_a_parent_with_confirmation_cascades_to_children(self):
+        child = Rock.objects.create(
+            title='Company Child', owner=self.admin, team=self.team,
+            quarter=1, year=2026, due_date=date(2026, 3, 31),
+            is_company_rock=True, parent_rock=self.company_parent,
+        )
+        other_child = Rock.objects.create(
+            title='Team-only Child', owner=self.admin, team=self.team,
+            quarter=1, year=2026, due_date=date(2026, 3, 31),
+            is_company_rock=False, parent_rock=self.company_parent,
+        )
+        self.client.force_login(self.admin)
+        resp = self.client.post(
+            f'/rocks/{self.company_parent.pk}/edit/',
+            self._rock_post_data(
+                title=self.company_parent.title, confirm_demote_children='on',
+            ),
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.company_parent.refresh_from_db()
+        child.refresh_from_db()
+        other_child.refresh_from_db()
+        self.assertFalse(self.company_parent.is_company_rock)
+        self.assertFalse(child.is_company_rock)
+        self.assertFalse(other_child.is_company_rock)  # was already False, unaffected
+
+    def test_demoting_a_parent_with_no_company_children_needs_no_confirmation(self):
+        self.client.force_login(self.admin)
+        resp = self.client.post(
+            f'/rocks/{self.company_parent.pk}/edit/',
+            self._rock_post_data(title=self.company_parent.title),  # is_company_rock omitted = unchecked
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.company_parent.refresh_from_db()
+        self.assertFalse(self.company_parent.is_company_rock)
+
+    def test_member_does_not_see_confirm_demote_checkbox(self):
+        Rock.objects.create(
+            title='Company Child', owner=self.admin, team=self.team,
+            quarter=1, year=2026, due_date=date(2026, 3, 31),
+            is_company_rock=True, parent_rock=self.company_parent,
+        )
+        self.client.force_login(self.member)
+        resp = self.client.get(f'/rocks/{self.company_parent.pk}/edit/')
+        self.assertNotContains(resp, 'confirm_demote_children')
