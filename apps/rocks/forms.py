@@ -3,13 +3,15 @@ from django.contrib.auth.models import User
 
 from .models import Rock, RockDependency
 from apps.accounts.models import Team
+from apps.accounts.scoping import is_org_admin
 
 
 class RockForm(forms.ModelForm):
     class Meta:
         model = Rock
         # team is excluded: always set to the user's active team in the view
-        fields = ['title', 'description', 'owner', 'quarter', 'year', 'due_date', 'parent_rock']
+        fields = ['title', 'description', 'owner', 'quarter', 'year', 'due_date',
+                  'parent_rock', 'is_company_rock']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -25,10 +27,15 @@ class RockForm(forms.ModelForm):
             'year': forms.NumberInput(attrs={'class': 'form-control', 'min': 2020, 'max': 2099}),
             'due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'parent_rock': forms.Select(attrs={'class': 'form-select'}),
+            'is_company_rock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-    def __init__(self, *args, team=None, **kwargs):
+    def __init__(self, *args, team=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Only an admin of the team's organisation may flag a Rock as company-wide.
+        is_admin = bool(user) and is_org_admin(user, team.organization if team else None)
+        if not is_admin:
+            del self.fields['is_company_rock']
         if team:
             self.fields['owner'].queryset = User.objects.filter(
                 profile__teams=team
