@@ -200,6 +200,17 @@ class RockCompanyRockParentValidationTest(TestCase):
                               'A company-wide Rock needs a company-wide parent, or no parent at all.')
         self.assertFalse(Rock.objects.filter(title='Child Rock').exists())
 
+    def test_redisplayed_form_after_validation_error_keeps_the_submitted_due_date(self):
+        """Regression test: the due_date input used to render blank whenever the form
+        redisplayed after any validation error, since the raw submitted string was being
+        run back through the `date` filter, which silently returns '' for a non-date value."""
+        self.client.force_login(self.admin)
+        resp = self.client.post('/rocks/new/', self._rock_post_data(
+            is_company_rock='on', parent_rock=self.team_parent.pk, due_date='2026-06-15',
+        ))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'value="2026-06-15"')
+
     def test_company_rock_accepts_company_parent(self):
         self.client.force_login(self.admin)
         self.client.post('/rocks/new/', self._rock_post_data(
