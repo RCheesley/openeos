@@ -1,4 +1,4 @@
-# EOS® App
+# an open-source App that allows an org to implement and run the business using the EOS® framework.
 
 An open-source web application that implements the full **Entrepreneurial Operating System® (EOS®)** framework. Run Level 10 Meeting®, track Rocks, manage Issues and To-Dos, maintain a V/TO®, review Scorecards, and navigate the The Accountability Chart® — all from a single self-hosted platform.
 
