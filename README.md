@@ -1,6 +1,6 @@
-# EOS App
+# EOS® App
 
-An open-source web application that implements the full **Entrepreneurial Operating System (EOS)** framework. Run Level 10 meetings, track Rocks, manage Issues and To-Dos, maintain a VTO, review Scorecards, and navigate an Accountability Chart — all from a single self-hosted platform.
+An open-source web application that implements the full **Entrepreneurial Operating System® (EOS®)** framework. Run Level 10 Meeting®, track Rocks, manage Issues and To-Dos, maintain a V/TO®, review Scorecards, and navigate the The Accountability Chart® — all from a single self-hosted platform.
 
 Built with Django, Bootstrap 5, PostgreSQL, and Docker. No JavaScript frameworks. No SaaS lock-in.
 
@@ -10,13 +10,13 @@ Built with Django, Bootstrap 5, PostgreSQL, and Docker. No JavaScript frameworks
 
 | Module | Description |
 |--------|-------------|
-| **VTO** | Vision/Traction Organizer — Core Values, Core Focus, 10-Year Target, Marketing Strategy, 3-Year Picture, 1-Year Plan |
-| **Accountability Chart** | Org-chart builder with seat owners, vacant seat tracking, and department grouping |
+| **V/TO®** | Vision/Traction Organizer® — Core Values, Core Focus, 10-Year Target, Marketing Strategy, 3-Year Picture, 1-Year Plan |
+| **The Accountability Chart®** | Org-chart builder with seat owners, vacant seat tracking, and department grouping |
 | **Rocks** | Quarterly priorities with on-track / off-track status, quarter labels, and dependency tracking |
 | **Scorecards** | Weekly measurables with above/below/equal goal directions and colour-coded status cells |
-| **Issues** | IDS (Identify, Discuss, Solve) list with short-term / long-term types, cross-team delegation, and activity history |
+| **Issues** | IDS® (Identify, Discuss, Solve) list with short-term / long-term types, cross-team delegation, and activity history |
 | **To-Dos** | Weekly action items with escalation levels, due dates, and Rock/Issue linking |
-| **Level 10 Meetings** | Guided 90-minute meeting runner with timed segments, segue entries, headlines, IDS integration, ratings, and cascading messages |
+| **Level 10 Meeting®** | Guided 90-minute meeting runner with timed segments, segue entries, headlines, IDS® integration, ratings, and cascading messages |
 
 ---
 
@@ -148,13 +148,13 @@ docker compose exec web coverage report
 .
 ├── apps/
 │   ├── accounts/       # Organisations, Teams, UserProfiles
-│   ├── accountability/ # Accountability Chart nodes and roles
-│   ├── issues/         # Issues with IDS workflow
-│   ├── meetings/       # Level 10 Meeting runner
+│   ├── accountability/ # The Accountability Chart® nodes and roles
+│   ├── issues/         # Issues with IDS® workflow
+│   ├── meetings/       # Level 10 Meeting® runner
 │   ├── rocks/          # Quarterly Rocks
 │   ├── scorecards/     # Weekly Scorecards
 │   ├── todos/          # To-Dos
-│   └── vto/            # Vision/Traction Organizer
+│   └── vto/            # Vision/Traction Organizer®
 ├── config/
 │   ├── settings/
 │   │   ├── base.py
