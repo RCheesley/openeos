@@ -94,8 +94,10 @@ class InviteUserForm(forms.Form):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        teams = Team.objects.none()
         if organization:
-            self.fields['teams'].queryset = Team.objects.filter(organization=organization)
+            teams = Team.objects.filter(organization=organization)
+        self.fields['teams'].queryset = teams
 
     def clean_username(self):
         username = self.cleaned_data['username']
@@ -114,9 +116,11 @@ class TeamMemberForm(forms.Form):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        users = User.objects.none()
         if organization:
-            self.fields['users'].queryset = (
+            users = (
                 User.objects
                 .filter(profile__organization=organization)
                 .order_by('first_name', 'username')
             )
+        self.fields['users'].queryset = users

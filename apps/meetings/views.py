@@ -6,7 +6,7 @@ from django.db.models import Q
 
 from .models import Meeting, MeetingNote, SegueEntry, Headline, MeetingRating, SEGMENT_NAMES, SEGMENT_DURATIONS, SEGMENT_TEMPLATES
 from .forms import MeetingCreateForm, SegueEntryForm, HeadlineForm, MeetingRatingForm, CascadingMessagesForm
-from apps.accounts.views import get_user_org, get_active_team
+from apps.accounts.scoping import get_active_team, get_user_org
 
 
 def _get_org(user):

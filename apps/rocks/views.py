@@ -12,7 +12,7 @@ from django.http import HttpResponseForbidden
 
 from .models import Rock, RockCheckin, RockDependency, RockMilestone
 from .forms import RockForm, RockStatusForm, RockDependencyForm
-from apps.accounts.views import get_user_org, get_active_team
+from apps.accounts.scoping import OrgScopedMixin, get_active_team, get_org_object_or_404
 from apps.issues.models import Issue, IssueActivity
 
 
@@ -116,7 +116,7 @@ class RockCreateView(LoginRequiredMixin, CreateView):
         return ctx
 
 
-class RockUpdateView(LoginRequiredMixin, UpdateView):
+class RockUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
     model = Rock
     form_class = RockForm
     template_name = 'rocks/rock_form.html'
@@ -136,7 +136,7 @@ class RockUpdateView(LoginRequiredMixin, UpdateView):
         return ctx
 
 
-class RockDetailView(LoginRequiredMixin, DetailView):
+class RockDetailView(LoginRequiredMixin, OrgScopedMixin, DetailView):
     model = Rock
     template_name = 'rocks/rock_detail.html'
     context_object_name = 'rock'
@@ -172,7 +172,7 @@ class RockDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
-class RockDeleteView(LoginRequiredMixin, DeleteView):
+class RockDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     model = Rock
     template_name = 'rocks/rock_confirm_delete.html'
     success_url = reverse_lazy('rocks:list')
@@ -190,7 +190,7 @@ class RockStatusView(LoginRequiredMixin, View):
     """POST-only: update a Rock's status and redirect back."""
 
     def post(self, request, pk):
-        rock = get_object_or_404(Rock, pk=pk)
+        rock = get_org_object_or_404(request, Rock, pk=pk)
         form = RockStatusForm(request.POST)
         if form.is_valid():
             new_status = form.cleaned_data['status']
@@ -219,7 +219,7 @@ class RockCheckinCreateView(LoginRequiredMixin, View):
     """POST-only: log a weekly progress check-in (owner or admin only)."""
 
     def post(self, request, pk):
-        rock = get_object_or_404(Rock, pk=pk)
+        rock = get_org_object_or_404(request, Rock, pk=pk)
         is_owner = request.user == rock.owner
         is_admin = request.user.is_superuser or getattr(
             getattr(request.user, 'profile', None), 'is_admin', lambda: False
@@ -291,7 +291,7 @@ class RockArchiveView(LoginRequiredMixin, ListView):
 
 class RockDependencyCreateView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        rock = get_object_or_404(Rock, pk=pk)
+        rock = get_org_object_or_404(request, Rock, pk=pk)
         form = RockDependencyForm(request.POST, rock=rock)
         if form.is_valid():
             dep = form.save(commit=False)
@@ -305,7 +305,9 @@ class RockDependencyCreateView(LoginRequiredMixin, View):
 
 class RockDependencyDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        dep = get_object_or_404(RockDependency, pk=pk)
+        dep = get_org_object_or_404(
+            request, RockDependency, org_lookup='rock__team__organization', pk=pk
+        )
         rock_pk = dep.rock.pk
         dep.delete()
         messages.success(request, 'Dependency removed.')
@@ -316,9 +318,15 @@ class RockDependencyDeleteView(LoginRequiredMixin, View):
 # Milestones
 # ---------------------------------------------------------------------------
 
+def _get_milestone(request, pk):
+    return get_org_object_or_404(
+        request, RockMilestone, org_lookup='rock__team__organization', pk=pk
+    )
+
+
 class MilestoneCreateView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        rock = get_object_or_404(Rock, pk=pk)
+        rock = get_org_object_or_404(request, Rock, pk=pk)
         title = request.POST.get('title', '').strip()
         due_date = request.POST.get('due_date') or None
         description = request.POST.get('description', '').strip()
@@ -338,11 +346,11 @@ class MilestoneEditView(LoginRequiredMixin, View):
     """GET renders an edit form; POST saves title/description/due_date."""
 
     def get(self, request, pk):
-        milestone = get_object_or_404(RockMilestone, pk=pk)
+        milestone = _get_milestone(request, pk)
         return render(request, 'rocks/milestone_edit.html', {'milestone': milestone})
 
     def post(self, request, pk):
-        milestone = get_object_or_404(RockMilestone, pk=pk)
+        milestone = _get_milestone(request, pk)
         title = request.POST.get('title', '').strip()
         if title:
             milestone.title = title
@@ -355,7 +363,7 @@ class MilestoneEditView(LoginRequiredMixin, View):
 
 class MilestoneToggleView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        milestone = get_object_or_404(RockMilestone, pk=pk)
+        milestone = _get_milestone(request, pk)
         if milestone.is_complete:
             milestone.mark_open()
         else:
@@ -365,7 +373,7 @@ class MilestoneToggleView(LoginRequiredMixin, View):
 
 class MilestoneDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
-        milestone = get_object_or_404(RockMilestone, pk=pk)
+        milestone = _get_milestone(request, pk)
         rock_pk = milestone.rock_id
         milestone.delete()
         messages.success(request, 'Milestone removed.')
@@ -380,8 +388,10 @@ class RockIssueLinkView(LoginRequiredMixin, View):
     """POST-only: add an Issue to a Rock's linked_issues M2M."""
 
     def post(self, request, pk):
-        rock = get_object_or_404(Rock, pk=pk)
-        issue = get_object_or_404(Issue, pk=request.POST.get('issue_id'))
+        rock = get_org_object_or_404(request, Rock, pk=pk)
+        issue = get_object_or_404(
+            Issue, pk=request.POST.get('issue_id'), originating_team=rock.team
+        )
         rock.linked_issues.add(issue)
         IssueActivity.objects.create(
             issue=issue, actor=request.user,
@@ -396,8 +406,8 @@ class RockIssueUnlinkView(LoginRequiredMixin, View):
     """POST-only: remove an Issue from a Rock's linked_issues M2M."""
 
     def post(self, request, pk):
-        rock = get_object_or_404(Rock, pk=pk)
-        issue = get_object_or_404(Issue, pk=request.POST.get('issue_id'))
+        rock = get_org_object_or_404(request, Rock, pk=pk)
+        issue = get_object_or_404(rock.linked_issues, pk=request.POST.get('issue_id'))
         rock.linked_issues.remove(issue)
         IssueActivity.objects.create(
             issue=issue, actor=request.user,

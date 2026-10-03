@@ -1,6 +1,5 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.db.models import Q
 
 from apps.accounts.models import Team
 from .models import Scorecard, ScorecardMetric, ScorecardEntry
@@ -16,8 +15,10 @@ class ScorecardForm(forms.ModelForm):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        teams = Team.objects.none()
         if organization:
-            self.fields['team'].queryset = Team.objects.filter(organization=organization).order_by('name')
+            teams = Team.objects.filter(organization=organization).order_by('name')
+        self.fields['team'].queryset = teams
 
 
 class ScorecardMetricForm(forms.ModelForm):
@@ -30,13 +31,14 @@ class ScorecardMetricForm(forms.ModelForm):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        owners = User.objects.none()
         if organization:
-            self.fields['owner'].queryset = (
+            owners = (
                 User.objects
-                .filter(Q(profile__organization=organization) | Q(is_superuser=True))
-                .distinct()
+                .filter(profile__organization=organization)
                 .order_by('first_name', 'last_name', 'username')
             )
+        self.fields['owner'].queryset = owners
         self.fields['order'].initial = 0
         self.fields['is_active'].initial = True
 

@@ -80,10 +80,10 @@ class IssueDelegateForm(forms.Form):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        teams = Team.objects.none()
         if organization:
-            self.fields['delegated_to_team'].queryset = (
-                Team.objects.filter(organization=organization).order_by('name')
-            )
+            teams = Team.objects.filter(organization=organization).order_by('name')
+        self.fields['delegated_to_team'].queryset = teams
 
 
 class IssueCommentForm(forms.Form):

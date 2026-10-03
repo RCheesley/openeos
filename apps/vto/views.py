@@ -6,7 +6,7 @@ from django.contrib import messages
 
 from .models import VTO, VTOCoreValue, VTOSection, VTOSectionHistory, SectionKey
 from .forms import VTOSectionForm, VTOCoreValueForm
-from apps.accounts.views import get_user_org
+from apps.accounts.scoping import OrgScopedMixin, get_user_org
 from apps.rocks.models import Rock
 
 
@@ -158,8 +158,9 @@ class CoreValueCreateView(LoginRequiredMixin, View):
         return render(request, self.template_name, {'form': form, 'action': 'Add'})
 
 
-class CoreValueUpdateView(LoginRequiredMixin, UpdateView):
+class CoreValueUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
     model = VTOCoreValue
+    org_lookup = 'vto__organization'
     form_class = VTOCoreValueForm
     template_name = 'vto/core_value_form.html'
     success_url = reverse_lazy('vto:detail')
@@ -174,8 +175,9 @@ class CoreValueUpdateView(LoginRequiredMixin, UpdateView):
         return ctx
 
 
-class CoreValueDeleteView(LoginRequiredMixin, DeleteView):
+class CoreValueDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     model = VTOCoreValue
+    org_lookup = 'vto__organization'
     template_name = 'vto/core_value_confirm_delete.html'
     success_url = reverse_lazy('vto:detail')
 

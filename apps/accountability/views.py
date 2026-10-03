@@ -6,7 +6,7 @@ from django.contrib import messages
 
 from .models import AccountabilityNode, AccountabilityRole
 from .forms import NodeForm, RoleForm
-from apps.accounts.views import get_user_org
+from apps.accounts.scoping import get_user_org
 
 
 def _get_org(user):
