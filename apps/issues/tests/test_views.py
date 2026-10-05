@@ -101,3 +101,30 @@ class IssueCompanyIssueFormPermissionTest(TestCase):
         company_issue.refresh_from_db()
         self.assertEqual(company_issue.title, 'Already Company (edited)')
         self.assertTrue(company_issue.is_company_issue)
+
+    def test_company_issue_flag_is_dropped_for_a_short_term_issue(self):
+        """Company-wide only means anything for long-term issues, the VTO never shows
+        short-term ones, so the flag shouldn't stick even if someone submits it anyway."""
+        self.client.force_login(self.admin)
+        self.client.post('/issues/new/', self._issue_post_data(
+            issue_type=Issue.TYPE_SHORT_TERM, is_company_issue='on',
+        ))
+        issue = Issue.objects.get(title='An Issue')
+        self.assertFalse(issue.is_company_issue)
+
+    def test_demoting_a_long_term_issue_to_short_term_drops_the_company_flag(self):
+        company_issue = Issue.objects.create(
+            title='Was Long-term Company', originating_team=self.team, created_by=self.admin,
+            issue_type=Issue.TYPE_LONG_TERM, is_company_issue=True,
+            target_quarter=1, target_year=2026,
+        )
+        self.client.force_login(self.admin)
+        self.client.post(
+            f'/issues/{company_issue.pk}/edit/',
+            self._issue_post_data(
+                title=company_issue.title, issue_type=Issue.TYPE_SHORT_TERM,
+                is_company_issue='on',
+            ),
+        )
+        company_issue.refresh_from_db()
+        self.assertFalse(company_issue.is_company_issue)
