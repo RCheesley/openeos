@@ -79,7 +79,7 @@ A living checklist of what's been built and what's coming next. PRs welcome for 
 
 - [x] Meeting notes PDF: export a completed meeting's notes and summary
 - [ ] Rocks CSV: export current quarter's rocks with status and owner
-- [ ] Scorecard CSV: export 13-week history for a scorecard
+- [x] Scorecard CSV: export 13-week history for a scorecard
 - [ ] Issues CSV: export open issues with status and delegation info
 
 ---
