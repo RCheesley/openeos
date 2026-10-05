@@ -14,14 +14,22 @@ class IssueForm(forms.ModelForm):
             'delegated_to_team',
             'linked_rocks',
             'target_quarter', 'target_year',
+            'is_company_issue',
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
             'target_year': forms.NumberInput(attrs={'min': 2020, 'max': 2099}),
+            'is_company_issue': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-    def __init__(self, *args, team=None, **kwargs):
+    def __init__(self, *args, team=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        is_admin = bool(user) and (
+            user.is_superuser
+            or getattr(getattr(user, 'profile', None), 'is_admin', lambda: False)()
+        )
+        if not is_admin:
+            del self.fields['is_company_issue']
         if team:
             # Delegation can go to any team in the org
             org_teams = Team.objects.filter(organization=team.organization).order_by('name')
