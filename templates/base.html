@@ -168,6 +168,7 @@
                             <li><a class="dropdown-item" href="{% url 'accounts:org_detail' %}"><i class="bi bi-building me-1"></i>Organisation</a></li>
                             {% if is_active_org_admin %}
                             <li><a class="dropdown-item" href="{% url 'accounts:org_settings' %}"><i class="bi bi-palette me-1"></i>Organisation settings</a></li>
+                            <li><a class="dropdown-item" href="{% url 'accounts:org_terminology' %}"><i class="bi bi-translate me-1"></i>Terminology</a></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{% url 'accounts:team_list' %}"><i class="bi bi-people me-1"></i>Teams</a></li>
                             <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}"><i class="bi bi-person-lines-fill me-1"></i>Users</a></li>

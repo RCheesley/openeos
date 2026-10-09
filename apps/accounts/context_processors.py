@@ -1,5 +1,6 @@
 from .branding import brand_for
 from .scoping import get_active_org, get_active_team, get_user_orgs, is_org_admin
+from .terminology import get_terms
 
 
 def active_context(request):
@@ -35,3 +36,8 @@ def branding(request):
     if org is None and request.user.is_authenticated:
         org = get_active_org(request)
     return {'brand': brand_for(org)}
+
+
+def terminology(request):
+    """The organisation's vocabulary, or the defaults when there is no organisation."""
+    return {'terms': get_terms(request)}

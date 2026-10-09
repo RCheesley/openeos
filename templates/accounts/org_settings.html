@@ -7,7 +7,10 @@
         <h1 class="h3 mb-0">Organisation settings</h1>
         <p class="text-muted mt-1 mb-0">Name, logo, colours and email sender for {{ org.name }}.</p>
     </div>
-    <div class="col-auto">
+    <div class="col-auto d-flex gap-2">
+        <a href="{% url 'accounts:org_terminology' %}" class="btn btn-outline-dark">
+            <i class="bi bi-translate me-1"></i> Terminology
+        </a>
         <a href="{% url 'accounts:org_detail' %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Back
         </a>
