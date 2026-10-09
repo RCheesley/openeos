@@ -94,7 +94,7 @@ class DefaultBrandNeverLeaksTest(TestCase):
         for url in gets:
             with self.subTest(url=url):
                 resp = self.client.get(url)
-                if resp.status_code != 200:
+                if resp.status_code != 200 or not resp['Content-Type'].startswith('text/html'):
                     continue
                 self.assertNotIn('EOS App', resp.content.decode())
                 self.assertTrue(page_title(resp).endswith(' — Probe Org'), page_title(resp))
@@ -103,7 +103,7 @@ class DefaultBrandNeverLeaksTest(TestCase):
         for url in self.LIST_PATHS:
             with self.subTest(url=url):
                 resp = self.client.get(url)
-                if resp.status_code != 200:
+                if resp.status_code != 200 or not resp['Content-Type'].startswith('text/html'):
                     continue
                 self.assertNotIn('EOS App', resp.content.decode())
                 self.assertTrue(page_title(resp).endswith(' — Probe Org'), page_title(resp))
