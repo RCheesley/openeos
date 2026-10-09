@@ -3,7 +3,6 @@ from django.views.generic import (
     TemplateView, CreateView, UpdateView, ListView, DetailView, FormView, View,
 )
 from django.db import models
-from django.http import Http404
 from django.shortcuts import redirect, get_object_or_404, render
 from django.db.models import Prefetch, Q
 from django.utils.crypto import get_random_string
@@ -213,9 +212,7 @@ class OrgTerminologyView(LoginRequiredMixin, AdminRequiredMixin, FormView):
 
     def get_org(self):
         org = get_active_org(self.request)
-        if org is None:
-            raise Http404
-        return org
+        return get_object_or_404(Organization, pk=org.pk if org else None)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
