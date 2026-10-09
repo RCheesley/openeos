@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}VTO — {{ vto.organization.name }} — Print{% endblock %}
+{% block title %}{{ terms.vto }} — {{ vto.organization.name }} — Print{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -31,7 +31,7 @@
 
 <div class="text-center mb-3 border-bottom pb-3">
     <h4 class="mb-0 fw-bold">{{ vto.organization.name }}</h4>
-    <div class="text-muted small">Vision / Traction Organizer (V/TO)</div>
+    <div class="text-muted small">{{ terms.vto }}</div>
 </div>
 
 <div class="row g-3">
@@ -45,7 +45,7 @@
     {# Core Values #}
     <div class="card mb-2">
         <div class="card-header py-1 bg-light">
-            <span class="fw-semibold small">Core Values</span>
+            <span class="fw-semibold small">{{ terms.core_values }}</span>
         </div>
         <div class="card-body py-2">
             {% if core_values %}

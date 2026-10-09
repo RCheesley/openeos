@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block page_title %}{{ scorecard.name }} — Scorecard{% endblock %}
+{% block page_title %}{{ scorecard.name }} — {{ terms.scorecard }}{% endblock %}
 
 {% block content %}
 {# ── Header ── #}
@@ -28,7 +28,7 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="{% url 'scorecards:metric_add' scorecard.pk %}"><i class="bi bi-plus me-2"></i>Add metric</a></li>
-                <li><a class="dropdown-item" href="{% url 'scorecards:update' scorecard.pk %}"><i class="bi bi-pencil me-2"></i>Edit scorecard</a></li>
+                <li><a class="dropdown-item" href="{% url 'scorecards:update' scorecard.pk %}"><i class="bi bi-pencil me-2"></i>Edit {{ terms.scorecard|lower }}</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="{% url 'scorecards:delete' scorecard.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
             </ul>
@@ -117,7 +117,7 @@
                                 <form method="post" action="{% url 'scorecards:entry_escalate' cell.pk %}" class="d-inline">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger border-0 p-0 ms-1"
-                                            title="Escalate to Issue" style="font-size:.6rem;line-height:1">
+                                            title="Escalate to {{ terms.issue }}" style="font-size:.6rem;line-height:1">
                                         <i class="bi bi-exclamation-triangle"></i>
                                     </button>
                                 </form>
@@ -138,7 +138,7 @@
 {# Legend #}
 <div class="d-flex gap-3 text-muted small mb-4">
     <span><span class="badge bg-success">&nbsp;</span> On track</span>
-    <span><span class="badge bg-danger">&nbsp;</span> Off track — click <i class="bi bi-exclamation-triangle"></i> to escalate to Issues</span>
+    <span><span class="badge bg-danger">&nbsp;</span> Off track — click <i class="bi bi-exclamation-triangle"></i> to escalate to {{ terms.issues }}</span>
     <span><span class="badge bg-secondary">&nbsp;</span> Not entered</span>
 </div>
 

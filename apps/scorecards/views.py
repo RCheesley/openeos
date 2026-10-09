@@ -12,6 +12,7 @@ from .forms import ScorecardForm, ScorecardMetricForm
 from apps.accounts.scoping import (
     OrgScopedMixin, get_active_org, get_active_team, get_org_object_or_404,
 )
+from apps.accounts.terminology import get_terms
 
 
 def _build_periods(n=13, frequency='weekly'):
@@ -93,7 +94,8 @@ class ScorecardCreateView(LoginRequiredMixin, CreateView):
         return kw
 
     def form_valid(self, form):
-        messages.success(self.request, f'Scorecard "{form.instance.name}" created.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.scorecard} "{form.instance.name}" created.')
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -113,7 +115,8 @@ class ScorecardUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
         return kw
 
     def form_valid(self, form):
-        messages.success(self.request, f'Scorecard "{form.instance.name}" updated.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.scorecard} "{form.instance.name}" updated.')
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -128,7 +131,8 @@ class ScorecardDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     success_url = reverse_lazy('scorecards:list')
 
     def form_valid(self, form):
-        messages.success(self.request, f'Scorecard "{self.object.name}" deleted.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.scorecard} "{self.object.name}" deleted.')
         return super().form_valid(form)
 
 
@@ -363,5 +367,6 @@ class MetricEscalateView(LoginRequiredMixin, View):
             action=IssueActivity.ACTION_CREATED,
             notes=f'Created from off-track Scorecard metric "{metric.name}".',
         )
-        messages.success(request, f'Issue created for off-track metric "{metric.name}".')
+        terms = get_terms(request)
+        messages.success(request, f'{terms.issue} created for off-track metric "{metric.name}".')
         return redirect('issues:detail', pk=issue.pk)
