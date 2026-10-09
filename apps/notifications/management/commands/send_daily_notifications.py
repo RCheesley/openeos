@@ -23,15 +23,17 @@ class Command(BaseCommand):
         ))
 
     def _send_overdue_digests(self):
+        # One digest per organisation per owner, so each email links to that
+        # organisation's own domain.
         overdue = (
             ToDo.objects
             .filter(status=ToDo.STATUS_OPEN, due_date__lt=date.today())
-            .select_related('owner', 'team')
-            .order_by('owner_id', 'due_date')
+            .select_related('owner', 'team__organization')
+            .order_by('owner_id', 'team__organization_id', 'due_date')
         )
         sent = 0
-        for owner, todos in groupby(overdue, key=lambda t: t.owner):
-            if send_overdue_todo_digest(owner, list(todos)):
+        for (owner, org), todos in groupby(overdue, key=lambda t: (t.owner, t.team.organization)):
+            if send_overdue_todo_digest(owner, list(todos), organization=org):
                 sent += 1
         return sent
 
