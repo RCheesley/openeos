@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from apps.accounts.models import Organization, Team, UserProfile
+from apps.accounts.models import Membership, Organization, Team
 from apps.issues.models import Issue
 
 
@@ -13,16 +13,12 @@ class IssueCompanyIssueFormPermissionTest(TestCase):
         self.team = Team.objects.create(organization=self.org, name='Flag Team')
 
         self.admin = User.objects.create_user(username='issueflagadmin', password='pw')
-        self.admin.profile.organization = self.org
+        Membership.objects.create(user=self.admin, organization=self.org, role=Membership.ROLE_ADMIN)
         self.admin.profile.teams.add(self.team)
-        self.admin.profile.role = UserProfile.ROLE_ADMIN
-        self.admin.profile.save()
 
         self.member = User.objects.create_user(username='issueflagmember', password='pw')
-        self.member.profile.organization = self.org
+        Membership.objects.create(user=self.member, organization=self.org, role=Membership.ROLE_MEMBER)
         self.member.profile.teams.add(self.team)
-        self.member.profile.role = UserProfile.ROLE_MEMBER
-        self.member.profile.save()
 
         self.issue = Issue.objects.create(
             title='Existing Issue', originating_team=self.team, created_by=self.member,

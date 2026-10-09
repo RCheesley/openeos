@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from apps.accounts.models import Organization, Team
+from apps.accounts.models import Membership, Organization, Team
 from apps.issues.models import Issue
 
 
@@ -33,9 +33,8 @@ class VTOCompanyIssuesTest(TestCase):
         self.other_team = Team.objects.create(organization=self.other_org, name='Other Team')
 
         self.user = User.objects.create_user(username='vtoissueuser', password='pw')
-        self.user.profile.organization = self.org
+        Membership.objects.create(user=self.user, organization=self.org)
         self.user.profile.teams.add(self.team_a)
-        self.user.profile.save()
 
         self.company_issue_a = Issue.objects.create(
             title='Company Issue A', originating_team=self.team_a,

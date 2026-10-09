@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.accounts.models import Team
+from apps.accounts.scoping import is_org_admin
 from apps.rocks.models import Rock
 from .models import Issue, IssueActivity
 
@@ -24,10 +25,8 @@ class IssueForm(forms.ModelForm):
 
     def __init__(self, *args, team=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        is_admin = bool(user) and (
-            user.is_superuser
-            or getattr(getattr(user, 'profile', None), 'is_admin', lambda: False)()
-        )
+        # Only an admin of the team's organisation may mark an Issue company-wide
+        is_admin = bool(user) and is_org_admin(user, team.organization if team else None)
         if not is_admin:
             del self.fields['is_company_issue']
         if team:
