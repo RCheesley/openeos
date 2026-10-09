@@ -379,10 +379,11 @@ class UserInviteView(LoginRequiredMixin, AdminRequiredMixin, FormView):
         from django.utils.http import urlsafe_base64_encode
         from apps.notifications.emails import send_user_invite_email
 
-        reset_url = self.request.build_absolute_uri(reverse('password_reset_confirm', kwargs={
+        base = org.site_url or self.request.build_absolute_uri('/').rstrip('/')
+        reset_url = base + reverse('password_reset_confirm', kwargs={
             'uidb64': urlsafe_base64_encode(force_bytes(user.pk)),
             'token': default_token_generator.make_token(user),
-        }))
+        })
         send_user_invite_email(user, org, reset_url)
 
     def get_context_data(self, **kwargs):

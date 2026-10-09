@@ -1,6 +1,7 @@
 from unittest import mock
 
 from django.contrib.auth.models import AnonymousUser, User
+from django.core import mail
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 from django.test import RequestFactory, TestCase, override_settings
@@ -223,6 +224,26 @@ class PinnedHostTest(TestCase):
         self.assertContains(resp, 'This address belongs to Mercury Org')
         self.client.post('/org/setup/', {'name': 'Sneaky Org'}, HTTP_HOST=MERCURY)
         self.assertFalse(Organization.objects.filter(name='Sneaky Org').exists())
+
+    @override_settings(SITE_URL='https://eos.example.test')
+    def test_invite_email_links_to_the_org_domain(self):
+        self.client.force_login(self.mercury['user'])
+        resp = self.client.post('/users/invite/', {
+            'username': 'invitee', 'email': 'invitee@example.com',
+            'role': Membership.ROLE_MEMBER, 'teams': [self.mercury['team'].pk],
+        }, HTTP_HOST=MERCURY)
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('https://mercury.example.test/accounts/reset/', mail.outbox[0].body)
+
+    @override_settings(SITE_URL='https://eos.example.test')
+    def test_invite_email_falls_back_to_the_request_host_without_a_domain(self):
+        OrganizationDomain.objects.filter(organization=self.mercury['org']).delete()
+        self.client.force_login(self.mercury['user'])
+        self.client.post('/users/invite/', {
+            'username': 'invitee', 'email': 'invitee@example.com',
+            'role': Membership.ROLE_MEMBER, 'teams': [self.mercury['team'].pk],
+        }, HTTP_HOST='testserver')
+        self.assertIn('http://testserver/accounts/reset/', mail.outbox[0].body)
 
     def test_active_org_is_resolved_once_per_request(self):
         self.client.force_login(self.mercury['user'])
