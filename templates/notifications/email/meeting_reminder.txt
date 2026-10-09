@@ -4,4 +4,4 @@ Reminder: {{ meeting.team.name }} has a Level 10 Meeting scheduled for today ({{
 
 View the meeting: {{ site_url }}{{ meeting.get_absolute_url }}
 
-— EOS App
+— {{ brand.name }}

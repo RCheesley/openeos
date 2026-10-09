@@ -6,4 +6,4 @@ Your Rock "{{ rock.title }}" was just marked Off Track.
 {% endif %}
 View the Rock: {{ site_url }}{{ rock.get_absolute_url }}
 
-— EOS App
+— {{ brand.name }}
