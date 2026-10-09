@@ -2,6 +2,8 @@
 
 A user may belong to several organisations through Membership. The session
 remembers which one is active; every list, form and pk lookup is limited to it.
+A request on an organisation's own hostname (see middleware.py) is pinned to
+that organisation and ignores the session choice.
 """
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -19,7 +21,23 @@ def get_user_orgs(user):
 
 
 def get_active_org(request):
-    """Return the session-pinned organisation if valid, else the user's first one."""
+    """Return the host's organisation, else the session-pinned one, else the user's first.
+
+    The result is memoised on the request because the context processor and
+    most views each ask for it.
+    """
+    if not hasattr(request, '_active_org'):
+        request._active_org = _resolve_active_org(request)
+    return request._active_org
+
+
+def _resolve_active_org(request):
+    host_org = getattr(request, 'host_org', None)
+    if host_org is not None:
+        user = request.user
+        if user.is_superuser or get_user_orgs(user).filter(pk=host_org.pk).exists():
+            return host_org
+        return None
     orgs = get_user_orgs(request.user)
     stored_id = request.session.get(SESSION_ORG_KEY)
     if stored_id:
@@ -36,6 +54,7 @@ def get_active_org(request):
 def set_active_org(request, org):
     request.session[SESSION_ORG_KEY] = org.pk
     request.session.pop(SESSION_TEAM_KEY, None)
+    request._active_org = org
 
 
 def get_active_team(request):
