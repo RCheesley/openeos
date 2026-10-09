@@ -123,6 +123,48 @@ class TwoFactorSetupTest(TwoFactorTestCase):
         self.assertEqual(StaticToken.objects.filter(device__user=self.user).count(), 10)
 
 
+class TwoFactorMiddlewareTest(TwoFactorTestCase):
+    def test_user_without_device_is_never_redirected(self):
+        self.login()
+        self.assertEqual(self.client.get('/rocks/').status_code, 200)
+        self.assertEqual(self.client.get('/profile/').status_code, 200)
+
+    def test_enrolled_user_is_redirected_to_verify_with_next(self):
+        confirmed_totp_device(self.user)
+        self.login()
+        self.assertRedirectsToVerify(self.client.get('/'), '/')
+        self.assertRedirectsToVerify(self.client.get('/rocks/'), '/rocks/')
+
+    def test_unconfirmed_device_does_not_trigger_the_redirect(self):
+        TOTPDevice.objects.create(user=self.user, name='abandoned', confirmed=False)
+        self.login()
+        self.assertEqual(self.client.get('/rocks/').status_code, 200)
+
+    def test_enrolled_user_can_still_log_out(self):
+        confirmed_totp_device(self.user)
+        self.login()
+        resp = self.client.post('/accounts/logout/')
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp['Location'], '/accounts/login/')
+
+    def test_admin_login_and_2fa_pages_are_reachable(self):
+        confirmed_totp_device(self.user)
+        self.login()
+        self.assertEqual(self.client.get('/admin/login/').status_code, 200)
+        self.assertEqual(self.client.get(VERIFY_URL).status_code, 200)
+
+    def test_anonymous_user_is_left_to_login_required(self):
+        resp = self.client.get('/rocks/')
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp['Location'].startswith('/accounts/login/'))
+
+    def test_verified_session_is_not_redirected(self):
+        device = confirmed_totp_device(self.user)
+        self.login()
+        self.mark_verified(device)
+        self.assertEqual(self.client.get('/rocks/').status_code, 200)
+
+
 class TwoFactorVerifyTest(TwoFactorTestCase):
     def setUp(self):
         super().setUp()
