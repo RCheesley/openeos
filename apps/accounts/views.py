@@ -182,11 +182,9 @@ class OrgSettingsView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
 
     def get_object(self, queryset=None):
         org = get_active_org(self.request)
-        if org is None:
-            raise Http404
         # A separate instance, so a rejected submission does not leak its
         # values into the brand the navbar and <head> are rendered from.
-        return Organization.objects.get(pk=org.pk)
+        return get_object_or_404(Organization, pk=org.pk if org else None)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
