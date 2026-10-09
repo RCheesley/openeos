@@ -17,7 +17,7 @@
                     <div class="form-check mb-3">
                         {{ form.overdue_todo_digest }}
                         <label class="form-check-label" for="{{ form.overdue_todo_digest.id_for_label }}">
-                            Overdue To-Do digest
+                            Overdue {{ terms.todo }} digest
                         </label>
                         <div class="text-muted small">{{ form.overdue_todo_digest.help_text }}</div>
                     </div>
@@ -31,7 +31,7 @@
                     <div class="form-check mb-4">
                         {{ form.rock_off_track_alerts }}
                         <label class="form-check-label" for="{{ form.rock_off_track_alerts.id_for_label }}">
-                            Rock off-track alerts
+                            {{ terms.rock }} off-track alerts
                         </label>
                         <div class="text-muted small">{{ form.rock_off_track_alerts.help_text }}</div>
                     </div>
