@@ -36,43 +36,43 @@
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-calendar3 me-1"></i>Meetings
+                            <i class="bi bi-calendar3 me-1"></i>{{ terms.meetings }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'meetings:list' %}">Level 10 Meeting</a></li>
+                            <li><a class="dropdown-item" href="{% url 'meetings:list' %}">{{ terms.meeting }}</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-gem me-1"></i>Rocks
+                            <i class="bi bi-gem me-1"></i>{{ terms.rocks }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'rocks:list' %}">Quarterly Rocks</a></li>
+                            <li><a class="dropdown-item" href="{% url 'rocks:list' %}">Quarterly {{ terms.rocks }}</a></li>
                             <li><a class="dropdown-item" href="{% url 'rocks:archive' %}">Archive</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'rocks:create' %}">New Rock</a></li>
+                            <li><a class="dropdown-item" href="{% url 'rocks:create' %}">New {{ terms.rock }}</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-exclamation-triangle me-1"></i>Issues
+                            <i class="bi bi-exclamation-triangle me-1"></i>{{ terms.issues }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'issues:list' %}">Issues List</a></li>
+                            <li><a class="dropdown-item" href="{% url 'issues:list' %}">{{ terms.issues }} List</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'issues:create' %}">New Issue</a></li>
+                            <li><a class="dropdown-item" href="{% url 'issues:create' %}">New {{ terms.issue }}</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-check2-square me-1"></i>To-Dos
+                            <i class="bi bi-check2-square me-1"></i>{{ terms.todos }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'todos:list' %}">My To-Dos</a></li>
-                            <li><a class="dropdown-item" href="{% url 'todos:list' %}?view=team">Team To-Dos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'todos:list' %}">My {{ terms.todos }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'todos:list' %}?view=team">Team {{ terms.todos }}</a></li>
                             <li><a class="dropdown-item" href="{% url 'todos:list' %}?status=overdue">Overdue</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'todos:create' %}">New To-Do</a></li>
+                            <li><a class="dropdown-item" href="{% url 'todos:create' %}">New {{ terms.todo }}</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -80,9 +80,9 @@
                             <i class="bi bi-bar-chart me-1"></i>More
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'scorecards:list' %}"><i class="bi bi-bar-chart-line me-2"></i>Scorecards</a></li>
-                            <li><a class="dropdown-item" href="{% url 'vto:detail' %}"><i class="bi bi-map me-2"></i>VTO</a></li>
-                            <li><a class="dropdown-item" href="{% url 'accountability:chart' %}"><i class="bi bi-diagram-3 me-2"></i>Accountability Chart</a></li>
+                            <li><a class="dropdown-item" href="{% url 'scorecards:list' %}"><i class="bi bi-bar-chart-line me-2"></i>{{ terms.scorecards }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'vto:detail' %}"><i class="bi bi-map me-2"></i>{{ terms.vto }}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'accountability:chart' %}"><i class="bi bi-diagram-3 me-2"></i>{{ terms.accountability_chart }}</a></li>
                         </ul>
                     </li>
                 </ul>

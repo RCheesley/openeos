@@ -260,3 +260,38 @@ class OrgTerminologyViewTest(TestCase):
         resp = self.client.get('/')
         self.assertNotContains(resp, f'href="{self.url}"')
 
+
+@override_settings(ALLOWED_HOSTS=HOSTS)
+class NavigationTerminologyTest(TestCase):
+    def setUp(self):
+        self.mercury = Organization.objects.create(name='Mercury Org', terminology=PRIORITIES)
+        self.silavapi = Organization.objects.create(name='Silavapi Org')
+        OrganizationDomain.objects.create(organization=self.mercury, hostname=MERCURY)
+        OrganizationDomain.objects.create(organization=self.silavapi, hostname=SILAVAPI)
+        self.user = User.objects.create_user(username='bothuser', password='pw')
+        Membership.objects.create(user=self.user, organization=self.mercury)
+        Membership.objects.create(user=self.user, organization=self.silavapi)
+
+    def test_each_host_shows_its_own_words_in_the_navigation(self):
+        self.client.force_login(self.user)
+
+        resp = self.client.get('/', HTTP_HOST=MERCURY)
+        self.assertContains(resp, 'Quarterly Priorities')
+        self.assertContains(resp, 'New Priority')
+        self.assertNotContains(resp, 'Quarterly Rocks')
+        self.assertNotContains(resp, 'New Rock')
+
+        resp = self.client.get('/', HTTP_HOST=SILAVAPI)
+        self.assertContains(resp, 'Quarterly Rocks')
+        self.assertContains(resp, 'New Rock')
+        self.assertNotContains(resp, 'Priorit')
+
+    def test_default_labels_are_the_eos_words(self):
+        self.client.force_login(self.user)
+        resp = self.client.get('/', HTTP_HOST=SILAVAPI)
+        for label in [
+            'Level 10 Meetings', 'Level 10 Meeting', 'Issues List', 'New Issue', 'My To-Dos',
+            'Team To-Dos', 'New To-Do', 'Scorecards', 'VTO', 'Accountability Chart',
+        ]:
+            with self.subTest(label=label):
+                self.assertContains(resp, label)
