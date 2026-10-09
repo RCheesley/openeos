@@ -3,6 +3,7 @@ from django.views.generic import (
     TemplateView, CreateView, UpdateView, ListView, DetailView, FormView, View,
 )
 from django.db import models
+from django.http import Http404
 from django.shortcuts import redirect, get_object_or_404, render
 from django.db.models import Prefetch, Q
 from django.utils.crypto import get_random_string
@@ -14,12 +15,13 @@ from django.contrib.auth.models import User
 from .models import Membership, Organization, Team, UserProfile
 from .forms import (
     InviteUserForm, OrganizationForm, OrganizationSettingsForm, TeamForm, TeamMemberForm,
-    UserProfileForm,
+    TerminologyForm, UserProfileForm,
 )
 from .scoping import (
     SESSION_TEAM_KEY, OrgScopedMixin, get_active_org, get_active_team, get_org_object_or_404,
     get_user_orgs, is_org_admin, set_active_org,
 )
+from .terminology import get_terms
 
 
 class AdminRequiredMixin(UserPassesTestMixin):
@@ -199,6 +201,44 @@ class OrgSettingsView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         messages.success(self.request, 'Branding updated.')
+        return super().form_valid(form)
+
+
+class OrgTerminologyView(LoginRequiredMixin, AdminRequiredMixin, FormView):
+    """Rename the EOS building blocks for the active organisation."""
+
+    form_class = TerminologyForm
+    template_name = 'accounts/org_terminology.html'
+    success_url = reverse_lazy('accounts:org_terminology')
+
+    def get_org(self):
+        org = get_active_org(self.request)
+        if org is None:
+            raise Http404
+        return org
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['terms'] = get_terms(self.request)
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['org'] = self.get_org()
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        if request.POST.get('reset'):
+            org = self.get_org()
+            org.terminology = {}
+            org.save(update_fields=['terminology', 'updated_at'])
+            messages.success(request, 'Terminology reset to defaults.')
+            return redirect(self.get_success_url())
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form.save(self.get_org())
+        messages.success(self.request, 'Terminology updated.')
         return super().form_valid(form)
 
 

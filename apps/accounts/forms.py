@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import Membership, Organization, Team, UserProfile
+from .terminology import PLURAL_KEYS, TERMS, Terms
 
 
 class OrganizationForm(forms.ModelForm):
@@ -59,6 +60,42 @@ class OrganizationSettingsForm(forms.ModelForm):
         if color == self.BOOTSTRAP_PRIMARY:
             return ''
         return color
+
+
+class TerminologyForm(forms.Form):
+    """A singular and a plural field per term, pre-filled with the effective words."""
+
+    def __init__(self, *args, terms=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.terms = terms or Terms()
+        for key, singular, plural, _ in TERMS:
+            self.fields[key] = self._word_field(singular, self.terms.get(key))
+            self.fields[PLURAL_KEYS[key]] = self._word_field(plural, self.terms.get(key, plural=True))
+
+    @staticmethod
+    def _word_field(default, current):
+        return forms.CharField(
+            required=False, max_length=50, label=default, initial=current,
+            widget=forms.TextInput(attrs={
+                'class': 'form-control form-control-sm', 'placeholder': default,
+            }),
+        )
+
+    def rows(self):
+        for key, singular, plural, description in TERMS:
+            yield {
+                'key': key,
+                'singular': singular,
+                'plural': plural,
+                'description': description,
+                'singular_field': self[key],
+                'plural_field': self[PLURAL_KEYS[key]],
+            }
+
+    def save(self, org):
+        org.terminology = Terms(self.cleaned_data).overrides()
+        org.save(update_fields=['terminology', 'updated_at'])
+        return org
 
 
 class TeamForm(forms.ModelForm):

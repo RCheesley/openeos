@@ -61,6 +61,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.accounts.context_processors.active_context',
                 'apps.accounts.context_processors.branding',
+                'apps.accounts.context_processors.terminology',
             ],
         },
     },
