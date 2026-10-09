@@ -3,7 +3,6 @@ from django.views.generic import (
     TemplateView, CreateView, UpdateView, ListView, DetailView, FormView, View,
 )
 from django.db import models
-from django.http import Http404
 from django.shortcuts import redirect, get_object_or_404, render
 from django.db.models import Prefetch, Q
 from django.utils.crypto import get_random_string
@@ -143,10 +142,11 @@ class OrgSwitchView(LoginRequiredMixin, View):
     """POST-only: make one of the user's organisations the active one."""
 
     def post(self, request, pk):
+        orgs = get_user_orgs(request.user)
         host_org = getattr(request, 'host_org', None)
-        if host_org is not None and host_org.pk != pk:
-            raise Http404
-        org = get_object_or_404(get_user_orgs(request.user), pk=pk)
+        if host_org is not None:
+            orgs = orgs.filter(pk=host_org.pk)
+        org = get_object_or_404(orgs, pk=pk)
         set_active_org(request, org)
         return redirect('home')
 
