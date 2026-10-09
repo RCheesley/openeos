@@ -106,6 +106,13 @@ class OrganizationDomainMiddlewareTest(TestCase):
         self.assertIsNone(request.host_org)
 
     @override_settings(ALLOWED_HOSTS=HOSTS)
+    def test_health_check_path_never_queries_the_database(self):
+        request = self._request(path='/healthz/')
+        with self.assertNumQueries(0):
+            self.assertEqual(self.middleware(request), 'response')
+        self.assertIsNone(request.host_org)
+
+    @override_settings(ALLOWED_HOSTS=HOSTS)
     def test_non_member_is_denied(self):
         outsider = User.objects.create_user(username='outsider', password='pw')
         with self.assertRaises(PermissionDenied):

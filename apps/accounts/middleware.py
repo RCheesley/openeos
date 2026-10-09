@@ -13,6 +13,10 @@ from .models import Membership, OrganizationDomain
 # reset a password, log out, use the Django admin or answer a health check.
 OPEN_PATH_PREFIXES = ('/accounts/', '/admin/', '/healthz/')
 
+# The health check must not depend on the database, so a database outage is
+# reported by the probe itself instead of failing in this middleware.
+SKIP_PATH_PREFIXES = ('/healthz/',)
+
 
 def request_hostname(request):
     try:
@@ -27,6 +31,10 @@ class OrganizationDomainMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.path.startswith(SKIP_PATH_PREFIXES):
+            request.org_domain = None
+            request.host_org = None
+            return self.get_response(request)
         request.org_domain = self.resolve(request_hostname(request))
         request.host_org = request.org_domain.organization if request.org_domain else None
         if request.host_org is not None and self.is_locked_out(request):
