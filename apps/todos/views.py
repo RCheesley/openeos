@@ -9,6 +9,7 @@ from django.contrib import messages
 from .models import ToDo
 from .forms import ToDoForm
 from apps.accounts.scoping import OrgScopedMixin, get_active_team, get_org_object_or_404
+from apps.accounts.terminology import get_terms
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +106,8 @@ class ToDoCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.team = get_active_team(self.request)
-        messages.success(self.request, f'To-Do "{form.instance.title}" created.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.todo} "{form.instance.title}" created.')
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -129,7 +131,8 @@ class ToDoUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
-        messages.success(self.request, f'To-Do "{form.instance.title}" updated.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.todo} "{form.instance.title}" updated.')
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -148,7 +151,8 @@ class ToDoDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     success_url = reverse_lazy('todos:list')
 
     def form_valid(self, form):
-        messages.success(self.request, f'To-Do "{self.object.title}" deleted.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.todo} "{self.object.title}" deleted.')
         return super().form_valid(form)
 
 
@@ -201,5 +205,6 @@ class ToDoEscalateView(LoginRequiredMixin, View):
         todo.linked_issue = issue
         todo.save(update_fields=['linked_issue', 'updated_at'])
 
-        messages.success(request, f'Issue created from "{todo.title}".')
+        terms = get_terms(request)
+        messages.success(request, f'{terms.issue} created from "{todo.title}".')
         return redirect('issues:detail', pk=issue.pk)

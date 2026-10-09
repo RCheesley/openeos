@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block page_title %}To-Dos{% endblock %}
+{% block page_title %}{{ terms.todos }}{% endblock %}
 
 {% block content %}
 {# ── Header ── #}
 <div class="row mb-3 align-items-center">
     <div class="col">
         <h1 class="h3 mb-0">
-            <i class="bi bi-check2-square me-2 text-primary"></i>To-Dos
+            <i class="bi bi-check2-square me-2 text-primary"></i>{{ terms.todos }}
             {% if overdue_count %}
             <span class="badge bg-danger ms-2" title="{{ overdue_count }} overdue">{{ overdue_count }}</span>
             {% endif %}
@@ -14,7 +14,7 @@
     </div>
     <div class="col-auto">
         <a href="{% url 'todos:create' %}" class="btn btn-dark">
-            <i class="bi bi-plus-lg me-1"></i>New To-Do
+            <i class="bi bi-plus-lg me-1"></i>New {{ terms.todo }}
         </a>
     </div>
 </div>
@@ -24,13 +24,13 @@
     <li class="nav-item">
         <a class="nav-link {% if view_filter != 'team' %}active{% endif %}"
            href="?view=mine{% if status_filter %}&status={{ status_filter }}{% endif %}">
-            <i class="bi bi-person me-1"></i>My To-Dos
+            <i class="bi bi-person me-1"></i>My {{ terms.todos }}
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link {% if view_filter == 'team' %}active{% endif %}"
            href="?view=team{% if status_filter %}&status={{ status_filter }}{% endif %}">
-            <i class="bi bi-people me-1"></i>Team To-Dos
+            <i class="bi bi-people me-1"></i>Team {{ terms.todos }}
         </a>
     </li>
 </ul>
@@ -157,7 +157,7 @@
                             <form method="post" action="{% url 'todos:escalate' todo.pk %}">
                                 {% csrf_token %}
                                 <button type="submit" class="dropdown-item text-danger">
-                                    <i class="bi bi-arrow-up-circle me-2"></i>Escalate to Issue
+                                    <i class="bi bi-arrow-up-circle me-2"></i>Escalate to {{ terms.issue }}
                                 </button>
                             </form>
                         </li>
@@ -184,16 +184,16 @@
 <div class="text-center py-5 text-muted">
     <i class="bi bi-check2-square display-3 d-block mb-3 text-primary opacity-25"></i>
     {% if status_filter == 'complete' %}
-    <h4>No completed To-Dos</h4>
-    <p>Completed To-Dos will appear here.</p>
+    <h4>No completed {{ terms.todos }}</h4>
+    <p>Completed {{ terms.todos }} will appear here.</p>
     {% elif status_filter == 'overdue' %}
-    <h4>No overdue To-Dos</h4>
+    <h4>No overdue {{ terms.todos }}</h4>
     <p class="text-success"><i class="bi bi-check-circle me-1"></i>All caught up!</p>
     {% else %}
-    <h4>No open To-Dos</h4>
-    <p class="mb-4">To-Dos are weekly action items. Create one to get started.</p>
+    <h4>No open {{ terms.todos }}</h4>
+    <p class="mb-4">{{ terms.todos }} are weekly action items. Create one to get started.</p>
     <a href="{% url 'todos:create' %}" class="btn btn-dark">
-        <i class="bi bi-plus-lg me-1"></i>Create first To-Do
+        <i class="bi bi-plus-lg me-1"></i>Create first {{ terms.todo }}
     </a>
     {% endif %}
 </div>
