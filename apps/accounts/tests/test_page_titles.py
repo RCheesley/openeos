@@ -50,7 +50,7 @@ class BrandedPageTitleTest(TestCase):
             ('/todos/', 'To-Dos — Mercury Consortium'),
             ('/scorecards/', 'Scorecards — Mercury Consortium'),
             ('/meetings/', 'Level 10 Meetings — Mercury Consortium'),
-            ('/vto/', 'VTO — Mercury Org — Mercury Consortium'),
+            ('/vto/', 'VTO — Mercury Consortium'),
         ]:
             with self.subTest(path=path):
                 resp = self.client.get(path, HTTP_HOST=MERCURY)
