@@ -1,12 +1,17 @@
+import mimetypes
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import (
     TemplateView, CreateView, UpdateView, ListView, DetailView, FormView, View,
 )
 from django.db import connection, models
 from django.db.utils import OperationalError
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, get_object_or_404, render
 from django.db.models import Prefetch, Q
+from django.utils.cache import patch_cache_control
 from django.utils.crypto import get_random_string
 from django.utils.decorators import method_decorator
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -315,6 +320,45 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, 'Profile updated.')
         return super().form_valid(form)
+
+
+class MediaAvatarView(LoginRequiredMixin, View):
+    """Serve an avatar only to its owner, a superuser, or members of a shared organisation.
+
+    Avatars are personal data, so they must not be fetched by anyone who guesses
+    the URL. Unknown files and files the requester may not see both give 404, so
+    the response never confirms that a particular avatar exists.
+    """
+
+    def get(self, request, name):
+        avatar_root = Path(settings.MEDIA_ROOT, 'avatars').resolve()
+        path = avatar_root.joinpath(name).resolve()
+        if avatar_root not in path.parents:
+            raise Http404
+        profile = (
+            UserProfile.objects.select_related('user')
+            .filter(avatar=f'avatars/{name}')
+            .first()
+        )
+        if profile is None or not self.can_view(request.user, profile.user):
+            raise Http404
+        if not path.is_file():
+            raise Http404
+
+        content_type = mimetypes.guess_type(name)[0] or 'application/octet-stream'
+        if settings.MEDIA_ACCEL_REDIRECT:
+            response = HttpResponse(content_type=content_type)
+            response['X-Accel-Redirect'] = f'/_protected_media/avatars/{name}'
+        else:
+            response = FileResponse(open(path, 'rb'), content_type=content_type)
+        patch_cache_control(response, private=True)
+        return response
+
+    @staticmethod
+    def can_view(viewer, owner):
+        if viewer == owner or viewer.is_superuser:
+            return True
+        return get_user_orgs(viewer).filter(memberships__user=owner).exists()
 
 
 # ---------------------------------------------------------------------------
