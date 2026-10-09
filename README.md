@@ -49,6 +49,13 @@ One deployment can host several organisations, each with its own teams, Rocks, I
 - Members of more than one organisation see an **organisation switcher** in the navbar above the team switcher. Everything on screen, including lists, search and links by id, is scoped to the active organisation, so switch first if a link to another organisation returns "not found".
 - Memberships can also be managed under **Memberships** in the Django admin.
 
+To onboard an organisation from a script or a deploy hook, use the `create_organization` management command. It creates the organisation, its domain, an admin user with an admin membership and a first team (default `Leadership`) in one step, and is safe to re-run: existing records are reused and only the options you pass are updated. Leave `--admin-password` out and a random password is generated and printed once (a password on the command line is visible in process listings). `--display-name`, `--primary-color`, `--team` and `--slug` are optional.
+
+```bash
+python manage.py create_organization --name "Acme Ltd" --domain acme.example.com \
+  --admin-username acme-admin --admin-email admin@acme.example.com
+```
+
 ### Organisation domains
 
 An organisation can own one or more hostnames (for example `acme.example.com`), set under **Organization domains** in the Django admin or inline on the organisation itself. A request on one of those hostnames is pinned to that organisation: the switcher collapses to it, the session choice is ignored, and `/org/setup/` redirects home. A logged-in user who is not a member of that organisation gets a 403 page with a log-out button (superusers are exempt, as are `/accounts/`, `/admin/` and `/healthz/`). Mark one hostname as primary and emails for that organisation will link to it instead of `SITE_URL`. Every hostname must also appear in `ALLOWED_HOSTS`; a leading-dot entry such as `.example.com` covers all of its subdomains. Hosts with no domain record keep the session-based switcher.
