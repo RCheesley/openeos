@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # EOS modules — uncommented as each phase is built
     'apps.accounts',
+    'apps.audit',
     'apps.rocks',
     'apps.issues',
     'apps.todos',

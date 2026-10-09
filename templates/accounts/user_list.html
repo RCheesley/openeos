@@ -8,6 +8,9 @@
         <p class="text-muted mt-1 mb-0">Everyone in {{ org.name }}</p>
     </div>
     <div class="col-auto">
+        <a href="{% url 'audit:event_list' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-journal-text me-1"></i> Audit log
+        </a>
         <a href="{% url 'accounts:user_invite' %}" class="btn btn-dark">
             <i class="bi bi-person-plus me-1"></i> Invite user
         </a>
