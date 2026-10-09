@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block page_title %}{{ action }} Rock{% endblock %}
+{% block page_title %}{{ action }} {{ terms.rock }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -10,7 +10,7 @@
                 <i class="bi bi-arrow-left"></i>
             </a>
             <h1 class="h3 mb-0">
-                <i class="bi bi-gem me-2 text-success"></i>{{ action }} Rock
+                <i class="bi bi-gem me-2 text-success"></i>{{ action }} {{ terms.rock }}
             </h1>
         </div>
 
@@ -146,18 +146,18 @@
                     {# Parent rock (optional) #}
                     {% if form.parent_rock.field.queryset.exists %}
                     <div class="mb-3">
-                        <label for="{{ form.parent_rock.id_for_label }}" class="form-label fw-semibold">Parent Rock</label>
+                        <label for="{{ form.parent_rock.id_for_label }}" class="form-label fw-semibold">Parent {{ terms.rock }}</label>
                         <select name="{{ form.parent_rock.html_name }}"
                                 id="{{ form.parent_rock.id_for_label }}"
                                 class="form-select {% if form.parent_rock.errors %}is-invalid{% endif %}">
-                            <option value="">— None (top-level Rock) —</option>
+                            <option value="">— None (top-level {{ terms.rock }}) —</option>
                             {% for val, label in form.parent_rock.field.choices %}
                             {% if val %}
                             <option value="{{ val }}" {% if form.parent_rock.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
                             {% endif %}
                             {% endfor %}
                         </select>
-                        <div class="form-text">Optional — link this to a higher-level Rock.</div>
+                        <div class="form-text">Optional — link this to a higher-level {{ terms.rock }}.</div>
                         {% for error in form.parent_rock.errors %}
                         <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
@@ -168,7 +168,7 @@
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-dark">
-                            <i class="bi bi-check-lg me-1"></i>{{ action }} Rock
+                            <i class="bi bi-check-lg me-1"></i>{{ action }} {{ terms.rock }}
                         </button>
                         <a href="{% url 'rocks:list' %}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
