@@ -145,6 +145,10 @@ development.
 
 ---
 
+### 6. Running as a non-root user
+
+The production image (the `production` stage of the `Dockerfile`, which `docker-compose.prod.yml` builds) runs as an unprivileged user, uid 1000 (`app`), rather than root. The named `static_volume` and `media_volume` volumes pick up the right ownership automatically; if you swap them for bind-mounted host directories, those directories must be writable by uid 1000. The development stack in `docker-compose.yml` builds the `development` stage, which stays root because it bind-mounts your checkout over `/app` and has to write `staticfiles/` there whoever owns the clone.
+
 ## Running Tests
 
 ```bash
