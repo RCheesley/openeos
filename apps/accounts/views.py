@@ -132,6 +132,14 @@ class OrgSetupView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('home')
 
     def dispatch(self, request, *args, **kwargs):
+        host_org = getattr(request, 'host_org', None)
+        if host_org is not None:
+            messages.info(
+                request,
+                f'This address belongs to {host_org.name}. '
+                f'To create another organisation, use the main site address.',
+            )
+            return redirect('home')
         if request.user.is_authenticated and not self._may_create(request.user):
             return redirect('home')
         return super().dispatch(request, *args, **kwargs)
@@ -159,6 +167,9 @@ class OrgSwitchView(LoginRequiredMixin, View):
     """POST-only: make one of the user's organisations the active one."""
 
     def post(self, request, pk):
+        host_org = getattr(request, 'host_org', None)
+        if host_org is not None and host_org.pk != pk:
+            raise Http404
         org = get_object_or_404(get_user_orgs(request.user), pk=pk)
         set_active_org(request, org)
         return redirect('home')
