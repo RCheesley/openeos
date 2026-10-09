@@ -1,4 +1,5 @@
-from .scoping import get_active_org, get_active_team, get_user_orgs
+from .branding import brand_for
+from .scoping import get_active_org, get_active_team, get_user_orgs, is_org_admin
 
 
 def active_context(request):
@@ -20,4 +21,17 @@ def active_context(request):
         'user_orgs': user_orgs,
         'active_team': team,
         'user_teams': user_teams,
+        'is_active_org_admin': is_org_admin(request.user, org),
     }
+
+
+def branding(request):
+    """Brand for the host's organisation, else the user's active one, else the default.
+
+    Unlike ``active_context`` this also applies to anonymous requests, so the
+    login page on an organisation's own domain carries its branding.
+    """
+    org = getattr(request, 'host_org', None)
+    if org is None and request.user.is_authenticated:
+        org = get_active_org(request)
+    return {'brand': brand_for(org)}
