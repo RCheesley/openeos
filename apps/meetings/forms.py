@@ -49,6 +49,13 @@ class HeadlineForm(forms.ModelForm):
             }),
         }
 
+    def __init__(self, *args, terms=None, **kwargs):
+        """``terms`` (the organisation's vocabulary) names the headline in the placeholder."""
+        super().__init__(*args, **kwargs)
+        if terms is not None:
+            word = terms.get('headline', lower=True)
+            self.fields['text'].widget.attrs['placeholder'] = f'Short {word} — good news or concern'
+
 
 class MeetingRatingForm(forms.ModelForm):
     class Meta:
