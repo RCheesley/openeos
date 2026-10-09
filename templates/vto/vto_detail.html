@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block page_title %}VTO{% endblock %}
+{% block page_title %}{{ terms.vto }}{% endblock %}
 
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
-        <h1 class="h3 mb-0"><i class="bi bi-map me-2 text-success"></i>Vision / Traction Organizer</h1>
+        <h1 class="h3 mb-0"><i class="bi bi-map me-2 text-success"></i>{{ terms.vto }}</h1>
         <div class="text-muted small">{{ vto.organization.name }}</div>
     </div>
     <a href="{% url 'vto:print' %}" class="btn btn-outline-secondary" target="_blank">
@@ -24,7 +24,7 @@
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
             <div>
-                <span class="fw-semibold small">Core Values</span>
+                <span class="fw-semibold small">{{ terms.core_values }}</span>
                 <div class="text-muted" style="font-size:.7rem">3–7 timeless guiding principles</div>
             </div>
             <a href="{% url 'vto:cv_add' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
@@ -48,7 +48,7 @@
                 {% endfor %}
             </div>
             {% else %}
-            <p class="text-muted small fst-italic mb-0">No core values yet. <a href="{% url 'vto:cv_add' %}">Add the first one.</a></p>
+            <p class="text-muted small fst-italic mb-0">No {{ terms.core_values|lower }} yet. <a href="{% url 'vto:cv_add' %}">Add the first one.</a></p>
             {% endif %}
         </div>
     </div>
@@ -251,8 +251,8 @@
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
             <div>
-                <span class="fw-semibold small"><i class="bi bi-gem me-1 text-success"></i>Company Rocks</span>
-                <div class="text-muted" style="font-size:.7rem">{{ rock_quarter }} · live from Rocks module</div>
+                <span class="fw-semibold small"><i class="bi bi-gem me-1 text-success"></i>Company {{ terms.rocks }}</span>
+                <div class="text-muted" style="font-size:.7rem">{{ rock_quarter }} · live from {{ terms.rocks }} module</div>
             </div>
             <a href="{% url 'rocks:list' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
                 <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
@@ -270,7 +270,7 @@
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="text-muted small fst-italic mb-0">No company-wide Rocks for {{ rock_quarter }}. <a href="{% url 'rocks:list' %}">Mark one as company-wide</a> from its edit screen.</p>
+            <p class="text-muted small fst-italic mb-0">No company-wide {{ terms.rocks }} for {{ rock_quarter }}. <a href="{% url 'rocks:list' %}">Mark one as company-wide</a> from its edit screen.</p>
             {% endif %}
         </div>
     </div>
@@ -279,8 +279,8 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
             <div>
-                <span class="fw-semibold small"><i class="bi bi-exclamation-triangle me-1 text-warning"></i>Company Issues List</span>
-                <div class="text-muted" style="font-size:.7rem">Long-term strategic issues · live from Issues module</div>
+                <span class="fw-semibold small"><i class="bi bi-exclamation-triangle me-1 text-warning"></i>Company {{ terms.issues }} List</span>
+                <div class="text-muted" style="font-size:.7rem">Long-term strategic {{ terms.issues|lower }} · live from {{ terms.issues }} module</div>
             </div>
             <a href="{% url 'issues:create' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
                 <i class="bi bi-plus" style="font-size:.8rem"></i>

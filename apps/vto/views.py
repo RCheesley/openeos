@@ -7,6 +7,7 @@ from django.contrib import messages
 from .models import VTO, VTOCoreValue, VTOSection, VTOSectionHistory, SectionKey
 from .forms import VTOSectionForm, VTOCoreValueForm
 from apps.accounts.scoping import OrgScopedMixin, get_active_org
+from apps.accounts.terminology import get_terms
 from apps.rocks.models import Rock
 
 
@@ -153,7 +154,8 @@ class CoreValueCreateView(LoginRequiredMixin, View):
             cv = form.save(commit=False)
             cv.vto = vto
             cv.save()
-            messages.success(request, f'Core Value "{cv.name}" added.')
+            terms = get_terms(request)
+            messages.success(request, f'{terms.core_value} "{cv.name}" added.')
             return redirect('vto:detail')
         return render(request, self.template_name, {'form': form, 'action': 'Add'})
 
@@ -166,7 +168,8 @@ class CoreValueUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
     success_url = reverse_lazy('vto:detail')
 
     def form_valid(self, form):
-        messages.success(self.request, f'Core Value "{form.instance.name}" updated.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.core_value} "{form.instance.name}" updated.')
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -182,5 +185,6 @@ class CoreValueDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
     success_url = reverse_lazy('vto:detail')
 
     def form_valid(self, form):
-        messages.success(self.request, f'Core Value "{self.object.name}" removed.')
+        terms = get_terms(self.request)
+        messages.success(self.request, f'{terms.core_value} "{self.object.name}" removed.')
         return super().form_valid(form)

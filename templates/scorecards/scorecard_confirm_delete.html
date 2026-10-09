@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block page_title %}Delete Scorecard{% endblock %}
+{% block page_title %}Delete {{ terms.scorecard }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -7,14 +7,14 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4 text-center">
                 <i class="bi bi-trash display-4 text-danger mb-3 d-block"></i>
-                <h4 class="mb-2">Delete Scorecard?</h4>
+                <h4 class="mb-2">Delete {{ terms.scorecard }}?</h4>
                 <p class="text-muted mb-1">You're about to permanently delete:</p>
                 <p class="fw-semibold mb-3">{{ object.name }}</p>
 
                 {% if object.metric_count %}
                 <div class="alert alert-warning text-start small">
                     <i class="bi bi-exclamation-triangle me-1"></i>
-                    This scorecard has <strong>{{ object.metric_count }} metric{{ object.metric_count|pluralize }}</strong>
+                    This {{ terms.scorecard|lower }} has <strong>{{ object.metric_count }} metric{{ object.metric_count|pluralize }}</strong>
                     and all historical entries will be deleted.
                 </div>
                 {% endif %}
