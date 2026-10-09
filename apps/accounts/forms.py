@@ -17,6 +17,50 @@ class OrganizationForm(forms.ModelForm):
         }
 
 
+class OrganizationSettingsForm(forms.ModelForm):
+    # The browser's colour input has no empty state and reports Bootstrap's
+    # blue when untouched, so that value means "no custom colour".
+    BOOTSTRAP_PRIMARY = '#0d6efd'
+
+    class Meta:
+        model = Organization
+        fields = [
+            'name', 'display_name', 'tagline', 'logo', 'favicon', 'primary_color',
+            'navbar_style', 'support_email', 'email_from_name',
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'display_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'tagline': forms.TextInput(attrs={'class': 'form-control'}),
+            'logo': forms.FileInput(attrs={'class': 'form-control'}),
+            'favicon': forms.FileInput(attrs={'class': 'form-control'}),
+            'primary_color': forms.TextInput(attrs={
+                'type': 'color', 'class': 'form-control form-control-color',
+            }),
+            'navbar_style': forms.Select(attrs={'class': 'form-select'}),
+            'support_email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'email_from_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        help_texts = {
+            'tagline': 'Shown under the name on the sign-in page and in the footer.',
+            'favicon': 'An .ico, .png or .svg file.',
+            'primary_color': 'Used for buttons, links and the "Primary colour" navbar style.',
+            'support_email': 'Linked from the footer when set.',
+            'email_from_name': 'Sender name on emails. Defaults to the display name.',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.initial.get('primary_color'):
+            self.initial['primary_color'] = self.BOOTSTRAP_PRIMARY
+
+    def clean_primary_color(self):
+        color = (self.cleaned_data.get('primary_color') or '').lower()
+        if color == self.BOOTSTRAP_PRIMARY:
+            return ''
+        return color
+
+
 class TeamForm(forms.ModelForm):
     class Meta:
         model = Team

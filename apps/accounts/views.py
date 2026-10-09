@@ -12,7 +12,10 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 
 from .models import Membership, Organization, Team, UserProfile
-from .forms import OrganizationForm, TeamForm, UserProfileForm, InviteUserForm, TeamMemberForm
+from .forms import (
+    InviteUserForm, OrganizationForm, OrganizationSettingsForm, TeamForm, TeamMemberForm,
+    UserProfileForm,
+)
 from .scoping import (
     SESSION_TEAM_KEY, OrgScopedMixin, get_active_org, get_active_team, get_org_object_or_404,
     get_user_orgs, is_org_admin, set_active_org,
@@ -167,6 +170,38 @@ class OrgDetailView(LoginRequiredMixin, TemplateView):
                 .order_by('user__first_name', 'user__username')
             )
         return ctx
+
+
+class OrgSettingsView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
+    """Edit the active organisation's name and branding."""
+
+    model = Organization
+    form_class = OrganizationSettingsForm
+    template_name = 'accounts/org_settings.html'
+    success_url = reverse_lazy('accounts:org_detail')
+
+    def get_object(self, queryset=None):
+        org = get_active_org(self.request)
+        if org is None:
+            raise Http404
+        # A separate instance, so a rejected submission does not leak its
+        # values into the brand the navbar and <head> are rendered from.
+        return Organization.objects.get(pk=org.pk)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        form = ctx['form']
+        ctx['org'] = self.object
+        ctx['field_groups'] = [
+            ('Identity', 'bi-building', [form[f] for f in ('name', 'display_name', 'tagline', 'logo', 'favicon')]),
+            ('Appearance', 'bi-palette', [form['primary_color'], form['navbar_style']]),
+            ('Email', 'bi-envelope', [form['support_email'], form['email_from_name']]),
+        ]
+        return ctx
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Branding updated.')
+        return super().form_valid(form)
 
 
 # ---------------------------------------------------------------------------

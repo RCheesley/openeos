@@ -2,6 +2,7 @@ from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import User
@@ -12,9 +13,34 @@ from django.dispatch import receiver
 
 
 class Organization(models.Model):
+    NAVBAR_DARK = 'dark'
+    NAVBAR_LIGHT = 'light'
+    NAVBAR_PRIMARY = 'primary'
+    NAVBAR_CHOICES = [
+        (NAVBAR_DARK, 'Dark'),
+        (NAVBAR_LIGHT, 'Light'),
+        (NAVBAR_PRIMARY, 'Primary colour'),
+    ]
+
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, blank=True)
     logo = models.ImageField(upload_to='org_logos/', blank=True, null=True)
+    display_name = models.CharField(
+        max_length=100, blank=True,
+        help_text='Shown in the navbar, page titles and emails. Defaults to the organisation name.',
+    )
+    tagline = models.CharField(max_length=200, blank=True)
+    favicon = models.FileField(
+        upload_to='org_favicons/', blank=True, null=True,
+        validators=[FileExtensionValidator(['ico', 'png', 'svg'])],
+    )
+    primary_color = models.CharField(
+        max_length=7, blank=True,
+        validators=[RegexValidator(r'^#[0-9A-Fa-f]{6}$', 'Use a hex colour like #0d6efd.')],
+    )
+    navbar_style = models.CharField(max_length=10, choices=NAVBAR_CHOICES, default=NAVBAR_DARK)
+    email_from_name = models.CharField(max_length=100, blank=True)
+    support_email = models.EmailField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -30,6 +56,9 @@ class Organization(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+    def get_display_name(self):
+        return self.display_name or self.name
 
     def get_absolute_url(self):
         return reverse('accounts:org_detail')

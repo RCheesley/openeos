@@ -1,0 +1,12 @@
+{# Pass brand_heading / brand_subheading to replace the name and tagline. #}
+<div class="text-center mb-4">
+    {% if brand.logo_url %}
+    <img src="{{ brand.logo_url }}" alt="" height="64" class="mb-2">
+    {% else %}
+    <i class="bi bi-diagram-3-fill display-4 text-dark"></i>
+    {% endif %}
+    <h1 class="h3 mt-2 fw-bold">{{ brand_heading|default:brand.name }}</h1>
+    {% if brand_subheading or brand.tagline %}
+    <p class="text-muted">{{ brand_subheading|default:brand.tagline }}</p>
+    {% endif %}
+</div>

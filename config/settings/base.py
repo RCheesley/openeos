@@ -60,6 +60,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.accounts.context_processors.active_context',
+                'apps.accounts.context_processors.branding',
             ],
         },
     },
@@ -119,3 +120,7 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='EOS App <noreply@exam
 
 # Base URL used to build absolute links in emails (no trailing slash).
 SITE_URL = config('SITE_URL', default='http://localhost:8000')
+
+# Name shown in the navbar, page titles and emails when no organisation
+# branding applies (the main host's login page, for instance).
+DEFAULT_BRAND_NAME = config('BRAND_NAME', default='EOS App')

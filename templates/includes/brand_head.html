@@ -1,0 +1,59 @@
+{% if brand.favicon_url %}
+    <link rel="icon" href="{{ brand.favicon_url }}">
+{% endif %}
+{% if brand.primary_color %}
+    {# Bootstrap bakes the primary colour into each component's own variables, so root overrides alone do not reach buttons and form controls. #}
+    <style>
+        :root {
+            --bs-primary: {{ brand.primary_color }};
+            --bs-primary-rgb: {{ brand.primary_rgb }};
+            --bs-link-color: {{ brand.primary_color }};
+            --bs-link-color-rgb: {{ brand.primary_rgb }};
+            --bs-link-hover-color: {{ brand.primary_hover }};
+            --bs-link-hover-color-rgb: {{ brand.primary_rgb }};
+        }
+        .btn-primary {
+            --bs-btn-bg: {{ brand.primary_color }};
+            --bs-btn-border-color: {{ brand.primary_color }};
+            --bs-btn-hover-bg: {{ brand.primary_hover }};
+            --bs-btn-hover-border-color: {{ brand.primary_hover }};
+            --bs-btn-active-bg: {{ brand.primary_active }};
+            --bs-btn-active-border-color: {{ brand.primary_active }};
+            --bs-btn-disabled-bg: {{ brand.primary_color }};
+            --bs-btn-disabled-border-color: {{ brand.primary_color }};
+            --bs-btn-focus-shadow-rgb: {{ brand.primary_rgb }};
+        }
+        .btn-outline-primary {
+            --bs-btn-color: {{ brand.primary_color }};
+            --bs-btn-border-color: {{ brand.primary_color }};
+            --bs-btn-hover-bg: {{ brand.primary_color }};
+            --bs-btn-hover-border-color: {{ brand.primary_color }};
+            --bs-btn-active-bg: {{ brand.primary_active }};
+            --bs-btn-active-border-color: {{ brand.primary_active }};
+            --bs-btn-disabled-color: {{ brand.primary_color }};
+            --bs-btn-disabled-border-color: {{ brand.primary_color }};
+            --bs-btn-focus-shadow-rgb: {{ brand.primary_rgb }};
+        }
+        .form-control:focus,
+        .form-select:focus {
+            border-color: rgba({{ brand.primary_rgb }}, 0.5);
+            box-shadow: 0 0 0 0.25rem rgba({{ brand.primary_rgb }}, 0.25);
+        }
+        .form-check-input:checked {
+            background-color: {{ brand.primary_color }};
+            border-color: {{ brand.primary_color }};
+        }
+        .form-check-input:focus {
+            border-color: rgba({{ brand.primary_rgb }}, 0.5);
+            box-shadow: 0 0 0 0.25rem rgba({{ brand.primary_rgb }}, 0.25);
+        }
+        .bg-primary {
+            --bs-bg-opacity: 1;
+            background-color: rgba({{ brand.primary_rgb }}, var(--bs-bg-opacity)) !important;
+        }
+        .text-primary {
+            --bs-text-opacity: 1;
+            color: rgba({{ brand.primary_rgb }}, var(--bs-text-opacity)) !important;
+        }
+    </style>
+{% endif %}
