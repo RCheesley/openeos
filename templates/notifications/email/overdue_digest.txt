@@ -6,4 +6,4 @@ You have {{ todos|length }} overdue To-Do{{ todos|length|pluralize }}:
 {% endfor %}
 View your To-Dos: {{ site_url }}{% url 'todos:list' %}
 
-— EOS App
+— {{ brand.name }}
