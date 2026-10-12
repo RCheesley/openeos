@@ -34,6 +34,10 @@ INSTALLED_APPS = [
     # 'apps.meetings',
 ]
 
+# Deployments can enable third-party or private apps without forking, e.g.
+# EXTRA_INSTALLED_APPS=django.contrib.sites,my_company.sso
+INSTALLED_APPS += config('EXTRA_INSTALLED_APPS', default='', cast=Csv())
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -92,7 +96,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'mediafiles'
