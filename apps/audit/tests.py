@@ -133,7 +133,7 @@ class AuthSignalTest(TestCase):
         self.assertEqual(event.actor, self.mine['admin'])
         self.assertEqual(event.actor_label, 'mineadmin')
         self.assertEqual(event.ip_address, '192.0.2.10')
-        self.assertIsNone(event.organization)
+        self.assertEqual(event.organization, self.mine['org'])
 
     def test_failed_login_is_recorded_without_actor(self):
         resp = self.client.post(
@@ -144,7 +144,14 @@ class AuthSignalTest(TestCase):
         self.assertIsNone(event.actor)
         self.assertEqual(event.actor_label, '')
         self.assertEqual(event.details, {'username': 'mineadmin'})
+        self.assertEqual(event.organization, self.mine['org'])
         self.assertFalse(AuditEvent.objects.filter(action='user.login').exists())
+
+    def test_failed_login_for_unknown_username_has_no_organisation(self):
+        self.client.post('/accounts/login/', {'username': 'nobody', 'password': 'wrong'})
+        event = AuditEvent.objects.get(action='user.login_failed')
+        self.assertIsNone(event.organization)
+        self.assertEqual(event.details, {'username': 'nobody'})
 
     def test_logout_is_recorded(self):
         self.client.force_login(self.mine['admin'])
@@ -153,6 +160,30 @@ class AuthSignalTest(TestCase):
         event = AuditEvent.objects.get(action='user.logout')
         self.assertEqual(event.actor, self.mine['admin'])
         self.assertEqual(event.actor_label, 'mineadmin')
+        self.assertEqual(event.organization, self.mine['org'])
+
+    def test_member_of_several_organisations_is_attributed_to_the_active_one(self):
+        theirs = build_org('Theirs')
+        Membership.objects.create(
+            user=self.mine['admin'], organization=theirs['org'], role=Membership.ROLE_MEMBER
+        )
+        # No session yet: the login cannot be pinned to either organisation.
+        self.client.post('/accounts/login/', {'username': 'mineadmin', 'password': 'pw'})
+        login = AuditEvent.objects.get(action='user.login')
+        self.assertIsNone(login.organization)
+        # Switching organisation pins the session, so the logout is attributed.
+        self.client.post(f"/org/{theirs['org'].pk}/switch/")
+        self.client.post('/accounts/logout/')
+        logout = AuditEvent.objects.get(action='user.logout')
+        self.assertEqual(logout.organization, theirs['org'])
+
+    def test_login_events_show_on_the_organisations_audit_page(self):
+        self.client.post('/accounts/login/', {'username': 'mineadmin', 'password': 'wrong'})
+        self.client.post('/accounts/login/', {'username': 'mineadmin', 'password': 'pw'})
+        resp = self.client.get('/org/audit/')
+        self.assertEqual(resp.status_code, 200)
+        actions = [e.action for e in resp.context['events']]
+        self.assertEqual(sorted(actions), ['user.login', 'user.login_failed'])
 
     def test_logout_of_anonymous_session_is_not_recorded(self):
         resp = self.client.post('/accounts/logout/')
@@ -187,7 +218,8 @@ class AuditEventListViewTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertTemplateUsed(resp, 'audit/event_list.html')
         events = list(resp.context['events'])
-        self.assertEqual(len(events), 2)
+        # The two seeded events plus the admin's own login, which force_login records.
+        self.assertEqual(len(events), 3)
         self.assertTrue(all(e.organization == self.mine['org'] for e in events))
         self.assertContains(resp, 'Mine Org')
         self.assertNotContains(resp, 'theirsadmin')
@@ -201,8 +233,9 @@ class AuditEventListViewTest(TestCase):
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 200)
         events = list(resp.context['events'])
-        self.assertEqual(len(events), 1)
-        self.assertEqual(events[0].organization, self.theirs['org'])
+        # Their seeded export plus the superuser's own login (root is a member of Theirs only).
+        self.assertEqual(len(events), 2)
+        self.assertTrue(all(e.organization == self.theirs['org'] for e in events))
 
     def test_user_without_organisation_is_sent_to_org_setup(self):
         orphan = User.objects.create_user(username='orphan', password='pw')
@@ -218,7 +251,7 @@ class AuditEventListViewTest(TestCase):
         self.assertEqual([e.action for e in events], ['user.invited'])
         self.assertEqual(resp.context['selected_action'], 'user.invited')
         self.assertEqual(
-            list(resp.context['actions']), ['organization.exported', 'user.invited']
+            list(resp.context['actions']), ['organization.exported', 'user.invited', 'user.login']
         )
 
     def test_action_filter_with_no_matches_shows_empty_state(self):
