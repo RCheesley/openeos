@@ -18,6 +18,7 @@ Built with Django, Bootstrap 5, PostgreSQL, and Docker. No JavaScript frameworks
 | **To-Dos** | Weekly action items with escalation levels, due dates, and Rock/Issue linking |
 | **Audit log** | Logins, logouts, failed logins and administrative actions recorded per organisation; admins see their organisation's log, superusers see everything in the Django admin |
 | **Level 10 Meeting®** | Guided 90-minute meeting runner with timed segments, segue entries, headlines, IDS® integration, ratings, and cascading messages |
+| **Two-factor authentication** | Optional per user: an authenticator app (TOTP) plus ten single-use backup codes, set up from **My Profile**. Set `OTP_TOTP_ISSUER` to change the name shown in authenticator apps; a later change lets an organisation require it for its members |
 
 ---
 
