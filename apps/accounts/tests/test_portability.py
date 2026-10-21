@@ -599,3 +599,48 @@ class ExportOrganizationCommandTest(MediaRootMixin, TestCase):
             call_command('export_organization', 'alpha-org', '--all', '--out', self.out)
         self.assertEqual(list(Path(self.out).iterdir()), [])
         self.assertFalse(AuditEvent.objects.filter(action='organization.exported').exists())
+
+
+class CrossOrganisationLinkTest(MediaRootMixin, TestCase):
+    """A link that points outside the archive must not leak the other record's name.
+
+    The admin's raw-id fields allow a Rock dependency or an Issue delegation to cross
+    organisations; the JSON keeps only the pk, and the CSV must do the same.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.a = populate_org('Alpha')
+        self.b = populate_org('Beta')
+        RockDependency.objects.create(
+            rock=self.a['rock'], depends_on_rock=self.b['rock'], description='crosses orgs',
+        )
+        self.a['issue'].delegated_to_team = self.b['team2']
+        self.a['issue'].save()
+        blob, _ = export_to_bytes(self.a['org'])
+        self.archive = zipfile.ZipFile(io.BytesIO(blob))
+
+    def rows(self, name):
+        text = self.archive.read(f'csv/{name}.csv').decode()
+        reader = csv.DictReader(io.StringIO(text))
+        return list(reader)
+
+    def test_rock_dependency_csv_keeps_the_id_but_not_the_other_rock_title(self):
+        row = next(r for r in self.rows('rockdependency') if r['description'] == 'crosses orgs')
+        self.assertEqual(row['depends_on_rock_id'], str(self.b['rock'].pk))
+        self.assertEqual(row['depends_on_rock'], '')
+        self.assertEqual(row['rock'], str(self.a['rock']))
+        self.assertNotIn(self.b['rock'].title, self.archive.read('csv/rockdependency.csv').decode())
+
+    def test_delegated_issue_csv_does_not_name_the_other_organisations_team(self):
+        row = next(r for r in self.rows('issue') if r['id'] == str(self.a['issue'].pk))
+        self.assertEqual(row['delegated_to_team_id'], str(self.b['team2'].pk))
+        self.assertEqual(row['delegated_to_team'], '')
+        self.assertNotIn(self.b['team2'].name, self.archive.read('csv/issue.csv').decode())
+
+    def test_json_keeps_only_the_dangling_pk(self):
+        import json
+        records = json.loads(self.archive.read('data/rocks.rockdependency.json'))
+        crossing = [r for r in records if r['fields']['description'] == 'crosses orgs']
+        self.assertEqual(crossing[0]['fields']['depends_on_rock'], self.b['rock'].pk)
+        self.assertNotIn(self.b['rock'].title, self.archive.read('data/rocks.rockdependency.json').decode())

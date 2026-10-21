@@ -391,6 +391,12 @@ def _csv(label, queryset, exported_pks):
         row = [_cell(getattr(obj, f.attname)) for f in plain]
         for field in foreign:
             related = getattr(obj, field.name)
+            carried = exported_pks.get(label_for(field.related_model))
+            if related is not None and carried is not None and related.pk not in carried:
+                # The row points outside the archive (a cross-organisation link made
+                # through the admin, say): keep the id so a reader can tell, but never
+                # render the other record's name.
+                related = None
             row += [_cell(related), _cell(getattr(obj, field.attname))]
         for field in many:
             related = getattr(obj, field.name).all()
