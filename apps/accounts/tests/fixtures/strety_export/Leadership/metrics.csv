@@ -1,0 +1,5 @@
+Title,Assignee,Creator,Teams,Number Format,Target Type,Target Value,Checkin Frequency,Subtype,Latest Value,Latest Entry Date,Created At
+Weekly L10 held,Ada Marsh,Ada Marsh,"",Yes/No,eq,1.0,Weekly,Manual,1.0,2026-10-14,2026-09-20 10:00
+Berths occupied,Ben Okoro,Ada Marsh,"",Percentage,gte,85,Weekly,Manual,88.5,2026-10-15,2026-09-20 10:00
+Cash in bank,Ada Marsh,Ada Marsh,"",Currency,gte,"$50,000",Monthly,Manual,"$61,200",2026-10-03,2026-09-20 10:00
+Open complaints,Dev,Ada Marsh,"",Number,lte,3,Quarterly,Manual,,,2026-09-20 10:00

@@ -1,0 +1,9 @@
+Level,Role,Reports To,Seat Holder(s),Seat Status,Responsibilities
+1,Owner's Box,,"",Fulfilled,""
+1,Visionary,,Ada Marsh,Fulfilled,"Vision; Culture; Big relationships"
+2,Integrator,Visionary,Ben Okoro,Fulfilled,"Run the business; LMA; Remove obstacles"
+3,Operations,Integrator,"Dev; Cleo Vance",Fulfilled,"Fuel
+Repairs
+Berthing"
+3,Finance,Integrator,"",Vacant,"Books; Cash"
+3,Harbourmaster,Marina Manager,Ada Marsh,Fulfilled,""
