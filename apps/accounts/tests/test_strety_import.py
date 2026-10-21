@@ -437,6 +437,29 @@ class PeopleTest(StretyImportMixin, TestCase):
         self.assertIn('  - Cleo Vance', output)
         self.assertEqual(ToDo.objects.get(title='Read the harbour bylaws').owner, self.ada)
 
+    def test_name_shared_with_a_superuser_member_goes_to_the_importing_user(self):
+        # A platform operator who is also a member, with the same name as the person
+        # running the import, must not win the match.
+        ops = User.objects.create_superuser(
+            username='ops', password='pw', first_name='Ada', last_name='Marsh'
+        )
+        Membership.objects.create(user=ops, organization=self.org, role=Membership.ROLE_ADMIN)
+        self.run_import('--user', 'ada')
+        self.assertEqual(Rock.objects.get(title='Launch the harbour app').owner, self.ada)
+
+    def test_superuser_only_matches_when_nobody_else_does(self):
+        ops = User.objects.create_superuser(
+            username='ops', password='pw', first_name='Ada', last_name='Marsh'
+        )
+        Membership.objects.create(user=ops, organization=self.org, role=Membership.ROLE_ADMIN)
+        self.run_import('--user', 'bokoro')
+        self.assertEqual(Rock.objects.get(title='Launch the harbour app').owner, self.ada)
+
+    def test_importing_user_joins_the_teams_the_import_creates(self):
+        self.run_import('--user', 'bokoro')
+        team_names = set(self.ben.profile.teams.values_list('name', flat=True))
+        self.assertEqual(team_names, {'Leadership', 'Operations'})
+
     def test_explicit_importing_user(self):
         self.run_import('--user', 'bokoro')
         self.assertEqual(ToDo.objects.get(title='Read the harbour bylaws').owner, self.ben)

@@ -13,7 +13,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accountability.models import AccountabilityNode, AccountabilityRole
-from apps.accounts.models import Team
+from apps.accounts.models import UserProfile, Team
 from apps.audit.services import record as record_audit_event
 from apps.issues.models import Issue
 from apps.rocks.models import Rock, RockMilestone
@@ -215,6 +215,10 @@ class StretyImporter:
             )
             if created:
                 self.summary.created('Teams')
+                # The person running the import joins each team it creates, so what
+                # landed is visible to them straight away (lists are per team).
+                profile, _ = UserProfile.objects.get_or_create(user=self.user)
+                profile.teams.add(team)
             else:
                 self.summary.skipped('Teams')
             self._teams[name] = team

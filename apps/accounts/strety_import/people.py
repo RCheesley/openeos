@@ -11,7 +11,8 @@ class PeopleResolver:
     """Turn names from the export into users.
 
     A name is matched, case-insensitively, against members of the organisation
-    by full name, then username, then first name when that is unique. An
+    by full name, then username, then first name when that is unique; the
+    importing user wins a tie, and superusers only match when nobody else does. An
     unmatched name is created as a new member when ``create_users`` is set;
     otherwise the importing user stands in wherever a user is required and
     nullable links are left empty. Every unmatched name is remembered so the
@@ -45,10 +46,13 @@ class PeopleResolver:
     # ── internals ────────────────────────────────────────────────────────────
 
     def _members_list(self):
+        # The importing user comes first and superusers last, so a name that fits
+        # several members (a platform operator who is also a member, say) resolves
+        # to the person running the import rather than the operator account.
         if self._members is None:
-            self._members = list(
-                User.objects.filter(memberships__organization=self.organization)
-                .distinct().order_by('pk')
+            members = User.objects.filter(memberships__organization=self.organization).distinct()
+            self._members = sorted(
+                members, key=lambda u: (u != self.importing_user, u.is_superuser, u.pk)
             )
         return self._members
 
@@ -61,6 +65,9 @@ class PeopleResolver:
             if user.username.lower() == key:
                 return user
         by_first_name = [u for u in members if u.first_name.strip().lower() == key]
+        if self.importing_user in by_first_name:
+            return self.importing_user
+        by_first_name = [u for u in by_first_name if not u.is_superuser] or by_first_name
         if len(by_first_name) == 1:
             return by_first_name[0]
         return None
