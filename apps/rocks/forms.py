@@ -3,14 +3,13 @@ from django.contrib.auth.models import User
 
 from .models import Rock, RockDependency
 from apps.accounts.models import Team
-from apps.accounts.scoping import is_org_admin
+from apps.accounts.scoping import TeamPickerMixin, is_org_admin
 
 
-class RockForm(forms.ModelForm):
+class RockForm(TeamPickerMixin, forms.ModelForm):
     class Meta:
         model = Rock
-        # team is excluded: always set to the user's active team in the view
-        fields = ['title', 'description', 'owner', 'quarter', 'year', 'due_date',
+        fields = ['title', 'description', 'owner', 'team', 'quarter', 'year', 'due_date',
                   'parent_rock', 'is_company_rock']
         widgets = {
             'title': forms.TextInput(attrs={
@@ -23,6 +22,7 @@ class RockForm(forms.ModelForm):
                 'placeholder': 'What does "done" look like? Be specific and measurable.',
             }),
             'owner': forms.Select(attrs={'class': 'form-select'}),
+            'team': forms.Select(attrs={'class': 'form-select'}),
             'quarter': forms.Select(attrs={'class': 'form-select'}),
             'year': forms.NumberInput(attrs={'class': 'form-control', 'min': 2020, 'max': 2099}),
             'due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -42,6 +42,8 @@ class RockForm(forms.ModelForm):
             )
         else:
             del self.fields['is_company_rock']
+        # The submitted team when bound, so owner and parent follow a change of team.
+        team = self.init_team_picker(team, user)
         if team:
             self.fields['owner'].queryset = User.objects.filter(
                 profile__teams=team
@@ -49,6 +51,12 @@ class RockForm(forms.ModelForm):
             self.fields['parent_rock'].queryset = Rock.objects.filter(
                 team=team
             ).order_by('-year', '-quarter', 'title')
+            self.fields['owner'].error_messages['invalid_choice'] = (
+                f'That person is not a member of {team.name}.'
+            )
+            self.fields['parent_rock'].error_messages['invalid_choice'] = (
+                f'The parent Rock must be on {team.name}.'
+            )
         else:
             self.fields['owner'].queryset = User.objects.none()
             self.fields['parent_rock'].queryset = Rock.objects.none()

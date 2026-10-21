@@ -1,17 +1,18 @@
 from django import forms
 
 from apps.accounts.models import Team
-from apps.accounts.scoping import is_org_admin
+from apps.accounts.scoping import TeamPickerMixin, is_org_admin
 from apps.rocks.models import Rock
 from .models import Issue, IssueActivity
 
 
-class IssueForm(forms.ModelForm):
+class IssueForm(TeamPickerMixin, forms.ModelForm):
+    team_field_name = 'originating_team'
+
     class Meta:
         model = Issue
-        # originating_team excluded: always set to the user's active team in the view
         fields = [
-            'title', 'description', 'issue_type',
+            'title', 'description', 'issue_type', 'originating_team',
             'delegated_to_team',
             'linked_rocks',
             'target_quarter', 'target_year',
@@ -29,6 +30,9 @@ class IssueForm(forms.ModelForm):
         is_admin = bool(user) and is_org_admin(user, team.organization if team else None)
         if not is_admin:
             del self.fields['is_company_issue']
+        self.user = user
+        # The submitted team when bound, so linked Rocks follow a change of team.
+        team = self.init_team_picker(team, user)
         if team:
             # Delegation can go to any team in the org
             org_teams = Team.objects.filter(organization=team.organization).order_by('name')
@@ -38,6 +42,9 @@ class IssueForm(forms.ModelForm):
                 .filter(team=team, status__in=[Rock.STATUS_ON_TRACK, Rock.STATUS_OFF_TRACK])
                 .select_related('owner')
                 .order_by('title')
+            )
+            self.fields['linked_rocks'].error_messages['invalid_choice'] = (
+                f'Linked Rocks must be on {team.name}.'
             )
         else:
             self.fields['delegated_to_team'].queryset = Team.objects.none()
@@ -62,6 +69,18 @@ class IssueForm(forms.ModelForm):
             # ever shows those. Don't let a short-term issue carry the flag.
             cleaned_data['is_company_issue'] = False
         return cleaned_data
+
+    def save(self, commit=True):
+        moved_from = None
+        if commit and self.instance.pk and 'originating_team' in self.changed_data:
+            moved_from = Team.objects.get(pk=self.initial['originating_team'])
+        issue = super().save(commit=commit)
+        if moved_from is not None:
+            IssueActivity.objects.create(
+                issue=issue, actor=self.user, action=IssueActivity.ACTION_STATUS_CHANGED,
+                notes=f'Moved from {moved_from.name} to {issue.originating_team.name}.',
+            )
+        return issue
 
 
 class IssueStatusForm(forms.Form):
