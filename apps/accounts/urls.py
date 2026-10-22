@@ -7,6 +7,7 @@ urlpatterns = [
     path('org/setup/', views.OrgSetupView.as_view(), name='org_setup'),
     path('org/', views.OrgDetailView.as_view(), name='org_detail'),
     path('org/settings/', views.OrgSettingsView.as_view(), name='org_settings'),
+    path('org/settings/terminology/', views.OrgTerminologyView.as_view(), name='org_terminology'),
     path('org/<int:pk>/switch/', views.OrgSwitchView.as_view(), name='org_switch'),
     path('teams/', views.TeamListView.as_view(), name='team_list'),
     path('teams/new/', views.TeamCreateView.as_view(), name='team_create'),
