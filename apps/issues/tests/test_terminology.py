@@ -90,6 +90,24 @@ class IssueTerminologyViewTest(TestCase):
         self.assertContains(resp, 'Required for long-term blockers.')
         self.assertFalse(Issue.objects.filter(title='Strategic gap').exists())
 
+    def test_long_term_issue_without_a_year_is_rejected_with_the_organisations_word(self):
+        # The reverse of the quarter case: quarter given, year missing.
+        self.client.force_login(self.blockers['user'])
+        resp = self.client.post('/issues/new/', {
+            'title': 'Strategic gap', 'issue_type': Issue.TYPE_LONG_TERM, 'target_quarter': 2,
+        }, HTTP_HOST=BLOCKERS)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Required for long-term blockers.')
+        self.assertNotContains(resp, 'Required for long-term issues.')
+        self.assertFalse(Issue.objects.filter(title='Strategic gap').exists())
+
+    def test_default_host_long_term_issue_without_a_year_keeps_the_default_word(self):
+        self.client.force_login(self.plain['user'])
+        resp = self.client.post('/issues/new/', {
+            'title': 'Strategic gap', 'issue_type': Issue.TYPE_LONG_TERM, 'target_quarter': 2,
+        }, HTTP_HOST=PLAIN)
+        self.assertContains(resp, 'Required for long-term issues.')
+
     def test_detail_and_delete_pages_use_the_organisations_word(self):
         self.client.force_login(self.blockers['user'])
         issue = self.blockers['issues'][0]

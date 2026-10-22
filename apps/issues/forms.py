@@ -58,7 +58,9 @@ class IssueForm(forms.ModelForm):
             if not target_quarter:
                 self.add_error('target_quarter', f'Required for long-term {self.terms.issues.lower()}.')
             if not target_year:
-                self.add_error('target_year', 'Required for long-term issues.')
+                self.add_error(
+                    'target_year', f'Required for long-term {self.terms.issues.lower()}.'
+                )
         elif 'is_company_issue' in cleaned_data:
             # Company-wide only means anything for long-term issues, the VTO only
             # ever shows those. Don't let a short-term issue carry the flag.
