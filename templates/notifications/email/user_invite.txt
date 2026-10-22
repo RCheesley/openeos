@@ -1,7 +1,7 @@
 Hi {{ user.first_name|default:user.username }},
 
-You've been invited to join {{ organization.name }} on EOS App.
+You've been invited to join {{ brand.name }}{% if organization.name != brand.name %} ({{ organization.name }}){% endif %}.
 
 Set your password to get started: {{ reset_url }}
 
-— EOS App
+— {{ brand.name }}
