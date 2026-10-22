@@ -57,12 +57,12 @@ One deployment can host several organisations, each with its own teams, Rocks, I
 - Members of more than one organisation see an **organisation switcher** in the navbar above the team switcher. Everything on screen, including lists, search and links by id, is scoped to the active organisation, so switch first if a link to another organisation returns "not found".
 - Memberships can also be managed under **Memberships** in the Django admin.
 
-To onboard an organisation from a script or a deploy hook, use the `create_organization` management command. It creates the organisation, its domain, an admin user with an admin membership and a first team (default `Leadership`) in one step, and is safe to re-run: existing records are reused and only the options you pass are updated. Leave `--admin-password` out and a random password is generated and printed once (a password on the command line is visible in process listings). `--display-name`, `--primary-color`, `--team` and `--slug` are optional.
+To onboard an organisation from a script or a deploy hook, use the `create_organization` management command. It creates the organisation, its domain, an admin user with an admin membership and a first team (default `Leadership`) in one step, and is safe to re-run: existing records are reused and only the options
+you pass are updated. Leave `--admin-password` out and a random password is generated and printed once (a password on the command line is visible in process listings). `--display-name`, `--primary-color`, `--team` and `--slug` are optional.
 
 ```bash
 python manage.py create_organization --name "Acme Ltd" --domain acme.example.com \
   --admin-username acme-admin --admin-email admin@acme.example.com
-```
 
 ### Organisation domains
 

@@ -224,11 +224,11 @@ class BrandingContextTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, '<title>Organisation settings — Mercury Consortium</title>', html=True)
 
-    def test_child_template_that_overrides_title_is_unchanged(self):
+    def test_child_template_page_title_carries_the_brand(self):
         self.client.force_login(self.user)
         for path, title in [
-            ('/', 'Dashboard — EOS App'),
-            ('/rocks/?quarter=1&year=2026', 'Rocks — Q1 2026 — EOS App'),
+            ('/', 'Dashboard — Mercury Consortium'),
+            ('/rocks/?quarter=1&year=2026', 'Rocks — Q1 2026 — Mercury Consortium'),
         ]:
             with self.subTest(path=path):
                 resp = self.client.get(path, HTTP_HOST=MERCURY)
