@@ -12,12 +12,14 @@ from django.template.loader import render_to_string
 from .models import NotificationPreference
 
 
-def _send(user, subject, template_name, context):
+def _send(user, subject, template_name, context, organization=None):
+    """Links use the organisation's own domain when it has one, else SITE_URL."""
     if not user.email:
         return False
+    site_url = (organization.site_url if organization else '') or settings.SITE_URL
     send_mail(
         subject=subject,
-        message=render_to_string(template_name, {**context, 'user': user, 'site_url': settings.SITE_URL}),
+        message=render_to_string(template_name, {**context, 'user': user, 'site_url': site_url}),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],
         fail_silently=True,
@@ -25,13 +27,16 @@ def _send(user, subject, template_name, context):
     return True
 
 
-def send_overdue_todo_digest(user, todos):
+def send_overdue_todo_digest(user, todos, organization=None):
     pref = NotificationPreference.for_user(user)
     if not pref.overdue_todo_digest:
         return False
     count = len(todos)
     subject = f'{count} overdue To-Do{"s" if count != 1 else ""} — EOS App'
-    return _send(user, subject, 'notifications/email/overdue_digest.txt', {'todos': todos})
+    return _send(
+        user, subject, 'notifications/email/overdue_digest.txt', {'todos': todos},
+        organization=organization,
+    )
 
 
 def send_meeting_reminder(user, meeting):
@@ -39,7 +44,10 @@ def send_meeting_reminder(user, meeting):
     if not pref.meeting_reminders:
         return False
     subject = f'Level 10 Meeting today — {meeting.team.name}'
-    return _send(user, subject, 'notifications/email/meeting_reminder.txt', {'meeting': meeting})
+    return _send(
+        user, subject, 'notifications/email/meeting_reminder.txt', {'meeting': meeting},
+        organization=meeting.team.organization,
+    )
 
 
 def send_rock_off_track_alert(rock):
@@ -47,7 +55,10 @@ def send_rock_off_track_alert(rock):
     if not pref.rock_off_track_alerts:
         return False
     subject = f'Rock marked off track: {rock.title}'
-    return _send(rock.owner, subject, 'notifications/email/rock_off_track.txt', {'rock': rock})
+    return _send(
+        rock.owner, subject, 'notifications/email/rock_off_track.txt', {'rock': rock},
+        organization=rock.team.organization,
+    )
 
 
 def send_user_invite_email(user, organization, reset_url):
@@ -56,4 +67,4 @@ def send_user_invite_email(user, organization, reset_url):
     return _send(user, subject, 'notifications/email/user_invite.txt', {
         'organization': organization,
         'reset_url': reset_url,
-    })
+    }, organization=organization)

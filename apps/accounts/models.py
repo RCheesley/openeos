@@ -1,4 +1,9 @@
+from urllib.parse import urlsplit
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.text import slugify
@@ -28,6 +33,62 @@ class Organization(models.Model):
 
     def get_absolute_url(self):
         return reverse('accounts:org_detail')
+
+    @property
+    def primary_domain(self):
+        return self.domains.filter(is_primary=True).first() or self.domains.first()
+
+    @property
+    def site_url(self):
+        """Absolute base URL for this organisation, or '' when it has no domain."""
+        domain = self.primary_domain
+        if domain is None:
+            return ''
+        scheme = urlsplit(settings.SITE_URL).scheme or 'https'
+        return f'{scheme}://{domain.hostname}'
+
+
+class OrganizationDomain(models.Model):
+    """A hostname that resolves to one organisation. Requests on it are pinned to that org."""
+
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='domains'
+    )
+    hostname = models.CharField(max_length=253, unique=True)
+    is_primary = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-is_primary', 'hostname']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['organization'],
+                condition=Q(is_primary=True),
+                name='one_primary_domain_per_organization',
+            ),
+        ]
+        verbose_name = 'Organization domain'
+        verbose_name_plural = 'Organization domains'
+
+    def __str__(self):
+        return self.hostname
+
+    @staticmethod
+    def normalize(hostname):
+        return (hostname or '').strip().lower().rstrip('.')
+
+    def clean(self):
+        self.hostname = self.normalize(self.hostname)
+        if not self.hostname:
+            raise ValidationError({'hostname': 'Enter a hostname.'})
+        if any(ch in self.hostname for ch in '/:') or any(ch.isspace() for ch in self.hostname):
+            raise ValidationError({
+                'hostname': 'Enter a bare hostname such as acme.example.com — no scheme, port or path.',
+            })
+
+    def save(self, *args, **kwargs):
+        self.hostname = self.normalize(self.hostname)
+        super().save(*args, **kwargs)
 
 
 class Team(models.Model):

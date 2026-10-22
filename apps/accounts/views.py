@@ -132,6 +132,14 @@ class OrgSetupView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('home')
 
     def dispatch(self, request, *args, **kwargs):
+        host_org = getattr(request, 'host_org', None)
+        if host_org is not None:
+            messages.info(
+                request,
+                f'This address belongs to {host_org.name}. '
+                f'To create another organisation, use the main site address.',
+            )
+            return redirect('home')
         if request.user.is_authenticated and not self._may_create(request.user):
             return redirect('home')
         return super().dispatch(request, *args, **kwargs)
@@ -159,7 +167,11 @@ class OrgSwitchView(LoginRequiredMixin, View):
     """POST-only: make one of the user's organisations the active one."""
 
     def post(self, request, pk):
-        org = get_object_or_404(get_user_orgs(request.user), pk=pk)
+        orgs = get_user_orgs(request.user)
+        host_org = getattr(request, 'host_org', None)
+        if host_org is not None:
+            orgs = orgs.filter(pk=host_org.pk)
+        org = get_object_or_404(orgs, pk=pk)
         set_active_org(request, org)
         return redirect('home')
 
@@ -431,10 +443,11 @@ class UserInviteView(LoginRequiredMixin, AdminRequiredMixin, FormView):
         from django.utils.http import urlsafe_base64_encode
         from apps.notifications.emails import send_user_invite_email
 
-        reset_url = self.request.build_absolute_uri(reverse('password_reset_confirm', kwargs={
+        base = org.site_url or self.request.build_absolute_uri('/').rstrip('/')
+        reset_url = base + reverse('password_reset_confirm', kwargs={
             'uidb64': urlsafe_base64_encode(force_bytes(user.pk)),
             'token': default_token_generator.make_token(user),
-        }))
+        })
         send_user_invite_email(user, org, reset_url)
 
     def get_context_data(self, **kwargs):

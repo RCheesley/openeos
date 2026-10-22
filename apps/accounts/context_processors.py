@@ -10,9 +10,14 @@ def active_context(request):
     user_teams = []
     if org is not None:
         user_teams = list(request.user.profile.teams.filter(organization=org).order_by('name'))
+    host_org = getattr(request, 'host_org', None)
+    if host_org is not None:
+        user_orgs = [host_org]
+    else:
+        user_orgs = list(get_user_orgs(request.user).order_by('name'))
     return {
         'active_org': org,
-        'user_orgs': list(get_user_orgs(request.user).order_by('name')),
+        'user_orgs': user_orgs,
         'active_team': team,
         'user_teams': user_teams,
     }

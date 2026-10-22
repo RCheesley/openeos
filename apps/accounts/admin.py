@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Membership, Organization, Team, UserProfile
+from .models import Membership, Organization, OrganizationDomain, Team, UserProfile
 
 
 class MembershipInline(admin.TabularInline):
@@ -8,13 +8,27 @@ class MembershipInline(admin.TabularInline):
     raw_id_fields = ['user']
 
 
+class OrganizationDomainInline(admin.TabularInline):
+    model = OrganizationDomain
+    extra = 0
+    fields = ['hostname', 'is_primary']
+
+
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug', 'created_at']
     search_fields = ['name']
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ['created_at', 'updated_at']
-    inlines = [MembershipInline]
+    inlines = [OrganizationDomainInline, MembershipInline]
+
+
+@admin.register(OrganizationDomain)
+class OrganizationDomainAdmin(admin.ModelAdmin):
+    list_display = ['hostname', 'organization', 'is_primary']
+    list_filter = ['organization', 'is_primary']
+    search_fields = ['hostname', 'organization__name']
+    readonly_fields = ['created_at']
 
 
 @admin.register(Team)
