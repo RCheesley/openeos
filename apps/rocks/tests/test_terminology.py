@@ -186,6 +186,16 @@ class RockTerminologyTest(TestCase):
         self.assertContains(resp, "Shows this Priority on the VTO, instead of just this team's Priority list.")
         self.assertNotContains(resp, 'Company-wide Rock')
 
+    def test_child_rock_tooltip_uses_the_organisations_words(self):
+        child = make_rock(self.team, self.user, 'Write the beta announcement')
+        child.parent_rock = self.rock
+        child.save()
+        self.client.force_login(self.user)
+
+        resp = self.get('/rocks/')
+        self.assertContains(resp, 'title="Has child Priorities"')
+        self.assertNotContains(resp, 'Has child Rocks')
+
 
 class RockFormTerminologyTest(TestCase):
     """Form placeholders and labels come from the team's organisation."""

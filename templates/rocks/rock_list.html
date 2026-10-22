@@ -125,7 +125,8 @@
                             <i class="bi bi-building text-muted ms-1" title="Company {{ terms.rock }}, shown on the {{ terms.vto }}"></i>
                             {% endif %}
                             {% if rock.child_rocks.exists %}
-                            <i class="bi bi-diagram-2 text-muted ms-1" title="Has child Rocks"></i>
+                            <i class="bi bi-diagram-2 text-muted ms-1"
+                               title="Has child {{ terms.rocks }}"></i>
                             {% endif %}
                             {% if rock.dependencies.exists %}
                             <i class="bi bi-link text-muted ms-1" title="Has cross-team dependencies"></i>
