@@ -63,6 +63,7 @@ you pass are updated. Leave `--admin-password` out and a random password is gene
 ```bash
 python manage.py create_organization --name "Acme Ltd" --domain acme.example.com \
   --admin-username acme-admin --admin-email admin@acme.example.com
+```
 
 ### Organisation domains
 
