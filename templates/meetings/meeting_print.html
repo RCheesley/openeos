@@ -45,7 +45,7 @@
         <div class="card-body py-2 text-center">
             {% if avg_rating %}
             <span class="fw-bold" style="font-size:1.4rem">{{ avg_rating }}/10</span>
-            <span class="text-muted small ms-1">average meeting rating</span>
+            <span class="text-muted small ms-1">average {{ terms.meeting|lower }} rating</span>
             {% else %}
             <span class="text-muted small fst-italic">No ratings recorded.</span>
             {% endif %}
@@ -92,7 +92,9 @@
     {# Meeting notes, per segment #}
     {% if segment_notes %}
     <div class="card mb-2">
-        <div class="card-header py-1 bg-light"><span class="fw-semibold small">Meeting Notes</span></div>
+        <div class="card-header py-1 bg-light">
+            <span class="fw-semibold small">{{ terms.meeting }} Notes</span>
+        </div>
         <div class="card-body py-2 small">
             {% for note in segment_notes %}
             <div class="mb-2 {% if not forloop.last %}pb-2 border-bottom{% endif %}">

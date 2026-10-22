@@ -1,6 +1,7 @@
 {# Segment 7: Conclude — rate the meeting, cascading messages, wrap up #}
 <p class="text-muted small mb-3">
-    Recap {{ terms.todos }} created, agree on {{ terms.cascading_messages|lower }}, then rate the meeting 1-10.
+    Recap {{ terms.todos }} created, agree on {{ terms.cascading_messages|lower }},
+    then rate the {{ terms.meeting|lower }} 1-10.
 </p>
 
 <div class="row g-3">
@@ -13,7 +14,7 @@
         </div>
 
         {# Rating #}
-        <div class="fw-semibold small mb-2">Rate This Meeting</div>
+        <div class="fw-semibold small mb-2">Rate This {{ terms.meeting }}</div>
         <form method="post" action="{% url 'meetings:rate' meeting.pk %}" class="mb-3">
             {% csrf_token %}
             <div class="mb-2">
@@ -93,9 +94,11 @@
             <label class="form-label small fw-semibold">{{ terms.cascading_messages }}</label>
             {{ cascading_form.cascading_messages }}
         </div>
+        {% with word=terms.meeting|lower|escapejs %}
         <button type="submit" class="btn btn-success"
-                onclick="return confirm('Complete this meeting? This cannot be undone.')">
-            <i class="bi bi-flag-fill me-1"></i>Complete Meeting
+                onclick="return confirm('Complete this {{ word }}? This cannot be undone.')">
+            <i class="bi bi-flag-fill me-1"></i>Complete {{ terms.meeting }}
         </button>
+        {% endwith %}
     </form>
 </div>

@@ -69,7 +69,9 @@ class TerminologyEmailTest(TestCase):
         message = mail.outbox[0]
         self.assertEqual(message.subject, 'Weekly Meeting today — Mercury Team')
         self.assertIn('has a Weekly Meeting scheduled for today', message.body)
+        self.assertIn('View the Weekly Meeting:', message.body)
         self.assertNotIn('Level 10', message.body)
+        self.assertNotIn('View the meeting:', message.body)
 
     def test_rock_alert_uses_the_organisations_rock_word(self):
         send_rock_off_track_alert(self.rock(self.mercury_team, 'Launch'))
@@ -90,6 +92,7 @@ class TerminologyEmailTest(TestCase):
         self.assertIn('View your To-Dos:', digest.body)
         self.assertEqual(reminder.subject, 'Level 10 Meeting today — Plain Team')
         self.assertIn('has a Level 10 Meeting scheduled', reminder.body)
+        self.assertIn('View the Level 10 Meeting:', reminder.body)
         self.assertEqual(alert.subject, 'Rock marked off track: Launch')
         self.assertIn('Your Rock "Launch"', alert.body)
 
@@ -105,5 +108,16 @@ class TerminologyEmailTest(TestCase):
         self.client.force_login(self.user)
         resp = self.client.get('/notifications/preferences/', HTTP_HOST='mercury.example.test')
         self.assertContains(resp, 'Overdue Action digest')
+        self.assertContains(resp, 'Weekly Meeting day reminders')
         self.assertContains(resp, 'Priority off-track alerts')
         self.assertNotContains(resp, 'Overdue To-Do digest')
+        self.assertNotContains(resp, 'Rock off-track alerts')
+
+    @override_settings(ALLOWED_HOSTS=['testserver', 'plain.example.test'])
+    def test_preferences_page_on_a_default_host_keeps_the_eos_words(self):
+        OrganizationDomain.objects.create(organization=self.plain, hostname='plain.example.test')
+        self.client.force_login(self.user)
+        resp = self.client.get('/notifications/preferences/', HTTP_HOST='plain.example.test')
+        self.assertContains(resp, 'Overdue To-Do digest')
+        self.assertContains(resp, 'Level 10 Meeting day reminders')
+        self.assertContains(resp, 'Rock off-track alerts')

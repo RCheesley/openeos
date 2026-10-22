@@ -32,20 +32,22 @@
                     <p class="mb-0 fw-semibold">{{ next_meeting.team.name }}</p>
                     <p class="text-muted small mb-3">Segment: {{ next_meeting_segment }}</p>
                     <a href="{{ next_meeting.get_absolute_url }}" class="btn btn-success btn-sm">
-                        <i class="bi bi-play-fill me-1"></i>Rejoin Meeting
+                        <i class="bi bi-play-fill me-1"></i>Rejoin {{ terms.meeting }}
                     </a>
                     {% else %}
-                    <p class="mb-1 text-muted small">Next meeting</p>
+                    <p class="mb-1 text-muted small">Next {{ terms.meeting|lower }}</p>
                     <p class="mb-0 fw-semibold">{{ next_meeting.team.name }}</p>
                     <p class="text-muted small mb-3">{{ next_meeting.scheduled_date }}</p>
                     <a href="{{ next_meeting.get_absolute_url }}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-calendar-check me-1"></i>View Meeting
+                        <i class="bi bi-calendar-check me-1"></i>View {{ terms.meeting }}
                     </a>
                     {% endif %}
                 {% else %}
-                    <p class="text-muted small mb-3">No upcoming meetings scheduled.</p>
+                    <p class="text-muted small mb-3">
+                        No upcoming {{ terms.meetings|lower }} scheduled.
+                    </p>
                     <a href="{% url 'meetings:list' %}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-plus me-1"></i>Schedule Meeting
+                        <i class="bi bi-plus me-1"></i>Schedule {{ terms.meeting }}
                     </a>
                 {% endif %}
             </div>
@@ -154,8 +156,8 @@
                     </div>
                 </div>
                 <p class="text-muted small mb-3">
-                    Core Values, Core Focus, 10-Year Target, Marketing Strategy,
-                    3-Year Picture, 1-Year Plan, Rocks, and Issues List.
+                    {{ terms.core_values }}, Core Focus, 10-Year Target, Marketing Strategy,
+                    3-Year Picture, 1-Year Plan, {{ terms.rocks }}, and {{ terms.issues }} List.
                 </p>
                 <a href="{% url 'vto:detail' %}" class="btn btn-outline-secondary btn-sm">
                     <i class="bi bi-map me-1"></i>View {{ terms.vto }}

@@ -137,8 +137,8 @@ def _build_runner_context(meeting, user, terms):
         'headline_form': HeadlineForm(terms=terms),
         'ratings': ratings,
         'my_rating': my_rating,
-        'rating_form': MeetingRatingForm(instance=my_rating),
-        'cascading_form': CascadingMessagesForm(instance=meeting),
+        'rating_form': MeetingRatingForm(instance=my_rating, terms=terms),
+        'cascading_form': CascadingMessagesForm(instance=meeting, terms=terms),
         'avg_rating': avg_rating,
         'new_todos': new_todos,
     }
@@ -225,7 +225,8 @@ class MeetingPrintView(LoginRequiredMixin, View):
             return redirect('accounts:org_setup')
         meeting = get_object_or_404(Meeting, pk=pk, team__organization=org)
         if not meeting.is_complete:
-            messages.warning(request, 'Finish the meeting before exporting its notes.')
+            word = get_terms(request).get('meeting', lower=True)
+            messages.warning(request, f'Finish the {word} before exporting its notes.')
             return redirect('meetings:detail', pk=pk)
         ctx = _build_runner_context(meeting, request.user, get_terms(request))
         return render(request, self.template_name, ctx)
@@ -239,7 +240,8 @@ class MeetingStartView(LoginRequiredMixin, View):
         meeting = get_object_or_404(Meeting, pk=pk, team__organization=org)
         if meeting.is_scheduled:
             meeting.start()
-            messages.success(request, 'Meeting started! Good luck — you\'ve got 90 minutes.')
+            word = get_terms(request).meeting
+            messages.success(request, f"{word} started! Good luck — you've got 90 minutes.")
         return redirect('meetings:detail', pk=pk)
 
 
@@ -267,7 +269,7 @@ class MeetingCompleteView(LoginRequiredMixin, View):
         if meeting.is_active:
             cascading = request.POST.get('cascading_messages', '')
             meeting.complete(cascading_messages=cascading)
-            messages.success(request, 'Meeting completed! Great work.')
+            messages.success(request, f'{get_terms(request).meeting} completed! Great work.')
         return redirect('meetings:detail', pk=pk)
 
 

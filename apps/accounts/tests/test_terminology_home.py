@@ -43,12 +43,31 @@ class HomeAndSearchTerminologyTest(TestCase):
         for label in [
             'Weekly Meetings</h5>', 'Priorities</h5>', 'Actions</h5>',
             'View Priorities', 'View Actions', 'Open actions',
+            '1-Year Plan, Priorities, and Issues List.',
         ]:
             with self.subTest(label=label):
                 self.assertContains(resp, label)
-        for label in ['Level 10 Meetings</h5>', 'Rocks</h5>', 'To-Dos</h5>', 'View Rocks', 'View To-Dos']:
+        for label in [
+            'Level 10 Meetings</h5>', 'Rocks</h5>', 'To-Dos</h5>', 'View Rocks', 'View To-Dos',
+            'Plan, Rocks, and Issues List.',
+        ]:
             with self.subTest(label=label):
                 self.assertNotContains(resp, label)
+
+    def test_meeting_card_without_a_meeting_uses_the_organisations_words(self):
+        resp = self.client.get('/', HTTP_HOST=MERCURY)
+        self.assertContains(resp, 'No upcoming weekly meetings scheduled.')
+        self.assertContains(resp, 'bi-plus me-1"></i>Schedule Weekly Meeting')
+        self.assertNotContains(resp, 'No upcoming meetings scheduled.')
+        self.assertNotContains(resp, 'Schedule Meeting')
+
+    def test_meeting_card_with_a_scheduled_meeting_uses_the_organisations_words(self):
+        Meeting.objects.create(team=self.mercury_team, scheduled_date=date.today())
+        resp = self.client.get('/', HTTP_HOST=MERCURY)
+        self.assertContains(resp, 'Next weekly meeting')
+        self.assertContains(resp, 'bi-calendar-check me-1"></i>View Weekly Meeting')
+        self.assertNotContains(resp, 'Next meeting')
+        self.assertNotContains(resp, 'View Meeting')
 
     def test_dashboard_keeps_the_descriptive_subtitles(self):
         resp = self.client.get('/', HTTP_HOST=MERCURY)
@@ -66,7 +85,9 @@ class HomeAndSearchTerminologyTest(TestCase):
         meeting.save(update_fields=['current_segment'])
         resp = self.client.get('/', HTTP_HOST=MERCURY)
         self.assertContains(resp, 'Segment: Priority Review')
+        self.assertContains(resp, 'bi-play-fill me-1"></i>Rejoin Weekly Meeting')
         self.assertNotContains(resp, 'Rock Review')
+        self.assertNotContains(resp, 'Rejoin Meeting')
 
     def test_search_placeholder_and_headings_use_the_organisations_words(self):
         Rock.objects.create(
@@ -83,7 +104,11 @@ class HomeAndSearchTerminologyTest(TestCase):
 
     def test_default_host_shows_the_eos_words(self):
         resp = self.client.get('/', HTTP_HOST=SILAVAPI)
-        for label in ['Level 10 Meetings</h5>', 'Rocks</h5>', 'To-Dos</h5>', 'View Rocks', 'View To-Dos']:
+        for label in [
+            'Level 10 Meetings</h5>', 'Rocks</h5>', 'To-Dos</h5>', 'View Rocks', 'View To-Dos',
+            'No upcoming level 10 meetings scheduled.', 'Schedule Level 10 Meeting',
+            '1-Year Plan, Rocks, and Issues List.',
+        ]:
             with self.subTest(label=label):
                 self.assertContains(resp, label)
         self.assertNotContains(resp, 'Priorit')

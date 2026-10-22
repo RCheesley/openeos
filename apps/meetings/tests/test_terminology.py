@@ -7,8 +7,10 @@ from django.test import RequestFactory, TestCase, override_settings
 from apps.accounts.models import Membership, Organization, OrganizationDomain, Team
 from apps.accounts.terminology import Terms, get_terms
 from apps.issues.models import IssueActivity
-from apps.meetings.forms import HeadlineForm
-from apps.meetings.models import SEGMENT_NAMES, Headline, Meeting, MeetingNote, segment_names_for
+from apps.meetings.forms import CascadingMessagesForm, HeadlineForm, MeetingRatingForm
+from apps.meetings.models import (
+    SEGMENT_NAMES, Headline, Meeting, MeetingNote, MeetingRating, segment_names_for,
+)
 from apps.meetings.views import _build_runner_context
 from apps.todos.models import ToDo
 
@@ -46,6 +48,30 @@ class HeadlineFormTest(TestCase):
         self.assertEqual(placeholder, 'Short headline — good news or concern')
 
 
+class ConcludeFormsTest(TestCase):
+    def test_placeholders_name_the_meeting_in_the_organisations_word(self):
+        rating = MeetingRatingForm(terms=Terms(RENAMED))
+        self.assertEqual(
+            rating.fields['improvement_note'].widget.attrs['placeholder'],
+            "What would make next week's weekly meeting better?",
+        )
+        cascading = CascadingMessagesForm(terms=Terms(RENAMED))
+        self.assertEqual(
+            cascading.fields['cascading_messages'].widget.attrs['placeholder'],
+            'What does the rest of the organisation need to know from this weekly meeting?',
+        )
+
+    def test_placeholders_default_without_terms(self):
+        self.assertEqual(
+            MeetingRatingForm().fields['improvement_note'].widget.attrs['placeholder'],
+            "What would make next week's meeting better?",
+        )
+        self.assertEqual(
+            CascadingMessagesForm().fields['cascading_messages'].widget.attrs['placeholder'],
+            'What does the rest of the organisation need to know from this meeting?',
+        )
+
+
 @override_settings(ALLOWED_HOSTS=HOSTS)
 class MeetingTerminologyTest(TestCase):
     """Meeting pages on an organisation's host use that organisation's words."""
@@ -81,6 +107,15 @@ class MeetingTerminologyTest(TestCase):
         self.meeting.delete()
         resp = self.client.get('/meetings/', HTTP_HOST=MERCURY)
         self.assertContains(resp, 'Schedule your first Weekly Meeting to get started.')
+        self.assertContains(resp, 'No weekly meetings yet')
+        self.assertContains(resp, 'bi-plus-lg me-1"></i>Schedule Weekly Meeting')
+        self.assertNotContains(resp, 'No meetings yet')
+        self.assertNotContains(resp, 'Schedule Meeting')
+
+    def test_list_schedule_button_uses_the_organisations_word(self):
+        resp = self.client.get('/meetings/', HTTP_HOST=MERCURY)
+        self.assertContains(resp, 'bi-plus-lg me-1"></i>Schedule Weekly Meeting')
+        self.assertNotContains(resp, 'Schedule Meeting')
 
     def test_list_shows_the_renamed_current_segment(self):
         self.start_at_segment(self.meeting, 2)
@@ -93,6 +128,8 @@ class MeetingTerminologyTest(TestCase):
         self.assertContains(resp, '<title>Schedule Weekly Meeting — Mercury Org</title>', html=True)
         self.assertContains(resp, 'Schedule Weekly Meeting</h1>')
         self.assertContains(resp, 'A Weekly Meeting runs 90 minutes')
+        self.assertContains(resp, 'bi-calendar-plus me-1"></i>Schedule Weekly Meeting')
+        self.assertNotContains(resp, 'Schedule Meeting<')
         resp = self.client.post(
             '/meetings/create/', {'team': self.mercury_team.pk, 'scheduled_date': '2026-02-02'},
             HTTP_HOST=MERCURY, follow=True,
@@ -101,7 +138,8 @@ class MeetingTerminologyTest(TestCase):
 
     def test_scheduled_detail_shows_the_renamed_agenda(self):
         resp = self.client.get(f'/meetings/{self.meeting.pk}/', HTTP_HOST=MERCURY)
-        self.assertContains(resp, 'Start Weekly Meeting')
+        self.assertContains(resp, 'bi-play-fill me-1"></i>Start Weekly Meeting')
+        self.assertNotContains(resp, 'Start Meeting')
         self.assertEqual(resp.context['segment_names'], RENAMED_SEGMENTS)
         for name in ['Priority Review', 'Updates', 'Action Review']:
             with self.subTest(name=name):
@@ -109,6 +147,54 @@ class MeetingTerminologyTest(TestCase):
         for name in ['Rock Review', 'Headlines', 'To-Do Review', 'Level 10']:
             with self.subTest(name=name):
                 self.assertNotContains(resp, name)
+
+    def test_starting_reports_in_the_organisations_word(self):
+        resp = self.client.post(
+            f'/meetings/{self.meeting.pk}/start/', HTTP_HOST=MERCURY, follow=True,
+        )
+        self.assertEqual(
+            [str(m) for m in resp.context['messages']],
+            ["Weekly Meeting started! Good luck — you've got 90 minutes."],
+        )
+
+    def test_print_before_completion_warns_in_the_organisations_word(self):
+        resp = self.client.get(
+            f'/meetings/{self.meeting.pk}/print/', HTTP_HOST=MERCURY, follow=True,
+        )
+        self.assertEqual(
+            [str(m) for m in resp.context['messages']],
+            ['Finish the weekly meeting before exporting its notes.'],
+        )
+
+    def test_conclude_segment_uses_the_organisations_words(self):
+        self.start_at_segment(self.meeting, 6)
+        resp = self.client.get(f'/meetings/{self.meeting.pk}/', HTTP_HOST=MERCURY)
+        for text in [
+            'then rate the weekly meeting 1-10.',
+            'Rate This Weekly Meeting',
+            "confirm('Complete this weekly meeting? This cannot be undone.')",
+            'bi-flag-fill me-1"></i>Complete Weekly Meeting',
+            'What would make next week&#x27;s weekly meeting better?',
+            'need to know from this weekly meeting?',
+        ]:
+            with self.subTest(text=text):
+                self.assertContains(resp, text)
+        for text in [
+            'rate the meeting 1-10', 'Rate This Meeting', 'Complete this meeting?',
+            'Complete Meeting<',
+        ]:
+            with self.subTest(text=text):
+                self.assertNotContains(resp, text)
+
+    def test_completing_reports_in_the_organisations_word(self):
+        self.start_at_segment(self.meeting, 6)
+        resp = self.client.post(
+            f'/meetings/{self.meeting.pk}/complete/', {'cascading_messages': 'Tell everyone.'},
+            HTTP_HOST=MERCURY, follow=True,
+        )
+        self.assertEqual(
+            [str(m) for m in resp.context['messages']], ['Weekly Meeting completed! Great work.'],
+        )
 
     def test_runner_uses_the_renamed_segment_and_placeholder(self):
         self.start_at_segment(self.meeting, 3)
@@ -173,7 +259,9 @@ class MeetingTerminologyTest(TestCase):
         resp = self.client.get(f'/meetings/{self.meeting.pk}/', HTTP_HOST=MERCURY)
         self.assertContains(resp, 'Priority Review')
         self.assertContains(resp, 'Actions Created This Meeting')
+        self.assertContains(resp, 'bi-journal-text me-1"></i>Weekly Meeting Notes')
         self.assertNotContains(resp, 'Rock Review')
+        self.assertNotContains(resp, '>Meeting Notes<')
 
     def test_print_view_uses_the_organisations_words(self):
         # Rendered through the runner context rather than the view: the view's
@@ -181,6 +269,7 @@ class MeetingTerminologyTest(TestCase):
         self.meeting.start()
         MeetingNote.objects.create(meeting=self.meeting, segment=2, text='Two off track.')
         ToDo.objects.create(title='Follow up', owner=self.user, team=self.mercury_team)
+        MeetingRating.objects.create(meeting=self.meeting, participant=self.user, score=9)
         self.meeting.complete(cascading_messages='Tell everyone.')
         request = RequestFactory().get(f'/meetings/{self.meeting.pk}/print/', HTTP_HOST=MERCURY)
         request.user = self.user
@@ -191,6 +280,9 @@ class MeetingTerminologyTest(TestCase):
         html = render_to_string('meetings/meeting_print.html', ctx, request=request)
         self.assertIn('<title>Mercury Team — 2026-01-05 — Weekly Meeting Notes — Print</title>', html)
         self.assertIn('Weekly Meeting Notes —', html)
+        self.assertIn('<span class="fw-semibold small">Weekly Meeting Notes</span>', html)
+        self.assertIn('average weekly meeting rating', html)
+        self.assertNotIn('>Meeting Notes<', html)
         self.assertIn('Priority Review', html)
         self.assertIn('Actions Created This Meeting', html)
         self.assertNotIn('Level 10', html)
@@ -202,11 +294,22 @@ class MeetingTerminologyTest(TestCase):
         resp = self.client.get('/meetings/', HTTP_HOST=SILAVAPI)
         self.assertContains(resp, '<title>Level 10 Meetings — Silavapi Org</title>', html=True)
         self.assertContains(resp, 'Level 10 Meetings</h1>')
+        self.assertContains(resp, 'bi-plus-lg me-1"></i>Schedule Level 10 Meeting')
 
         resp = self.client.get(f'/meetings/{meeting.pk}/', HTTP_HOST=SILAVAPI)
-        self.assertContains(resp, 'Start Level 10 Meeting')
+        self.assertContains(resp, 'bi-play-fill me-1"></i>Start Level 10 Meeting')
         self.assertEqual(resp.context['segment_names'], SEGMENT_NAMES)
         for name in ['Rock Review', 'Headlines', 'To-Do Review']:
             with self.subTest(name=name):
                 self.assertContains(resp, name)
         self.assertNotContains(resp, 'Priority')
+
+        resp = self.client.post(f'/meetings/{meeting.pk}/start/', HTTP_HOST=SILAVAPI, follow=True)
+        self.assertEqual(
+            [str(m) for m in resp.context['messages']],
+            ["Level 10 Meeting started! Good luck — you've got 90 minutes."],
+        )
+        self.start_at_segment(meeting, 6)
+        resp = self.client.get(f'/meetings/{meeting.pk}/', HTTP_HOST=SILAVAPI)
+        self.assertContains(resp, 'Rate This Level 10 Meeting')
+        self.assertContains(resp, 'bi-flag-fill me-1"></i>Complete Level 10 Meeting')
