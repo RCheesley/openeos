@@ -1,11 +1,13 @@
 import csv
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .models import Issue, IssueActivity
 from .forms import IssueForm, IssueStatusForm, IssueDelegateForm, IssueCommentForm
@@ -13,6 +15,7 @@ from apps.accounts.scoping import (
     OrgScopedMixin, get_active_team, get_org_object_or_404, is_org_admin,
 )
 from apps.accounts.terminology import get_terms
+from .forms import IssueOwnerForm, IssueRankForm, display_name
 
 ISSUE_ORG_LOOKUP = 'originating_team__organization'
 
@@ -50,6 +53,7 @@ def _filtered_issues(request):
         qs = Issue.objects.filter(delegated_to_team=team).select_related(
             'originating_team', 'delegated_to_team', 'created_by', 'created_by__profile'
         ).prefetch_related('linked_rocks')
+    qs = qs.select_related('owner')
     # Status filter
     status = request.GET.get('status', '')
     if status in dict(Issue.STATUS_CHOICES):
@@ -62,7 +66,10 @@ def _filtered_issues(request):
     issue_type = request.GET.get('type', '')
     if issue_type in dict(Issue.TYPE_CHOICES):
         qs = qs.filter(issue_type=issue_type)
-    return qs
+    # Rank filter: only the top rank is offered on the page
+    if request.GET.get('rank', '') == str(Issue.RANK_TOP):
+        qs = qs.filter(rank=Issue.RANK_TOP)
+    return qs.order_by(*Issue.rank_ordering())
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +93,13 @@ class IssueListView(LoginRequiredMixin, ListView):
             'status_choices': Issue.STATUS_CHOICES,
             'type_choices': Issue.TYPE_CHOICES,
         })
+        # Ranking: who may rank each row, and the "Rank 1 only" toggle
+        ctx['issues'] = flag_rankable(self.request.user, ctx['issues'])
+        query = self.request.GET.copy()
+        ctx['rank_filter'] = query.pop('rank', [''])[-1] == str(Issue.RANK_TOP)
+        if not ctx['rank_filter']:
+            query['rank'] = Issue.RANK_TOP
+        ctx['rank_toggle_query'] = query.urlencode()
         return ctx
 
 
@@ -109,6 +123,7 @@ class IssueCreateView(LoginRequiredMixin, CreateView):
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
         _log(self.object, self.request.user, IssueActivity.ACTION_CREATED)
+        _log_owner_change(self.object, self.request.user, None, self.object.owner)
         if self.object.is_delegated:
             _log(
                 self.object, self.request.user, IssueActivity.ACTION_DELEGATED,
@@ -141,8 +156,12 @@ class IssueUpdateView(LoginRequiredMixin, OrgScopedMixin, UpdateView):
 
     def form_valid(self, form):
         terms = get_terms(self.request)
+        # The form has already put the new owner on self.object; ask the database
+        old_owner = User.objects.filter(owned_issues=self.object.pk).first()
         messages.success(self.request, f'{terms.issue} "{self.object.title}" updated.')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        _log_owner_change(self.object, self.request.user, old_owner, self.object.owner)
+        return response
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -168,6 +187,9 @@ class IssueDetailView(LoginRequiredMixin, OrgScopedMixin, DetailView):
         ctx['delegate_form'] = IssueDelegateForm(
             initial={'delegated_to_team': issue.delegated_to_team},
             organization=issue.originating_team.organization,
+        )
+        ctx['owner_form'] = IssueOwnerForm(
+            initial={'owner': issue.owner_id}, team=issue.originating_team,
         )
         ctx['comment_form'] = IssueCommentForm()
         ctx['can_edit'] = _can_edit(self.request.user, issue)
@@ -252,6 +274,94 @@ class IssueDelegateView(LoginRequiredMixin, View):
 
 
 # ---------------------------------------------------------------------------
+# Owner and rank
+# ---------------------------------------------------------------------------
+
+def flag_rankable(user, issues):
+    """Set ``can_rank`` on each Issue: whether ``user`` may rank it.
+
+    The rule is the one for changing its status (``_can_edit``), worked out
+    once per page instead of once per row. Returns the Issues as a list.
+    """
+    issues = list(issues)
+    team_ids = set(user.profile.teams.values_list('pk', flat=True))
+    admin_of = {}
+    for issue in issues:
+        team = issue.originating_team
+        if team.pk in team_ids:
+            issue.can_rank = True
+            continue
+        if team.organization_id not in admin_of:
+            admin_of[team.organization_id] = is_org_admin(user, team.organization)
+        issue.can_rank = admin_of[team.organization_id]
+    return issues
+
+
+def _log_owner_change(issue, actor, old_owner, new_owner):
+    if old_owner == new_owner:
+        return
+    if new_owner is None:
+        notes = f'Owner removed (was {display_name(old_owner)}).'
+    elif old_owner is None:
+        notes = f'Owner set to {display_name(new_owner)}.'
+    else:
+        notes = f'Owner changed from {display_name(old_owner)} to {display_name(new_owner)}.'
+    _log(issue, actor, IssueActivity.ACTION_OWNER_CHANGED, notes=notes)
+
+
+def _back_to(request, issue):
+    """Return to the page the control was used on, at this Issue's row."""
+    next_url = request.POST.get('next', '')
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return redirect(f'{next_url}#issue-{issue.pk}')
+    return redirect('issues:detail', pk=issue.pk)
+
+
+class IssueOwnerView(LoginRequiredMixin, View):
+    """POST-only: set, change or remove an Issue's owner."""
+
+    def post(self, request, pk):
+        issue = _get_issue(request, pk)
+        if not _can_edit(request.user, issue):
+            return HttpResponseForbidden()
+        form = IssueOwnerForm(request.POST, team=issue.originating_team)
+        if form.is_valid():
+            old_owner, new_owner = issue.owner, form.cleaned_data['owner']
+            if old_owner != new_owner:
+                issue.owner = new_owner
+                issue.save(update_fields=['owner', 'updated_at'])
+                _log_owner_change(issue, request.user, old_owner, new_owner)
+        else:
+            messages.error(request, ' '.join(form.errors.get('owner', [])))
+        return _back_to(request, issue)
+
+
+class IssueRankView(LoginRequiredMixin, View):
+    """POST-only: set an Issue's rank, or clear it with an empty value."""
+
+    def post(self, request, pk):
+        issue = _get_issue(request, pk)
+        if not _can_edit(request.user, issue):
+            return HttpResponseForbidden()
+        form = IssueRankForm(request.POST)
+        if form.is_valid():
+            old_rank, new_rank = issue.rank, form.cleaned_data['rank']
+            if old_rank != new_rank:
+                issue.rank = new_rank
+                issue.save(update_fields=['rank', 'updated_at'])
+                if new_rank is None:
+                    notes = f'Rank cleared (was {old_rank}).'
+                elif old_rank is None:
+                    notes = f'Rank set to {new_rank}.'
+                else:
+                    notes = f'Rank changed from {old_rank} to {new_rank}.'
+                _log(issue, request.user, IssueActivity.ACTION_RANKED, notes=notes)
+        return _back_to(request, issue)
+
+
+# ---------------------------------------------------------------------------
 # Comments
 # ---------------------------------------------------------------------------
 
@@ -284,7 +394,10 @@ class IssueCsvExportView(LoginRequiredMixin, View):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="issues_export.csv"'
         writer = csv.writer(response)
-        writer.writerow(['Title', 'Type', 'Status', 'Originating Team', 'Delegated To', 'Created By', 'Created At'])
+        writer.writerow([
+            'Title', 'Type', 'Status', 'Originating Team', 'Delegated To', 'Created By',
+            'Created At', 'Owner', 'Rank',
+        ])
         for issue in issues:
             created_by = (
                 (issue.created_by.get_full_name() or issue.created_by.username)
@@ -299,5 +412,7 @@ class IssueCsvExportView(LoginRequiredMixin, View):
                 delegated_to,
                 created_by,
                 issue.created_at.date().isoformat(),
+                display_name(issue.owner) if issue.owner else '',
+                issue.rank or '',
             ])
         return response

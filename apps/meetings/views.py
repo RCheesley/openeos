@@ -59,14 +59,16 @@ def _build_runner_context(meeting, user, terms):
 
     # Issues (open, for this team)
     from apps.issues.models import Issue
-    issues = list(
+    from apps.issues.views import flag_rankable
+    issues = flag_rankable(
+        user,
         Issue.objects
         .filter(
             Q(originating_team=team) | Q(delegated_to_team=team),
             status__in=[Issue.STATUS_OPEN, Issue.STATUS_IN_IDS],
         )
-        .select_related('originating_team')
-        .order_by('issue_type', 'created_at')
+        .select_related('originating_team', 'owner')
+        .order_by(*Issue.rank_ordering()),
     )
 
     # Open To-Dos for team members

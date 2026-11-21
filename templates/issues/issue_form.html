@@ -115,6 +115,22 @@
                         </div>
                     </div>
 
+                    {# Owner (optional) #}
+                    <div class="mb-3">
+                        <label for="{{ form.owner.id_for_label }}" class="form-label fw-semibold">Owner</label>
+                        <select name="{{ form.owner.html_name }}"
+                                id="{{ form.owner.id_for_label }}"
+                                class="form-select {% if form.owner.errors %}is-invalid{% endif %}">
+                            {% for val, label in form.owner.field.choices %}
+                            <option value="{{ val }}" {% if form.owner.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Optional. The team member who sees this {{ terms.issue|lower }} through.</div>
+                        {% for error in form.owner.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
                     {# Originating team + Delegate to #}
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">

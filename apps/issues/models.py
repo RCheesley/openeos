@@ -26,6 +26,12 @@ class Issue(models.Model):
 
     QUARTER_CHOICES = [(i, f'Q{i}') for i in range(1, 5)]
 
+    # A short fixed scale a team sets together in the meeting: 1 is solved
+    # first. Several Issues may share a rank; unranked ones come last.
+    RANK_TOP = 1
+    RANK_CHOICES = [(1, '1'), (2, '2'), (3, '3')]
+    RANK_LABELS = {1: 'Rank 1 (top)', 2: 'Rank 2', 3: 'Rank 3'}
+
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     originating_team = models.ForeignKey(
@@ -33,6 +39,13 @@ class Issue(models.Model):
     )
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name='created_issues'
+    )
+    owner = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='owned_issues',
+    )
+    rank = models.PositiveSmallIntegerField(
+        choices=RANK_CHOICES, null=True, blank=True,
     )
     issue_type = models.CharField(
         max_length=20, choices=TYPE_CHOICES, default=TYPE_SHORT_TERM
@@ -101,6 +114,25 @@ class Issue(models.Model):
     def type_badge_class(self):
         return 'purple' if self.issue_type == self.TYPE_LONG_TERM else 'info text-dark'
 
+    # ── Ranking ──────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def rank_ordering():
+        """Rank 1 first, unranked last, and the oldest first within a rank."""
+        return (models.F('rank').asc(nulls_last=True), 'created_at', 'pk')
+
+    @property
+    def rank_label(self):
+        return self.RANK_LABELS.get(self.rank, 'Not ranked')
+
+    @property
+    def rank_options(self):
+        """(value, label, is_current) for each button of the rank control."""
+        return [
+            (value, self.RANK_LABELS[value], value == self.rank)
+            for value, _ in self.RANK_CHOICES
+        ]
+
 
 class IssueActivity(models.Model):
     ACTION_CREATED = 'created'
@@ -112,6 +144,8 @@ class IssueActivity(models.Model):
     ACTION_COMMENT = 'comment'
     ACTION_RESOLVED = 'resolved'
     ACTION_DROPPED = 'dropped'
+    ACTION_OWNER_CHANGED = 'owner_changed'
+    ACTION_RANKED = 'ranked'
 
     ACTION_CHOICES = [
         (ACTION_CREATED, 'Created'),
@@ -123,6 +157,8 @@ class IssueActivity(models.Model):
         (ACTION_COMMENT, 'Comment'),
         (ACTION_RESOLVED, 'Resolved'),
         (ACTION_DROPPED, 'Dropped'),
+        (ACTION_OWNER_CHANGED, 'Owner Changed'),
+        (ACTION_RANKED, 'Rank Changed'),
     ]
 
     issue = models.ForeignKey(
@@ -153,4 +189,6 @@ class IssueActivity(models.Model):
             self.ACTION_COMMENT: 'bi-chat-left-text text-muted',
             self.ACTION_RESOLVED: 'bi-check-circle text-success',
             self.ACTION_DROPPED: 'bi-x-circle text-secondary',
+            self.ACTION_OWNER_CHANGED: 'bi-person text-primary',
+            self.ACTION_RANKED: 'bi-sort-numeric-down text-primary',
         }.get(self.action, 'bi-circle text-muted')

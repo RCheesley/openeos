@@ -4,6 +4,7 @@ from apps.accounts.models import Team
 from apps.accounts.scoping import is_org_admin
 from apps.rocks.models import Rock
 from apps.accounts.terminology import Terms, terms_for
+from django.contrib.auth.models import User
 from .models import Issue, IssueActivity
 
 
@@ -14,6 +15,7 @@ class IssueForm(forms.ModelForm):
         fields = [
             'title', 'description', 'issue_type',
             'delegated_to_team',
+            'owner',
             'linked_rocks',
             'target_quarter', 'target_year',
             'is_company_issue',
@@ -47,6 +49,16 @@ class IssueForm(forms.ModelForm):
         self.fields['linked_rocks'].required = False
         self.fields['target_quarter'].required = False
         self.fields['target_year'].required = False
+        # Owner: optional, and a member of the team like a Rock's or To-Do's owner
+        owner = self.fields['owner']
+        owner.required = False
+        owner.empty_label = 'No owner'
+        owner.label_from_instance = display_name
+        owner.queryset = team_owner_choices(team)
+        if team:
+            owner.error_messages['invalid_choice'] = (
+                f'That person is not a member of {team.name}.'
+            )
         self.terms = terms_for(team.organization if team else None)
 
     def clean(self):
@@ -106,6 +118,45 @@ class IssueDelegateForm(forms.Form):
         if organization:
             teams = Team.objects.filter(organization=organization).order_by('name')
         self.fields['delegated_to_team'].queryset = teams
+
+
+def display_name(user):
+    return user.get_full_name() or user.username
+
+
+def team_owner_choices(team):
+    """The people who may own an Issue: members of its originating team,
+    the same rule the Rock and To-Do forms apply to their owner."""
+    if team is None:
+        return User.objects.none()
+    return (
+        User.objects
+        .filter(profile__teams=team)
+        .distinct()
+        .order_by('first_name', 'last_name', 'username')
+    )
+
+
+class IssueOwnerForm(forms.Form):
+    owner = forms.ModelChoiceField(
+        queryset=User.objects.none(), required=False, empty_label='No owner',
+    )
+
+    def __init__(self, *args, team=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['owner'].label_from_instance = display_name
+        self.fields['owner'].queryset = team_owner_choices(team)
+        if team:
+            self.fields['owner'].error_messages['invalid_choice'] = (
+                f'That person is not a member of {team.name}.'
+            )
+
+
+class IssueRankForm(forms.Form):
+    """An empty value clears the rank."""
+    rank = forms.TypedChoiceField(
+        choices=Issue.RANK_CHOICES, coerce=int, required=False, empty_value=None,
+    )
 
 
 class IssueCommentForm(forms.Form):

@@ -100,6 +100,8 @@ def pk_urls(f):
         (f'/rocks/milestones/{f["milestone"].pk}/delete/', {}),
         (f'/issues/{f["issue"].pk}/status/', {'status': Issue.STATUS_IN_IDS}),
         (f'/issues/{f["issue"].pk}/delegate/', {}),
+        (f'/issues/{f["issue"].pk}/owner/', {'owner': ''}),
+        (f'/issues/{f["issue"].pk}/rank/', {'rank': 1}),
         (f'/issues/{f["issue"].pk}/comment/', {'notes': 'x'}),
         (f'/todos/{f["todo"].pk}/complete/', {}),
         (f'/todos/{f["todo"].pk}/escalate/', {}),

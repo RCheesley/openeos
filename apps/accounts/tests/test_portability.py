@@ -134,7 +134,7 @@ def populate_org(label):
     issue = Issue.objects.create(
         title=f'{label} Issue', originating_team=team, created_by=former,
         delegated_to_team=team2, issue_type=Issue.TYPE_LONG_TERM, target_quarter=2,
-        target_year=2026,
+        target_year=2026, owner=member, rank=2,
     )
     issue.linked_rocks.add(rock)
     activity = IssueActivity.objects.create(
@@ -429,6 +429,9 @@ class BuildArchiveTest(MediaRootMixin, TestCase):
         self.assertEqual(row['linked_rocks'], 'Alpha Rock')
         self.assertEqual(row['linked_rocks_ids'], str(self.a['rock'].pk))
         self.assertEqual(row['created_by'], 'alphaformer')
+        self.assertEqual(row['owner'], 'alphamember')
+        self.assertEqual(row['owner_id'], str(self.a['member'].pk))
+        self.assertEqual(row['rank'], '2')
 
         rows = list(csv.reader(io.StringIO(self.archive.read('csv/user.csv').decode())))
         self.assertEqual(rows[0], ['id', *USER_FIELDS])

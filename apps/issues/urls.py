@@ -12,5 +12,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.IssueDeleteView.as_view(), name='delete'),
     path('<int:pk>/status/', views.IssueStatusView.as_view(), name='status'),
     path('<int:pk>/delegate/', views.IssueDelegateView.as_view(), name='delegate'),
+    path('<int:pk>/owner/', views.IssueOwnerView.as_view(), name='owner'),
+    path('<int:pk>/rank/', views.IssueRankView.as_view(), name='rank'),
     path('<int:pk>/comment/', views.IssueCommentView.as_view(), name='comment'),
 ]

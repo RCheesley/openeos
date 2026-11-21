@@ -69,13 +69,21 @@
 </div>
 {% endif %}
 
+{# Rank filter: show only the top rank #}
+<div class="mb-2">
+    <a href="?{{ rank_toggle_query }}" class="btn btn-sm {% if rank_filter %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+       {% if rank_filter %}aria-current="true"{% endif %}>
+        {% if rank_filter %}<i class="bi bi-check-lg me-1" aria-hidden="true"></i>{% endif %}Rank 1 only{% if rank_filter %}<span class="visually-hidden"> (on, select to show every rank)</span>{% endif %}
+    </a>
+</div>
+
 {# ── Issue list ── #}
 {% if issues %}
 <p class="text-muted small mb-2">{{ issues|length }} {% term 'issue' count=issues|length %}</p>
 <div class="card border-0 shadow-sm">
     <ul class="list-group list-group-flush">
         {% for issue in issues %}
-        <li class="list-group-item px-3 py-3">
+        <li class="list-group-item px-3 py-3" id="issue-{{ issue.pk }}">
             <div class="d-flex align-items-start gap-3">
 
                 {# Type + Status badges #}
@@ -119,6 +127,13 @@
                         {{ issue.description|truncatewords:20 }}
                     </div>
                     {% endif %}
+                    {# Owner + rank #}
+                    <div class="small mt-2 d-flex gap-3 flex-wrap align-items-center">
+                        {% if issue.owner %}
+                        <span class="text-muted"><i class="bi bi-person me-1" aria-hidden="true"></i>Owner: {{ issue.owner.get_full_name|default:issue.owner.username }}</span>
+                        {% endif %}
+                        {% include "issues/_rank_control.html" with can_rank=issue.can_rank next_url=request.get_full_path %}
+                    </div>
                 </div>
 
                 {# Created by + date #}

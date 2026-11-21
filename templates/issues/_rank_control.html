@@ -1,0 +1,26 @@
+{% comment %}
+Rank control for one Issue: three buttons, one click each, no page of
+its own. Expects `issue`, `can_rank` (may this person rank it) and `next_url`.
+The current rank is said in words and marked with a tick, not by colour alone;
+pressing the current rank again clears it.
+{% endcomment %}
+{% if can_rank and issue.is_open %}
+<form method="post" action="{% url 'issues:rank' issue.pk %}" class="d-inline-flex align-items-center gap-2">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <span class="small text-muted" aria-hidden="true">Rank</span>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Rank for {{ issue.title }}: {{ issue.rank_label }}">
+        {% for value, label, is_current in issue.rank_options %}
+        <button type="submit" name="rank" value="{% if not is_current %}{{ value }}{% endif %}"
+                class="btn py-0 {% if is_current %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+                aria-pressed="{{ is_current|yesno:'true,false' }}"
+                title="{% if is_current %}{{ label }}: current rank, press to clear{% else %}Set {{ label|lower }}{% endif %}">
+            {% if is_current %}<i class="bi bi-check-lg" aria-hidden="true"></i>{% endif %}<span aria-hidden="true">{{ value }}</span>
+            <span class="visually-hidden">{% if is_current %}{{ label }}, current rank. Press to clear.{% else %}Set {{ label|lower }}{% endif %}</span>
+        </button>
+        {% endfor %}
+    </div>
+</form>
+{% elif issue.rank %}
+<span class="badge text-bg-light border">{{ issue.rank_label }}</span>
+{% endif %}

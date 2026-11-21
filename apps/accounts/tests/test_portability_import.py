@@ -128,6 +128,9 @@ class RoundTripTest(ImportTestBase):
         self.assertEqual(issue.delegated_to_team.organization, self.new_org)
         self.assertEqual(list(issue.linked_rocks.all()), [rock])
         self.assertEqual(issue.created_by.username, 'alphaformer')
+        self.assertEqual(issue.owner.username, 'alphamember')
+        self.assertNotEqual(issue.owner, self.a['member'])
+        self.assertEqual(issue.rank, 2)
         self.assertEqual(issue.activity.get().actor, self.admin)
 
         headline = Headline.objects.get(meeting__team__organization=self.new_org)

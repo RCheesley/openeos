@@ -16,13 +16,13 @@ class IssueActivityInline(admin.TabularInline):
 @admin.register(Issue)
 class IssueAdmin(admin.ModelAdmin):
     list_display = (
-        'title', 'issue_type', 'status', 'originating_team',
-        'delegated_to_team', 'created_by', 'created_at',
+        'title', 'issue_type', 'status', 'rank', 'originating_team',
+        'delegated_to_team', 'owner', 'created_by', 'created_at',
     )
     list_filter = ('issue_type', 'status', 'originating_team', 'delegated_to_team')
     search_fields = ('title', 'description')
     readonly_fields = ('created_at', 'updated_at')
-    autocomplete_fields = ('originating_team', 'delegated_to_team', 'created_by')
+    autocomplete_fields = ('originating_team', 'delegated_to_team', 'created_by', 'owner')
     filter_horizontal = ('linked_rocks',)
     inlines = [IssueActivityInline]
 
