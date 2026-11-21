@@ -19,6 +19,40 @@
     </div>
 </div>
 
+{# ── Scope hint: which teams this list covers ── #}
+{% if scope == 'all' %}
+<p class="text-muted small mb-3">
+    Showing all your teams ({{ scoped_teams|length }})
+    {% if active_team %}
+    · <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=team">Back to {{ active_team.name }}</a>
+    {% endif %}
+</p>
+{% elif other_todos_total %}
+<p class="text-muted small mb-3">
+    Showing {{ active_team.name }}
+    · <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=all" title="{{ other_teams_summary }}">
+        {{ other_todos_total }} more on other teams</a>
+</p>
+{% endif %}
+
+{# ── Scope toggle: the active team, or every team the user may see ── #}
+{% if visible_teams|length > 1 and active_team %}
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Which teams to show">
+        <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=team"
+           class="btn {% if scope == 'team' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+           {% if scope == 'team' %}aria-current="true"{% endif %}>
+            This team
+        </a>
+        <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=all"
+           class="btn {% if scope == 'all' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+           {% if scope == 'all' %}aria-current="true"{% endif %}>
+            All teams
+        </a>
+    </div>
+</div>
+{% endif %}
+
 {# ── View tabs (Mine / Team) ── #}
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
@@ -70,6 +104,21 @@
 
 {# ── To-Do list ── #}
 {% if todos %}
+{% comment %}
+One card per team. Inside the loop ``todos`` is that team's share of the list,
+so the rows below read the same whether the page covers one team or several.
+{% endcomment %}
+{% for team, todos in teams_todos %}
+{# ── Team heading, only when the list spans several teams ── #}
+{% if scope == 'all' %}
+<div class="d-flex align-items-center mb-2{% if not forloop.first %} mt-4{% endif %}">
+    <h2 class="h5 mb-0 me-2">{{ team.name }}</h2>
+    <span class="badge bg-light text-dark border">
+        {{ todos|length }}
+        {% if todos|length == 1 %}{{ terms.todo }}{% else %}{{ terms.todos }}{% endif %}
+    </span>
+</div>
+{% endif %}
 <div class="card border-0 shadow-sm">
     <ul class="list-group list-group-flush">
         {% for todo in todos %}
@@ -116,6 +165,12 @@
                         {% elif escalation == 1 %}
                         <span class="badge bg-warning text-dark">
                             <i class="bi bi-clock me-1"></i>{{ todo.days_open }} days open
+                        </span>
+                        {% endif %}
+                        {# Team (all-teams view only) #}
+                        {% if scope == 'all' %}
+                        <span class="text-muted small">
+                            <i class="bi bi-people me-1" aria-hidden="true"></i>{{ todo.team.name }}
                         </span>
                         {% endif %}
                     </div>
@@ -179,6 +234,7 @@
         {% endfor %}
     </ul>
 </div>
+{% endfor %}
 
 {% else %}
 <div class="text-center py-5 text-muted">

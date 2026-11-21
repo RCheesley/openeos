@@ -18,6 +18,40 @@
     </div>
 </div>
 
+{# ── Scope hint: which teams this list covers ── #}
+{% if scope == 'all' %}
+<p class="text-muted small mb-3">
+    Showing all your teams ({{ scoped_teams|length }})
+    {% if active_team %}
+    · <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=team">Back to {{ active_team.name }}</a>
+    {% endif %}
+</p>
+{% elif other_issues_total %}
+<p class="text-muted small mb-3">
+    Showing {{ active_team.name }}
+    · <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=all" title="{{ other_teams_summary }}">
+        {{ other_issues_total }} more on other teams</a>
+</p>
+{% endif %}
+
+{# ── Scope toggle: the active team, or every team the user may see ── #}
+{% if visible_teams|length > 1 and active_team %}
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Which teams to show">
+        <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=team"
+           class="btn {% if scope == 'team' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+           {% if scope == 'team' %}aria-current="true"{% endif %}>
+            This team
+        </a>
+        <a href="?{% if filter_query %}{{ filter_query }}&amp;{% endif %}scope=all"
+           class="btn {% if scope == 'all' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+           {% if scope == 'all' %}aria-current="true"{% endif %}>
+            All teams
+        </a>
+    </div>
+</div>
+{% endif %}
+
 {# ── Filters ── #}
 <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
 
@@ -72,6 +106,21 @@
 {# ── Issue list ── #}
 {% if issues %}
 <p class="text-muted small mb-2">{{ issues|length }} {% term 'issue' count=issues|length %}</p>
+{% comment %}
+One card per team. Inside the loop ``issues`` is that team's share of the list,
+so the rows below read the same whether the page covers one team or several.
+{% endcomment %}
+{% for team, issues in teams_issues %}
+{# ── Team heading, only when the list spans several teams ── #}
+{% if scope == 'all' %}
+<div class="d-flex align-items-center mb-2{% if not forloop.first %} mt-4{% endif %}">
+    <h2 class="h5 mb-0 me-2">{{ team.name }}</h2>
+    <span class="badge bg-light text-dark border">
+        {{ issues|length }}
+        {% if issues|length == 1 %}{{ terms.issue }}{% else %}{{ terms.issues }}{% endif %}
+    </span>
+</div>
+{% endif %}
 <div class="card border-0 shadow-sm">
     <ul class="list-group list-group-flush">
         {% for issue in issues %}
@@ -161,6 +210,7 @@
         {% endfor %}
     </ul>
 </div>
+{% endfor %}
 
 {% else %}
 <div class="text-center py-5 text-muted">

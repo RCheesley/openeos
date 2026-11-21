@@ -1,4 +1,5 @@
 from datetime import date
+from urllib.parse import urlencode
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
@@ -10,20 +11,47 @@ from .models import ToDo
 from .forms import ToDoForm
 from apps.accounts.scoping import OrgScopedMixin, get_active_team, get_org_object_or_404
 from apps.accounts.terminology import get_terms
+from apps.accounts.team_scope import (
+    SCOPE_ALL, count_other_teams, get_scope, get_visible_teams, group_by_team,
+    summarise_other_teams,
+)
 
 
 # ---------------------------------------------------------------------------
 # List — My To-Dos / Team To-Dos
 # ---------------------------------------------------------------------------
 
+SCOPE_SESSION_KEY = 'todos_scope'
+
+
 class ToDoListView(LoginRequiredMixin, ListView):
+    """The active team's To-Dos, or every visible team's with ``?scope=all``.
+
+    The scope works as on the Rocks and Scorecards lists (see
+    ``apps.accounts.team_scope``) and is kept in the session under its own
+    key. It sits above the Mine / Team tabs and the status filters, which
+    narrow whichever teams it covers: "mine" in all teams is every To-Do
+    the user owns on those teams. The default is the active team, as before.
+    """
     model = ToDo
     template_name = 'todos/todo_list.html'
     context_object_name = 'todos'
 
-    def get_queryset(self):
+    def _scope(self):
+        """``(scope, active team, visible teams, listed teams)``."""
         team = get_active_team(self.request)
-        if not team:
+        visible_teams = list(get_visible_teams(self.request))
+        scope = get_scope(self.request, SCOPE_SESSION_KEY)
+        if not team and visible_teams:
+            # An organisation admin on no team has no single team to show.
+            scope = SCOPE_ALL
+        if scope == SCOPE_ALL:
+            return scope, team, visible_teams, visible_teams
+        return scope, team, visible_teams, [team] if team else []
+
+    def _filtered(self, teams):
+        """To-Dos on ``teams`` narrowed by the Mine / Team tab and the status filter."""
+        if not teams:
             return ToDo.objects.none()
 
         view = self.request.GET.get('view', 'mine')
@@ -31,7 +59,7 @@ class ToDoListView(LoginRequiredMixin, ListView):
 
         qs = (
             ToDo.objects
-            .filter(team=team)
+            .filter(team__in=teams)
             .select_related('owner', 'owner__profile', 'team', 'linked_rock', 'linked_issue')
         )
 
@@ -47,13 +75,32 @@ class ToDoListView(LoginRequiredMixin, ListView):
 
         return qs
 
+    def get_queryset(self):
+        return self._filtered(self._scope()[3])
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         today = date.today()
+        view = self.request.GET.get('view', 'mine')
+        status = self.request.GET.get('status', 'open')
+        scope, team, visible_teams, scoped_teams = self._scope()
+        other_team_counts = []
+        if scope != SCOPE_ALL and team:
+            other_team_counts = count_other_teams(self._filtered(visible_teams), team, visible_teams)
         ctx.update({
-            'view_filter': self.request.GET.get('view', 'mine'),
-            'status_filter': self.request.GET.get('status', 'open'),
+            'view_filter': view,
+            'status_filter': status,
             'today': today,
+            'scope': scope,
+            # Tab and status, for links that switch scope without losing them.
+            'filter_query': urlencode({'view': view, 'status': status}),
+            'active_team': team,
+            'visible_teams': visible_teams,
+            'scoped_teams': scoped_teams,
+            'teams_todos': group_by_team(ctx['todos'], scoped_teams),
+            'other_team_counts': other_team_counts,
+            'other_todos_total': sum(n for _, n in other_team_counts),
+            'other_teams_summary': summarise_other_teams(other_team_counts),
         })
         try:
             ctx['overdue_count'] = (

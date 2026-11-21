@@ -35,18 +35,32 @@ def get_visible_teams(request):
     return get_assignable_teams(request.user, get_active_org(request))
 
 
-def count_other_teams(queryset, team, visible_teams):
+def count_other_teams(queryset, team, visible_teams, team_field='team'):
     """How many records in ``queryset`` each visible team other than ``team`` has.
 
     Returns ``[(team, n), ...]`` in ``visible_teams`` order, leaving out teams
     with none. The caller narrows ``queryset`` first (quarter, status, active
     flag) so the counts match what the all-teams view would list.
+    ``team_field`` names the foreign key to the team where it is not ``team``.
     """
     counts = dict(
-        queryset.filter(team__in=visible_teams).exclude(team=team)
-        .order_by().values('team').annotate(n=Count('id')).values_list('team', 'n')
+        queryset.filter(**{f'{team_field}__in': visible_teams}).exclude(**{team_field: team})
+        .order_by().values(team_field).annotate(n=Count('id')).values_list(team_field, 'n')
     )
     return [(t, counts[t.pk]) for t in visible_teams if t.pk in counts]
+
+
+def group_by_team(records, teams, team_field='team'):
+    """``[(team, [record, ...]), ...]`` in ``teams`` order, leaving out teams with none.
+
+    Records keep the order they arrive in within their team, so whatever
+    sorting the list applies carries into each group. Each record appears
+    once, under the team its ``team_field`` points at.
+    """
+    grouped = {}
+    for record in records:
+        grouped.setdefault(getattr(record, f'{team_field}_id'), []).append(record)
+    return [(t, grouped[t.pk]) for t in teams if t.pk in grouped]
 
 
 def summarise_other_teams(counts):

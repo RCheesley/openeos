@@ -12,6 +12,10 @@ from .forms import IssueForm, IssueStatusForm, IssueDelegateForm, IssueCommentFo
 from apps.accounts.scoping import (
     OrgScopedMixin, get_active_team, get_org_object_or_404, is_org_admin,
 )
+from apps.accounts.team_scope import (
+    SCOPE_ALL, count_other_teams, get_scope, get_visible_teams, group_by_team,
+    summarise_other_teams,
+)
 from apps.accounts.terminology import get_terms
 
 ISSUE_ORG_LOOKUP = 'originating_team__organization'
@@ -35,19 +39,23 @@ def _can_edit(user, issue):
 def _filtered_issues(request):
     """Shared filter logic for the Issue list and its CSV export, so the
     export always matches whatever the list page is currently showing."""
-    team = get_active_team(request)
-    if not team:
+    return _issues_on(request, _issue_scope(request)[3])
+
+
+def _issues_on(request, teams):
+    """The Issues of ``teams`` narrowed by the view, status and type filters."""
+    if not teams:
         return Issue.objects.none()
     qs = (
         Issue.objects
-        .filter(originating_team=team)
+        .filter(originating_team__in=teams)
         .select_related('originating_team', 'delegated_to_team', 'created_by', 'created_by__profile')
         .prefetch_related('linked_rocks')
     )
-    # View filter: 'delegated' shows issues delegated TO the active team
+    # View filter: 'delegated' shows issues delegated TO the listed teams
     view = request.GET.get('view', '')
     if view == 'delegated':
-        qs = Issue.objects.filter(delegated_to_team=team).select_related(
+        qs = Issue.objects.filter(delegated_to_team__in=teams).select_related(
             'originating_team', 'delegated_to_team', 'created_by', 'created_by__profile'
         ).prefetch_related('linked_rocks')
     # Status filter
@@ -65,6 +73,34 @@ def _filtered_issues(request):
     return qs
 
 
+SCOPE_SESSION_KEY = 'issues_scope'
+
+
+def _issue_scope(request):
+    """Which teams the list covers: ``(scope, active team, visible teams, listed teams)``.
+
+    The scope works as on the Rocks and Scorecards lists (see
+    ``apps.accounts.team_scope``) and is kept in the session under its own
+    key. The default is the active team, as before.
+    """
+    team = get_active_team(request)
+    visible_teams = list(get_visible_teams(request))
+    scope = get_scope(request, SCOPE_SESSION_KEY)
+    if not team and visible_teams:
+        # An organisation admin on no team has no single team to show.
+        scope = SCOPE_ALL
+    if scope == SCOPE_ALL:
+        return scope, team, visible_teams, visible_teams
+    return scope, team, visible_teams, [team] if team else []
+
+
+def _team_field(request):
+    """The team an Issue is listed under: the one that raised it, or, with
+    ``?view=delegated``, the one it is delegated to. Either way each Issue
+    has one such team, so the all-teams view lists it once."""
+    return 'delegated_to_team' if request.GET.get('view', '') == 'delegated' else 'originating_team'
+
+
 # ---------------------------------------------------------------------------
 # List
 # ---------------------------------------------------------------------------
@@ -79,6 +115,7 @@ class IssueListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        ctx.update(self._scope_context(ctx['issues']))
         ctx.update({
             'status_filter': self.request.GET.get('status', ''),
             'type_filter': self.request.GET.get('type', ''),
@@ -87,6 +124,32 @@ class IssueListView(LoginRequiredMixin, ListView):
             'type_choices': Issue.TYPE_CHOICES,
         })
         return ctx
+
+    def _scope_context(self, issues):
+        """The team scope, the Issues grouped by team and the other-teams hint."""
+        request = self.request
+        scope, team, visible_teams, scoped_teams = _issue_scope(request)
+        team_field = _team_field(request)
+        other_team_counts = []
+        if scope != SCOPE_ALL and team:
+            other_team_counts = count_other_teams(
+                _issues_on(request, visible_teams).prefetch_related(None),
+                team, visible_teams, team_field=team_field,
+            )
+        # Everything but the scope, for links that switch scope without losing the filters.
+        filter_query = request.GET.copy()
+        filter_query.pop('scope', None)
+        return {
+            'scope': scope,
+            'filter_query': filter_query.urlencode(),
+            'active_team': team,
+            'visible_teams': visible_teams,
+            'scoped_teams': scoped_teams,
+            'teams_issues': group_by_team(issues, scoped_teams, team_field),
+            'other_team_counts': other_team_counts,
+            'other_issues_total': sum(n for _, n in other_team_counts),
+            'other_teams_summary': summarise_other_teams(other_team_counts),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -275,12 +338,16 @@ class IssueCsvExportView(LoginRequiredMixin, View):
     """Export whatever the Issue list page is currently showing as CSV.
 
     Reuses ``_filtered_issues`` so the export always mirrors the same team
-    and filters (status/type/view) as the list page, rather than hardcoding
-    an "open issues only" rule.
+    scope (this team or all teams) and filters (status/type/view) as the
+    list page, rather than hardcoding an "open issues only" rule.
     """
 
     def get(self, request):
-        issues = _filtered_issues(request)
+        # Team by team, as the list shows them when it covers several teams.
+        teams_issues = group_by_team(
+            _filtered_issues(request), _issue_scope(request)[3], _team_field(request)
+        )
+        issues = [issue for _, team_issues in teams_issues for issue in team_issues]
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="issues_export.csv"'
         writer = csv.writer(response)
