@@ -9,7 +9,7 @@ from apps.accounts.scoping import SESSION_TEAM_KEY
 from apps.issues.models import Issue
 from apps.meetings.models import Meeting
 from apps.rocks.models import Rock, RockDependency, RockMilestone
-from apps.scorecards.models import Scorecard, ScorecardEntry, ScorecardMetric
+from apps.scorecards.models import Scorecard, ScorecardEntry, ScorecardMetric, build_periods
 from apps.todos.models import ToDo
 from apps.vision.models import VTO, VTOCoreValue
 
@@ -58,6 +58,11 @@ def build_org(label):
 
 def pk_urls(f):
     """Every URL that reaches a record by primary key, with the POST data it expects."""
+    # Entering a value for an earlier week on the board, for the whole board and for one metric.
+    earlier_week = (
+        f'/scorecards/{f["scorecard"].pk}/enter/'
+        f'?frequency=weekly&period={build_periods(ScorecardMetric.FREQ_WEEKLY)[0].isoformat()}'
+    )
     gets = [
         f'/rocks/{f["rock"].pk}/',
         f'/rocks/{f["rock"].pk}/edit/',
@@ -73,6 +78,8 @@ def pk_urls(f):
         f'/scorecards/{f["scorecard"].pk}/edit/',
         f'/scorecards/{f["scorecard"].pk}/delete/',
         f'/scorecards/{f["scorecard"].pk}/enter/',
+        earlier_week,
+        f'{earlier_week}&metric={f["metric"].pk}',
         f'/scorecards/{f["scorecard"].pk}/metrics/add/',
         f'/scorecards/metric/{f["metric"].pk}/edit/',
         f'/vision/core-values/{f["core_value"].pk}/edit/',
@@ -104,6 +111,8 @@ def pk_urls(f):
         (f'/todos/{f["todo"].pk}/complete/', {}),
         (f'/todos/{f["todo"].pk}/escalate/', {}),
         (f'/scorecards/{f["scorecard"].pk}/enter/', {}),
+        (earlier_week, {}),
+        (f'{earlier_week}&metric={f["metric"].pk}', {f'value_{f["metric"].pk}': '5'}),
         (f'/scorecards/metric/{f["metric"].pk}/delete/', {}),
         (f'/scorecards/entry/{f["entry"].pk}/escalate/', {}),
         (f'/teams/{f["team"].pk}/members/', {'users': [f['user'].pk]}),

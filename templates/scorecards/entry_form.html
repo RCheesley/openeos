@@ -14,7 +14,7 @@
             </div>
         </div>
 
-        <p class="text-muted small mb-4">Leave a field blank to keep the existing value (or skip if not yet available).</p>
+        <p class="text-muted small mb-4">{% if is_backfill %}You are entering values for an earlier period: {{ period_label }}. {% endif %}Leave a field blank to keep the existing value (or skip if not yet available).</p>
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-0">
@@ -35,7 +35,7 @@
                             {% for row in rows %}
                             <tr class="{% if row.error %}table-danger{% endif %}">
                                 <td>
-                                    <div class="fw-semibold small">{{ row.metric.name }}</div>
+                                    <div class="fw-semibold small">{{ row.metric.name }}{% if show_row_periods %} <span class="fw-normal text-muted">· {{ row.period_label }}</span>{% endif %}</div>
                                     <div class="text-muted" style="font-size:.7rem">{{ row.metric.get_metric_type_display }}</div>
                                 </td>
                                 <td class="text-center text-muted small">{{ row.metric.format_goal }}</td>
@@ -70,6 +70,9 @@
                                         {% else %}{{ row.entry.value|floatformat:"2g" }}
                                         {% endif %}
                                     </span>
+                                    {% if row.entry.entered_by %}
+                                    <div class="text-muted" style="font-size:.7rem">{{ row.entry.entered_by.get_full_name|default:row.entry.entered_by.username }}, {{ row.entry.entered_at|date:"j M Y" }}</div>
+                                    {% endif %}
                                     {% else %}
                                     <span class="text-muted small">—</span>
                                     {% endif %}

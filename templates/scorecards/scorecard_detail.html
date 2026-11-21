@@ -20,7 +20,7 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{% url 'scorecards:enter' scorecard.pk %}" class="btn btn-primary">
-            <i class="bi bi-pencil-square me-1"></i>Enter this week
+            <i class="bi bi-pencil-square me-1"></i>{% if weekly_only %}Enter this week{% else %}Enter current values{% endif %}
         </a>
         <a href="{% url 'scorecards:export_csv' scorecard.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-download me-1"></i>Export CSV
@@ -43,8 +43,13 @@
 <p class="text-muted mb-4">{{ scorecard.description }}</p>
 {% endif %}
 
-{# ── 13-week table ── #}
-{% if table %}
+{# ── 13-period table, one per cadence (a weekly-only board has just the weekly one) ── #}
+{% if sections %}
+{% for section in sections %}
+{% with periods=section.periods table=section.table current_week=section.current %}
+{% if not weekly_only %}
+<h2 class="h6 text-uppercase text-muted mb-2">{{ section.label }} metrics</h2>
+{% endif %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -54,11 +59,14 @@
                         <th style="min-width:180px">Metric</th>
                         <th class="text-center" style="min-width:60px">Goal</th>
                         <th class="text-center text-muted small" style="min-width:40px">Owner</th>
-                        {% for period in periods %}
+                        {% for column in section.columns %}
+                        {% with period=column.period %}
                         <th class="text-center small {% if period == current_week %}table-primary{% endif %}" style="min-width:60px">
-                            {{ period|date:"M j" }}
+                            <a href="{% url 'scorecards:enter' scorecard.pk %}?frequency={{ section.frequency }}&amp;period={{ period|date:'Y-m-d' }}"
+                               class="text-reset" title="Enter or correct values for {{ column.title }}">{{ column.label }}</a>
                             {% if period == current_week %}<div style="font-size:.6rem;font-weight:700">NOW</div>{% endif %}
                         </th>
+                        {% endwith %}
                         {% endfor %}
                     </tr>
                 </thead>
@@ -104,18 +112,20 @@
                         </td>
 
                         {# Weekly cells #}
-                        {% for cell in row.cells %}
+                        {% for period, cell in row.period_cells %}
                         <td class="text-center small {% if cell %}{{ cell.cell_class }}{% else %}table-secondary{% endif %}"
                             {% if period == current_week %}style="border-left:2px solid #0d6efd"{% endif %}>
                             {% if cell %}
-                                <span title="{{ cell.notes|default:'' }}">
+                                <a href="{% url 'scorecards:enter' scorecard.pk %}?frequency={{ section.frequency }}&amp;period={{ period|date:'Y-m-d' }}&amp;metric={{ row.metric.pk }}"
+                                   class="text-reset"
+                                   title="{% if cell.entered_by %}Entered by {{ cell.entered_by.get_full_name|default:cell.entered_by.username }}, {{ cell.entered_at|date:'j M Y' }}. {% endif %}{% if cell.notes %}{{ cell.notes }} {% endif %}Select to correct.">
                                     {{ row.metric.format_value|default:'' }}
                                     {# Render value through metric's formatter #}
                                     {% if row.metric.metric_type == 'integer' %}{{ cell.value|floatformat:"0g" }}
                                     {% elif row.metric.metric_type == 'percentage' %}{{ cell.value|floatformat:1 }}%
                                     {% else %}{{ cell.value|floatformat:"2g" }}
                                     {% endif %}
-                                </span>
+                                </a>
                                 {% if not cell.on_track %}
                                 <form method="post" action="{% url 'scorecards:entry_escalate' cell.pk %}" class="d-inline">
                                     {% csrf_token %}
@@ -126,7 +136,9 @@
                                 </form>
                                 {% endif %}
                             {% else %}
-                                <span class="text-muted">—</span>
+                                <a href="{% url 'scorecards:enter' scorecard.pk %}?frequency={{ section.frequency }}&amp;period={{ period|date:'Y-m-d' }}&amp;metric={{ row.metric.pk }}"
+                                   class="text-muted text-decoration-none d-block"
+                                   aria-label="Enter {{ row.metric.name }} for the period starting {{ period|date:'j M Y' }}">—</a>
                             {% endif %}
                         </td>
                         {% endfor %}
@@ -137,12 +149,15 @@
         </div>
     </div>
 </div>
+{% endwith %}
+{% endfor %}
 
 {# Legend #}
-<div class="d-flex gap-3 text-muted small mb-4">
+<div class="d-flex flex-wrap gap-3 text-muted small mb-4">
     <span><span class="badge bg-success">&nbsp;</span> On track</span>
     <span><span class="badge bg-danger">&nbsp;</span> Off track — click <i class="bi bi-exclamation-triangle"></i> to escalate to {{ terms.issues }}</span>
     <span><span class="badge bg-secondary">&nbsp;</span> Not entered</span>
+    <span>Select a value, a dash or a column heading to enter or correct that period.</span>
 </div>
 
 {% else %}

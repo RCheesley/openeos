@@ -17,6 +17,57 @@ def _current_month_start():
     return date.today().replace(day=1)
 
 
+# How often a metric is measured. Weeks start on Monday; months, quarters and
+# years follow the calendar (quarters start in January, April, July, October).
+FREQ_WEEKLY = 'weekly'
+FREQ_MONTHLY = 'monthly'
+FREQ_QUARTERLY = 'quarterly'
+FREQ_ANNUAL = 'annual'
+_MONTHS_PER_PERIOD = {FREQ_MONTHLY: 1, FREQ_QUARTERLY: 3, FREQ_ANNUAL: 12}
+
+
+def period_start_for(frequency, day):
+    """Return the first day of the period of ``frequency`` that contains ``day``."""
+    if frequency == FREQ_WEEKLY:
+        return day - timedelta(days=day.weekday())  # Monday
+    span = _MONTHS_PER_PERIOD[frequency]
+    return date(day.year, day.month - (day.month - 1) % span, 1)
+
+
+def shift_period(frequency, start, count):
+    """Return the period start ``count`` periods after ``start`` (before, if negative)."""
+    if frequency == FREQ_WEEKLY:
+        return start + timedelta(weeks=count)
+    months = start.year * 12 + (start.month - 1) + count * _MONTHS_PER_PERIOD[frequency]
+    return date(months // 12, months % 12 + 1, 1)
+
+
+def build_periods(frequency, n=13, today=None):
+    """Return the ``n`` period starts ending with the current period, oldest first."""
+    latest = period_start_for(frequency, today or date.today())
+    return [shift_period(frequency, latest, -i) for i in range(n - 1, -1, -1)]
+
+
+def period_label(frequency, start):
+    """A period's name in a sentence or page heading, such as "November 2026"."""
+    if frequency == FREQ_WEEKLY:
+        return f'Week of {start.strftime("%b %d, %Y")}'
+    if frequency == FREQ_MONTHLY:
+        return start.strftime('%B %Y')
+    if frequency == FREQ_QUARTERLY:
+        return f'Q{(start.month - 1) // 3 + 1} {start.year}'
+    return str(start.year)
+
+
+def period_column_label(frequency, start):
+    """A period's short name for a table column heading."""
+    if frequency == FREQ_WEEKLY:
+        return f'{start.strftime("%b")} {start.day}'
+    if frequency == FREQ_MONTHLY:
+        return start.strftime('%b %Y')
+    return period_label(frequency, start)
+
+
 class Scorecard(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -68,11 +119,15 @@ class ScorecardMetric(models.Model):
         (DIR_EQUAL, 'Equal to goal'),
     ]
 
-    FREQ_WEEKLY = 'weekly'
-    FREQ_MONTHLY = 'monthly'
+    FREQ_WEEKLY = FREQ_WEEKLY
+    FREQ_MONTHLY = FREQ_MONTHLY
+    FREQ_QUARTERLY = FREQ_QUARTERLY
+    FREQ_ANNUAL = FREQ_ANNUAL
     FREQ_CHOICES = [
         (FREQ_WEEKLY, 'Weekly'),
         (FREQ_MONTHLY, 'Monthly'),
+        (FREQ_QUARTERLY, 'Quarterly'),
+        (FREQ_ANNUAL, 'Annual'),
     ]
 
     scorecard = models.ForeignKey(Scorecard, on_delete=models.CASCADE, related_name='metrics')
@@ -114,9 +169,10 @@ class ScorecardMetric(models.Model):
         return v == g
 
     def current_period_start(self):
-        if self.frequency == self.FREQ_WEEKLY:
-            return _current_week_start()
-        return _current_month_start()
+        return period_start_for(self.frequency, date.today())
+
+    def period_label(self, start):
+        return period_label(self.frequency, start)
 
     def latest_entry(self):
         return self.entries.order_by('-period_start').first()
@@ -132,6 +188,8 @@ class ScorecardEntry(models.Model):
         User, on_delete=models.SET_NULL, null=True, related_name='scorecard_entries'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    # When the value was last saved. Empty on entries made before this was recorded.
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     class Meta:
         ordering = ['-period_start']
@@ -143,6 +201,11 @@ class ScorecardEntry(models.Model):
     def save(self, *args, **kwargs):
         self.on_track = self.metric.compute_on_track(self.value)
         super().save(*args, **kwargs)
+
+    @property
+    def entered_at(self):
+        """When the value shown was saved: the last change, or else the first entry."""
+        return self.updated_at or self.created_at
 
     @property
     def cell_class(self):

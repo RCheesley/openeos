@@ -4,14 +4,17 @@ from decimal import Decimal, InvalidOperation
 from itertools import groupby
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
 from django.utils.text import slugify
 from django.contrib import messages
 
-from .models import Scorecard, ScorecardMetric, ScorecardEntry, _current_week_start, _current_month_start
+from .models import (
+    Scorecard, ScorecardMetric, ScorecardEntry, _current_week_start,
+    build_periods, period_column_label, period_label, period_start_for, shift_period,
+)
 from .forms import ScorecardForm, ScorecardMetricForm
 from apps.accounts.scoping import (
     OrgScopedMixin, get_active_org, get_active_team, get_org_object_or_404,
@@ -20,50 +23,101 @@ from apps.accounts.team_scope import (
     SCOPE_ALL, count_other_teams, get_scope, get_visible_teams, summarise_other_teams,
 )
 from apps.accounts.terminology import get_terms
+from apps.audit.services import record
 
 SCOPE_SESSION_KEY = 'scorecards_scope'
 
 
 def _build_periods(n=13, frequency='weekly'):
     """Return list of n period-start dates ending with the current period, oldest first."""
-    if frequency == 'weekly':
-        latest = _current_week_start()
-        return [latest - timedelta(weeks=i) for i in range(n - 1, -1, -1)]
-    latest = _current_month_start()
-    periods = []
-    y, m = latest.year, latest.month
-    for _ in range(n):
-        periods.append(date(y, m, 1))
-        m -= 1
-        if m == 0:
-            m, y = 12, y - 1
-    return list(reversed(periods))
+    return build_periods(frequency, n)
 
 
-def _build_scorecard_table(scorecard):
-    """Build the 13-week periods and per-metric cell table for a scorecard's history.
+def _entries_by_period(metrics, frequency, periods):
+    """Map (metric id, period start) to the entry shown for that period.
+
+    An entry belongs to the period its date falls in. Weekly entries are stored
+    on their Monday, so each is its own week. Entries for a longer cadence are
+    stored on the period's first day, but values entered before cadences were
+    honoured sit on a Monday inside the month: those are shown in that month
+    (the latest one wins) and are left stored as they are.
+    """
+    entries = (
+        ScorecardEntry.objects
+        .filter(
+            metric__in=metrics,
+            period_start__gte=periods[0],
+            period_start__lt=shift_period(frequency, periods[-1], 1),
+        )
+        .select_related('entered_by')
+        .order_by('period_start')
+    )
+    return {(e.metric_id, period_start_for(frequency, e.period_start)): e for e in entries}
+
+
+def _current_entries(metrics):
+    """Map metric id to the entry for that metric's own current period."""
+    current = {}
+    for frequency in {m.frequency for m in metrics}:
+        group = [m for m in metrics if m.frequency == frequency]
+        period = period_start_for(frequency, date.today())
+        for (metric_id, _), entry in _entries_by_period(group, frequency, [period]).items():
+            current[metric_id] = entry
+    return current
+
+
+def _build_scorecard_table(scorecard, frequency=ScorecardMetric.FREQ_WEEKLY):
+    """Build the 13 periods and per-metric cell table for the metrics of one cadence.
 
     Returns (periods, table) where periods is oldest→newest period-start dates and
-    table is [{'metric': m, 'cells': [entry|None, ...]}] aligned to those periods.
-    Shared by the detail view and the CSV export so both render the same data.
+    table is [{'metric': m, 'cells': [entry|None, ...], 'period_cells': [(period, entry|None), ...]}]
+    aligned to those periods.
     """
-    metrics = list(scorecard.active_metrics.select_related('owner', 'owner__profile'))
-    periods = _build_periods(13, 'weekly')
+    metrics = list(
+        scorecard.active_metrics.filter(frequency=frequency).select_related('owner', 'owner__profile')
+    )
+    periods = build_periods(frequency)
+    entry_map = _entries_by_period(metrics, frequency, periods) if metrics else {}
 
-    entry_map = {
-        (e.metric_id, e.period_start): e
-        for e in ScorecardEntry.objects.filter(
-            metric__scorecard=scorecard,
-            period_start__gte=periods[0],
-            period_start__lte=periods[-1],
-        ).select_related('entered_by')
-    }
-
-    table = [
-        {'metric': m, 'cells': [entry_map.get((m.pk, p)) for p in periods]}
-        for m in metrics
-    ]
+    table = []
+    for m in metrics:
+        cells = [entry_map.get((m.pk, p)) for p in periods]
+        table.append({'metric': m, 'cells': cells, 'period_cells': list(zip(periods, cells))})
     return periods, table
+
+
+def _build_scorecard_sections(scorecard, weekly=None):
+    """Build one table per cadence that has active metrics, weekly first.
+
+    Each cadence has its own 13 period columns, so a board that mixes weekly and
+    monthly metrics shows one table for each. ``weekly`` takes an already built
+    (periods, table) for the weekly cadence. Shared by the detail view and the
+    CSV export so both render the same data.
+    """
+    sections = []
+    for frequency, label in ScorecardMetric.FREQ_CHOICES:
+        if weekly is not None and frequency == ScorecardMetric.FREQ_WEEKLY:
+            periods, table = weekly
+        else:
+            periods, table = _build_scorecard_table(scorecard, frequency)
+        if not table:
+            continue
+        sections.append({
+            'frequency': frequency,
+            'label': label,
+            'periods': periods,
+            'columns': [
+                {
+                    'period': p,
+                    'label': period_column_label(frequency, p),
+                    'title': period_label(frequency, p),
+                }
+                for p in periods
+            ],
+            'current': periods[-1],
+            'table': table,
+        })
+    return sections
 
 
 # ---------------------------------------------------------------------------
@@ -129,13 +183,8 @@ class ScorecardListView(LoginRequiredMixin, ListView):
         summaries = []
         for sc in ctx['scorecards']:
             metrics = list(sc.active_metrics)
-            entries = {
-                e.metric_id: e
-                for e in ScorecardEntry.objects.filter(
-                    metric__scorecard=sc,
-                    period_start=current_week,
-                )
-            }
+            # Each metric is judged on its own current period (week, month, ...).
+            entries = _current_entries(metrics)
             on_track = sum(1 for m in metrics if entries.get(m.pk) and entries[m.pk].on_track)
             off_track = sum(1 for m in metrics if entries.get(m.pk) and not entries[m.pk].on_track)
             missing = sum(1 for m in metrics if m.pk not in entries)
@@ -229,16 +278,27 @@ class ScorecardDetailView(LoginRequiredMixin, OrgScopedMixin, DetailView):
         ctx['periods'] = periods
         ctx['table'] = table
         ctx['current_week'] = _current_week_start()
+        # One table per cadence. A board with only weekly metrics has the one
+        # weekly table, with no cadence heading.
+        sections = _build_scorecard_sections(sc, weekly=(periods, table))
+        ctx['sections'] = sections
+        ctx['weekly_only'] = all(s['frequency'] == ScorecardMetric.FREQ_WEEKLY for s in sections)
         ctx['metric_form'] = ScorecardMetricForm(organization=sc.team.organization)
         return ctx
 
 
 class ScorecardCsvExportView(LoginRequiredMixin, View):
-    """Export a scorecard's 13-week history as CSV."""
+    """Export a scorecard's 13-period history as CSV.
+
+    A board with one cadence is one table. A board that mixes cadences has one
+    table per cadence, each with its own heading row, separated by a blank row.
+    """
 
     def get(self, request, pk):
         scorecard = get_org_object_or_404(request, Scorecard, pk=pk)
-        periods, table = _build_scorecard_table(scorecard)
+        sections = _build_scorecard_sections(scorecard)
+        if not sections:
+            sections = [{'periods': build_periods(ScorecardMetric.FREQ_WEEKLY), 'table': []}]
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = (
@@ -246,15 +306,20 @@ class ScorecardCsvExportView(LoginRequiredMixin, View):
         )
 
         writer = csv.writer(response)
-        writer.writerow(['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in periods])
-        for row in table:
-            metric = row['metric']
-            owner_name = metric.owner.get_full_name() or metric.owner.username
-            cells = [
-                metric.format_value(entry.value) if entry else ''
-                for entry in row['cells']
-            ]
-            writer.writerow([metric.name, owner_name, metric.format_goal()] + cells)
+        for index, section in enumerate(sections):
+            if index:
+                writer.writerow([])
+            writer.writerow(
+                ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in section['periods']]
+            )
+            for row in section['table']:
+                metric = row['metric']
+                owner_name = metric.owner.get_full_name() or metric.owner.username
+                cells = [
+                    metric.format_value(entry.value) if entry else ''
+                    for entry in row['cells']
+                ]
+                writer.writerow([metric.name, owner_name, metric.format_goal()] + cells)
         return response
 
 
@@ -330,38 +395,72 @@ class MetricDeleteView(LoginRequiredMixin, View):
 
 
 # ---------------------------------------------------------------------------
-# Weekly entry — POST multiple values in one form
+# Value entry: POST multiple values in one form
 # ---------------------------------------------------------------------------
 
 class ScorecardEntryView(LoginRequiredMixin, View):
-    """GET: show entry form for current period. POST: save/update entries."""
+    """GET: show the entry form. POST: save/update entries.
+
+    With no query string the form covers every active metric, each for its own
+    current period. ``?frequency=monthly&period=2026-09-01`` instead covers the
+    metrics of that cadence for one earlier period shown on the board, to fill
+    in or correct it; adding ``&metric=<pk>`` narrows it to that one metric.
+    """
 
     template_name = 'scorecards/entry_form.html'
 
-    def _get_data(self, scorecard):
+    def _get_rows(self, request, scorecard):
+        """Return ([{'metric', 'period', 'entry'}], is_backfill) for this request."""
         metrics = list(scorecard.active_metrics.select_related('owner'))
-        current_week = _current_week_start()
-        existing = {
-            e.metric_id: e
-            for e in ScorecardEntry.objects.filter(
-                metric__scorecard=scorecard,
-                period_start=current_week,
-            )
-        }
-        return metrics, current_week, existing
+        frequency = request.GET.get('frequency')
+        raw_period = request.GET.get('period')
+        fixed_period = None
+        if frequency or raw_period:
+            if frequency not in dict(ScorecardMetric.FREQ_CHOICES):
+                raise Http404
+            try:
+                fixed_period = date.fromisoformat(raw_period or '')
+            except ValueError:
+                raise Http404
+            # Only the periods the board shows can be filled in or corrected.
+            if fixed_period not in build_periods(frequency):
+                raise Http404
+            metrics = [m for m in metrics if m.frequency == frequency]
+            metric_pk = request.GET.get('metric')
+            if metric_pk:
+                metrics = [m for m in metrics if str(m.pk) == metric_pk]
+            if not metrics:
+                raise Http404
+
+        existing = {}
+        for freq in {m.frequency for m in metrics}:
+            group = [m for m in metrics if m.frequency == freq]
+            period = fixed_period or period_start_for(freq, date.today())
+            for (metric_id, _), entry in _entries_by_period(group, freq, [period]).items():
+                existing[metric_id] = entry
+        rows = [
+            {
+                'metric': m,
+                'period': fixed_period or period_start_for(m.frequency, date.today()),
+                'entry': existing.get(m.pk),
+            }
+            for m in metrics
+        ]
+        return rows, fixed_period is not None
 
     def get(self, request, pk):
         scorecard = get_org_object_or_404(request, Scorecard, pk=pk)
-        metrics, current_week, existing = self._get_data(scorecard)
-        return self._render(request, scorecard, metrics, current_week, existing, errors={})
+        rows, is_backfill = self._get_rows(request, scorecard)
+        return self._render(request, scorecard, rows, is_backfill, errors={})
 
     def post(self, request, pk):
         scorecard = get_org_object_or_404(request, Scorecard, pk=pk)
-        metrics, current_week, existing = self._get_data(scorecard)
+        rows, is_backfill = self._get_rows(request, scorecard)
         errors = {}
         saved = 0
 
-        for metric in metrics:
+        for row in rows:
+            metric, entry = row['metric'], row['entry']
             raw = request.POST.get(f'value_{metric.pk}', '').strip()
             notes = request.POST.get(f'notes_{metric.pk}', '').strip()
             if not raw:
@@ -372,16 +471,31 @@ class ScorecardEntryView(LoginRequiredMixin, View):
                 errors[metric.pk] = 'Invalid number.'
                 continue
 
-            entry = existing.get(metric.pk)
             if entry:
+                if entry.value == value and entry.notes == notes:
+                    continue  # unchanged: keep who entered it and when
+                previous = {'value': str(entry.value), 'notes': entry.notes}
                 entry.value = value
                 entry.notes = notes
                 entry.entered_by = request.user
                 entry.save()
+                # The entry holds the latest value; the audit log keeps the one it replaced.
+                record(
+                    'scorecard.entry_changed', request=request,
+                    organization=scorecard.team.organization, target=entry,
+                    details={
+                        'metric': metric.name,
+                        'period': metric.period_label(row['period']),
+                        'previous_value': previous['value'],
+                        'previous_notes': previous['notes'],
+                        'new_value': str(value),
+                        'new_notes': notes,
+                    },
+                )
             else:
-                ScorecardEntry.objects.create(
+                row['entry'] = ScorecardEntry.objects.create(
                     metric=metric,
-                    period_start=current_week,
+                    period_start=row['period'],
                     value=value,
                     notes=notes,
                     entered_by=request.user,
@@ -389,27 +503,55 @@ class ScorecardEntryView(LoginRequiredMixin, View):
             saved += 1
 
         if errors:
-            return self._render(request, scorecard, metrics, current_week, existing, errors=errors)
+            return self._render(request, scorecard, rows, is_backfill, errors=errors)
 
-        messages.success(request, f'{saved} metric{"s" if saved != 1 else ""} updated for week of {current_week}.')
+        messages.success(
+            request,
+            f'{saved} metric{"s" if saved != 1 else ""} updated for {self._period_phrase(rows)}.',
+        )
         return redirect('scorecards:detail', pk=pk)
 
-    def _render(self, request, scorecard, metrics, current_week, existing, errors):
+    @staticmethod
+    def _shared_period(rows):
+        """Return (frequency, period) when every row is for the same period, else None."""
+        found = {(r['metric'].frequency, r['period']) for r in rows}
+        return found.pop() if len(found) == 1 else None
+
+    def _period_phrase(self, rows):
+        shared = self._shared_period(rows)
+        if not shared:
+            return 'the current period'
+        frequency, period = shared
+        if frequency == ScorecardMetric.FREQ_WEEKLY:
+            return f'week of {period}'
+        return period_label(frequency, period)
+
+    def _render(self, request, scorecard, rows, is_backfill, errors):
         from django.shortcuts import render
-        rows = []
-        for m in metrics:
-            entry = existing.get(m.pk)
-            rows.append({
+        shared = self._shared_period(rows)
+        display_rows = []
+        for r in rows:
+            m, entry = r['metric'], r['entry']
+            display_rows.append({
                 'metric': m,
                 'entry': entry,
                 'error': errors.get(m.pk),
                 'value_str': str(entry.value) if entry else '',
+                'period_label': m.period_label(r['period']),
             })
+        current_week = _current_week_start()
         return render(request, self.template_name, {
             'scorecard': scorecard,
-            'rows': rows,
+            'rows': display_rows,
             'current_week': current_week,
-            'period_label': f'Week of {current_week.strftime("%b %d, %Y")}',
+            'period_label': (
+                period_label(*shared) if shared
+                else f'Week of {current_week.strftime("%b %d, %Y")}' if not rows
+                else 'Current period'
+            ),
+            # Rows for different periods (a board that mixes cadences) each name their own.
+            'show_row_periods': bool(rows) and not shared,
+            'is_backfill': is_backfill,
         })
 
 
@@ -419,6 +561,12 @@ class ScorecardEntryView(LoginRequiredMixin, View):
 
 class MetricEscalateView(LoginRequiredMixin, View):
     """POST-only: create an Issue from an off-track metric entry."""
+
+    @staticmethod
+    def _period_phrase(metric, entry):
+        if metric.frequency == ScorecardMetric.FREQ_WEEKLY:
+            return f'the week of {entry.period_start}'
+        return metric.period_label(period_start_for(metric.frequency, entry.period_start))
 
     def post(self, request, pk):
         entry = get_org_object_or_404(
@@ -432,7 +580,7 @@ class MetricEscalateView(LoginRequiredMixin, View):
             title=f'Off-track: {metric.name}',
             description=(
                 f'Metric "{metric.name}" on {metric.scorecard.name} was off-track '
-                f'for the week of {entry.period_start}.\n\n'
+                f'for {self._period_phrase(metric, entry)}.\n\n'
                 f'Value: {metric.format_value(entry.value)} '
                 f'(goal: {metric.format_goal()})\n'
                 f'{("Notes: " + entry.notes) if entry.notes else ""}'
