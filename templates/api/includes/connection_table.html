@@ -1,0 +1,39 @@
+{% if connections %}
+<div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Application</th>
+                {% if show_user %}<th scope="col">Member</th>{% else %}<th scope="col">Organisation</th>{% endif %}
+                <th scope="col">May</th>
+                <th scope="col">Connected</th>
+                <th scope="col">Last used</th>
+                <th scope="col"><span class="visually-hidden">Disconnect</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for connection in connections %}
+            <tr>
+                <td class="fw-semibold">{{ connection.application.name }}</td>
+                {% if show_user %}
+                <td>{{ connection.user.get_full_name|default:connection.user.username }}</td>
+                {% else %}
+                <td>{{ connection.organization.name }}</td>
+                {% endif %}
+                <td>{% for scope in connection.scopes %}<code class="me-1">{{ scope }}</code>{% endfor %}</td>
+                <td>{{ connection.approved_at|date:"j M Y" }}</td>
+                <td>{% if connection.last_used_at %}{{ connection.last_used_at|date:"j M Y, H:i" }}{% else %}<span class="text-muted">Never</span>{% endif %}</td>
+                <td class="text-end">
+                    <form method="post" action="{% url 'api_web:revoke' connection.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Disconnect</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card-body text-muted">No applications are connected.</div>
+{% endif %}

@@ -1,0 +1,62 @@
+{% extends "base_minimal.html" %}
+{% block page_title %}Connect an application{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 34rem">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            {% if error %}
+            <h1 class="h4">This request cannot be completed</h1>
+            <p class="mb-1"><code>{{ error.error }}</code></p>
+            <p class="text-muted mb-0">{{ error.description }}</p>
+            {% else %}
+            <h1 class="h4 mb-1">Connect {{ application.name|default:"this application" }}?</h1>
+            <p class="text-muted">Signed in as {{ request.user.get_full_name|default:request.user.username }}.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+
+                {% if organizations %}
+                <div class="mb-3">
+                    <label for="{{ form.organization.id_for_label }}" class="form-label fw-semibold">Organisation it may act in</label>
+                    {% if organizations|length == 1 %}
+                    <input type="hidden" name="organization" value="{{ organizations.0.pk }}">
+                    <div class="form-control-plaintext">{{ organizations.0.get_display_name }}</div>
+                    {% else %}
+                    <select name="organization" id="{{ form.organization.id_for_label }}" class="form-select">
+                        {% for org in organizations %}
+                        <option value="{{ org.pk }}">{{ org.get_display_name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    {% for error in form.organization.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+
+                <p class="fw-semibold mb-1">It will be able to</p>
+                <ul>
+                    {% for scope, description in scope_rows %}
+                    <li>{{ description }} <span class="text-muted small">(<code>{{ scope }}</code>)</span></li>
+                    {% endfor %}
+                </ul>
+                <p class="text-muted small">It can never do more than you can do yourself. You can disconnect it at any time from your profile.</p>
+                {% else %}
+                <div class="alert alert-warning">
+                    API access is not switched on for any organisation you belong to. An organisation admin can switch it on under Organisation settings.
+                </div>
+                {% endif %}
+
+                {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+                <div class="d-flex gap-2 mt-4">
+                    {% if organizations %}
+                    <button type="submit" name="allow" value="Authorize" class="btn btn-dark">Connect</button>
+                    {% endif %}
+                    <button type="submit" class="btn btn-outline-secondary">Cancel</button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

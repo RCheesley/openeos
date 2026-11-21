@@ -9,3 +9,7 @@ python-decouple==3.8
 django-otp==1.7.5
 qrcode[pil]==8.2
 coverage==7.17.3
+djangorestframework==3.18.3
+drf-spectacular==0.30.0
+drf-spectacular-sidecar==2026.10.1
+django-oauth-toolkit==3.4.1

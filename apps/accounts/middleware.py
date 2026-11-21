@@ -11,7 +11,8 @@ from .models import Membership, OrganizationDomain
 
 # Paths a non-member may still reach on a pinned host, so they can log in,
 # reset a password, log out, use the Django admin or answer a health check.
-OPEN_PATH_PREFIXES = ('/accounts/', '/admin/', '/healthz/')
+# The OAuth metadata documents under /.well-known/ are public by definition.
+OPEN_PATH_PREFIXES = ('/accounts/', '/admin/', '/healthz/', '/.well-known/')
 
 # The health check must not depend on the database, so a database outage is
 # reported by the probe itself instead of failing in this middleware.

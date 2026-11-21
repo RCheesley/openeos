@@ -1,0 +1,2580 @@
+openapi: 3.2.0
+info:
+  title: Empresadence API
+  version: 1.0.0
+  description: 'Read access to one organisation''s teams, priorities, actions, blockers,
+    metrics boards, meetings, vision document and org chart. Every request needs an
+    OAuth 2.1 access token; the token fixes the organisation it acts in. Resource
+    and field names are fixed whatever an organisation calls things: its own words
+    are returned by `GET /api/v1/organisation`.'
+paths:
+  /api/v1/actions:
+    get:
+      operationId: actions_list
+      description: Actions of the teams you may list on the web, plus any you own.
+      summary: List actions
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - in: query
+        name: mine
+        schema:
+          type: boolean
+        description: '`true` for only the caller''s own actions.'
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - id
+          - -id
+          - updated_at
+          - -updated_at
+          default: id
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - complete
+          - open
+        description: Only actions with this status.
+      - in: query
+        name: team
+        schema:
+          type: integer
+        description: Only records of this team.
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+        description: Only records changed at or after this time (ISO 8601). What a
+          sync client polls with.
+      tags:
+      - Actions
+      security:
+      - oauth2:
+        - actions:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActionList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/actions/{id}:
+    get:
+      operationId: actions_retrieve
+      description: Any action of the organisation, as on the web. Anything else answers
+        404.
+      summary: Get one action
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Actions
+      security:
+      - oauth2:
+        - actions:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/blockers:
+    get:
+      operationId: blockers_list
+      description: Blockers raised by, or handed to, the teams you may list on the
+        web.
+      summary: List blockers
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - id
+          - -id
+          - updated_at
+          - -updated_at
+          default: id
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - dropped
+          - in_discussion
+          - open
+          - resolved
+        description: Only blockers with this status.
+      - in: query
+        name: team
+        schema:
+          type: integer
+        description: Only blockers raised by this team or handed to it.
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - long_term
+          - short_term
+        description: Only short-term or long-term blockers.
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+        description: Only records changed at or after this time (ISO 8601). What a
+          sync client polls with.
+      tags:
+      - Blockers
+      security:
+      - oauth2:
+        - blockers:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBlockerList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/blockers/{id}:
+    get:
+      operationId: blockers_retrieve
+      description: Any blocker of the organisation, as on the web. Anything else answers
+        404.
+      summary: Get one blocker
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Blockers
+      security:
+      - oauth2:
+        - blockers:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blocker'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/me:
+    get:
+      operationId: me_retrieve
+      description: Needs a valid token and no particular scope.
+      summary: The caller, and their role in the organisation
+      tags:
+      - Organisation
+      security:
+      - oauth2: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/meetings:
+    get:
+      operationId: meetings_list
+      description: 'Meetings of the teams you may list on the web: your own, or every
+        team if you are an organisation admin. A meeting records no time of last change,
+        so this list has no `updated_since`; narrow it by date instead.'
+      summary: List meetings
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: Only meetings scheduled on or after this date.
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - id
+          - -id
+          - scheduled_date
+          - -scheduled_date
+          default: id
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - active
+          - complete
+          - scheduled
+        description: Only meetings with this status.
+      - in: query
+        name: team
+        schema:
+          type: integer
+        description: Only records of this team.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: Only meetings scheduled on or before this date.
+      tags:
+      - Meetings
+      security:
+      - oauth2:
+        - meetings:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMeetingList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/meetings/{id}:
+    get:
+      operationId: meetings_retrieve
+      description: Any meeting of the organisation, as on the web. Anything else answers
+        404.
+      summary: Get one meeting
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Meetings
+      security:
+      - oauth2:
+        - meetings:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meeting'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/metrics-boards:
+    get:
+      operationId: metrics_boards_list
+      description: 'Metrics boards of the teams you may list on the web: your own,
+        or every team if you are an organisation admin. The web lists the active ones;
+        pass `is_active=true` for the same.'
+      summary: List metrics boards
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Only boards that are, or are not, in use.
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - id
+          - -id
+          - updated_at
+          - -updated_at
+          default: id
+      - in: query
+        name: team
+        schema:
+          type: integer
+        description: Only records of this team.
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+        description: Only records changed at or after this time (ISO 8601). What a
+          sync client polls with.
+      tags:
+      - Metrics Boards
+      security:
+      - oauth2:
+        - metrics-boards:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMetricsBoardList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/metrics-boards/{id}:
+    get:
+      operationId: metrics_boards_retrieve
+      description: Any metrics board of the organisation, as on the web. Anything
+        else answers 404.
+      summary: Get one metrics board
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Metrics Boards
+      security:
+      - oauth2:
+        - metrics-boards:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsBoard'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/metrics-boards/{id}/metrics:
+    get:
+      operationId: metrics_boards_metrics_list
+      description: In the order they are shown on the web. The web shows the active
+        ones.
+      summary: List the metrics on a board
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Only metrics that are, or are not, in use.
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - order
+          - -order
+          - id
+          - -id
+          default: order
+      tags:
+      - Metrics
+      security:
+      - oauth2:
+        - metrics-boards:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMetricList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/metrics-boards/{id}/metrics/{metric_id}/entries:
+    get:
+      operationId: metrics_boards_metrics_entries_list
+      description: One entry per week or month, newest period first.
+      summary: List the values entered for a metric
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: Only periods starting on or after this date.
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - in: path
+        name: metric_id
+        schema:
+          type: integer
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - -period_start
+          - period_start
+          - id
+          - -id
+          default: -period_start
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: Only periods starting on or before this date.
+      tags:
+      - Entries
+      security:
+      - oauth2:
+        - metrics-boards:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEntryList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/org-chart:
+    get:
+      operationId: org_chart_retrieve
+      description: 'The whole chart as a tree: each node, who holds it and what it
+        is responsible for. Every member of the organisation sees it, as on the web.'
+      summary: The organisation's chart of roles
+      tags:
+      - Org Chart
+      security:
+      - oauth2:
+        - org-chart:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgChart'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/organisation:
+    get:
+      operationId: organisation_retrieve
+      description: Its name, branding and the words it uses for each building block.
+      summary: The organisation this token acts in
+      tags:
+      - Organisation
+      security:
+      - oauth2:
+        - organisation:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organisation'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/priorities:
+    get:
+      operationId: priorities_list
+      description: 'Priorities of the teams you may list on the web: your own, or
+        every team if you are an organisation admin.'
+      summary: List priorities
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - id
+          - -id
+          - updated_at
+          - -updated_at
+          default: id
+      - in: query
+        name: quarter
+        schema:
+          type: integer
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+        description: Only this quarter.
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - complete
+          - dropped
+          - off_track
+          - on_track
+        description: Only priorities with this status.
+      - in: query
+        name: team
+        schema:
+          type: integer
+        description: Only records of this team.
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+        description: Only records changed at or after this time (ISO 8601). What a
+          sync client polls with.
+      - in: query
+        name: year
+        schema:
+          type: integer
+        description: Only this year.
+      tags:
+      - Priorities
+      security:
+      - oauth2:
+        - priorities:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPriorityList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/priorities/{id}:
+    get:
+      operationId: priorities_retrieve
+      description: Any priority of the organisation, as on the web. Anything else
+        answers 404.
+      summary: Get one priority
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Priorities
+      security:
+      - oauth2:
+        - priorities:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Priority'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/priorities/{id}/check-ins:
+    get:
+      operationId: priorities_check_ins_list
+      description: Newest first.
+      summary: List the check-ins on a priority
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - -id
+          - id
+          default: -id
+      tags:
+      - Check-ins
+      security:
+      - oauth2:
+        - priorities:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCheckInList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/priorities/{id}/steps:
+    get:
+      operationId: priorities_steps_list
+      description: In the order they are shown on the web.
+      summary: List the steps of a priority
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - order
+          - -order
+          - id
+          - -id
+          default: order
+      tags:
+      - Steps
+      security:
+      - oauth2:
+        - priorities:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStepList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/teams:
+    get:
+      operationId: teams_list
+      description: Every team of the organisation.
+      summary: List teams
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: Where to continue from. Follow the `next` and `previous` links;
+          do not build one.
+        schema:
+          type: string
+      - name: limit
+        required: false
+        in: query
+        description: 'How many results to return per page: 50 unless given, 200 at
+          most.'
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Sort order. A leading minus means newest or highest first.
+        schema:
+          type: string
+          enum:
+          - id
+          - -id
+          - updated_at
+          - -updated_at
+          default: id
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+        description: Only records changed at or after this time (ISO 8601). What a
+          sync client polls with.
+      tags:
+      - Teams
+      security:
+      - oauth2:
+        - teams:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTeamList'
+          description: ''
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: A query parameter was not valid.
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/teams/{id}:
+    get:
+      operationId: teams_retrieve
+      description: Any team of the organisation, as on the web. Anything else answers
+        404.
+      summary: Get one team
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Teams
+      security:
+      - oauth2:
+        - teams:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No such record, or not one the caller may see.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+  /api/v1/vision-board:
+    get:
+      operationId: vision_board_retrieve
+      description: Its values, then its sections in the organisation's own layout.
+        Every member of the organisation sees the whole document, as on the web. A
+        section nobody has written yet is returned with empty content.
+      summary: The organisation's vision document
+      tags:
+      - Vision Board
+      security:
+      - oauth2:
+        - vision-board:read
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisionBoard'
+          description: ''
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: No access token, or one that is expired, revoked or issued
+            for another address.
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: The token lacks the scope this endpoint needs.
+        '429':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Too many requests.
+components:
+  schemas:
+    Action:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/ActionStatusEnum'
+        owner:
+          $ref: '#/components/schemas/Person'
+        team_id:
+          type: integer
+        due_date:
+          type: string
+          format: date
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        priority_id:
+          type:
+          - integer
+          - 'null'
+        blocker_id:
+          type:
+          - integer
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blocker_id
+      - created_at
+      - id
+      - owner
+      - priority_id
+      - status
+      - team_id
+      - title
+      - updated_at
+    ActionStatusEnum:
+      enum:
+      - open
+      - complete
+      type: string
+      description: |-
+        * `open` - Open
+        * `complete` - Complete
+    AgendaItem:
+      type: object
+      properties:
+        position:
+          type: integer
+          description: Place in the agenda, from 0. Notes refer to it.
+        type:
+          $ref: '#/components/schemas/AgendaItemTypeEnum'
+        name:
+          type: string
+          description: What the organisation calls this part of the meeting.
+        duration_minutes:
+          type: integer
+      required:
+      - duration_minutes
+      - name
+      - position
+      - type
+    AgendaItemTypeEnum:
+      enum:
+      - meeting_opener
+      - metrics_board_review
+      - priority_review
+      - updates
+      - action_review
+      - problem_solving
+      - conclude
+      - custom
+      type: string
+      description: |-
+        * `meeting_opener` - Meeting opener
+        * `metrics_board_review` - Metrics board review
+        * `priority_review` - Priority review
+        * `updates` - Updates
+        * `action_review` - Action review
+        * `problem_solving` - Problem solving
+        * `conclude` - Conclude
+        * `custom` - Custom
+    Blocker:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/BlockerStatusEnum'
+        type:
+          $ref: '#/components/schemas/BlockerTypeEnum'
+        team_id:
+          type: integer
+        delegated_to_team_id:
+          type:
+          - integer
+          - 'null'
+        is_company_wide:
+          type: boolean
+        priority_ids:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        target_quarter:
+          minimum: 0
+          maximum: 32767
+          oneOf:
+          - $ref: '#/components/schemas/QuarterEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        target_year:
+          type:
+          - integer
+          - 'null'
+          maximum: 32767
+          minimum: 0
+        resolution_notes:
+          type: string
+        created_by:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - delegated_to_team_id
+      - id
+      - is_company_wide
+      - priority_ids
+      - status
+      - team_id
+      - title
+      - type
+      - updated_at
+    BlockerStatusEnum:
+      enum:
+      - open
+      - in_discussion
+      - resolved
+      - dropped
+      type: string
+      description: |-
+        * `open` - Open
+        * `in_discussion` - Being worked through
+        * `resolved` - Resolved
+        * `dropped` - Dropped
+    BlockerTypeEnum:
+      enum:
+      - short_term
+      - long_term
+      type: string
+      description: |-
+        * `short_term` - Short-term
+        * `long_term` - Long-term
+    Branding:
+      type: object
+      properties:
+        display_name:
+          type: string
+        tagline:
+          type: string
+        primary_color:
+          type: string
+          description: 'A hex colour such as #0d6efd, or empty.'
+        navbar_style:
+          type: string
+        logo_url:
+          type: string
+        favicon_url:
+          type: string
+      required:
+      - display_name
+      - favicon_url
+      - logo_url
+      - navbar_style
+      - primary_color
+      - tagline
+    CheckIn:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        priority_id:
+          type: integer
+        confidence:
+          $ref: '#/components/schemas/ConfidenceEnum'
+        note:
+          type: string
+        created_by:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - confidence
+      - created_at
+      - created_by
+      - id
+      - priority_id
+    ConfidenceEnum:
+      enum:
+      - on_track
+      - off_track
+      type: string
+      description: |-
+        * `on_track` - On track
+        * `off_track` - Off track
+    Entry:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        metric_id:
+          type: integer
+        period_start:
+          type: string
+          format: date
+          description: The first day of the week or month the value is for.
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+        on_track:
+          type: boolean
+          description: Whether the value met the metric's goal when it was entered.
+        note:
+          type: string
+        entered_by:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - entered_by
+      - id
+      - metric_id
+      - note
+      - period_start
+      - value
+    GoalDirectionEnum:
+      enum:
+      - above
+      - below
+      - equal
+      type: string
+      description: |-
+        * `above` - At or above the goal
+        * `below` - At or below the goal
+        * `equal` - Equal to the goal
+    Me:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        organisation:
+          $ref: '#/components/schemas/MeOrganisation'
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        is_organisation_admin:
+          type: boolean
+        team_ids:
+          type: array
+          items:
+            type: integer
+        scopes:
+          type: array
+          items:
+            type: string
+          description: The scopes this token carries.
+      required:
+      - email
+      - id
+      - is_organisation_admin
+      - name
+      - organisation
+      - role
+      - scopes
+      - team_ids
+      - username
+    MeOrganisation:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+    Meeting:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        team_id:
+          type: integer
+        scheduled_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/MeetingStatusEnum'
+        started_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        ended_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        duration_minutes:
+          type:
+          - integer
+          - 'null'
+          description: How long it ran, once it has ended.
+        current_position:
+          type: integer
+          description: The agenda item the meeting has reached.
+        agenda:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgendaItem'
+          readOnly: true
+          description: The agenda as it stood when the meeting was created. Later
+            changes to the organisation's agenda do not alter it.
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeetingNote'
+        updates:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeetingUpdate'
+        ratings:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeetingRating'
+        average_rating:
+          type:
+          - number
+          - 'null'
+          format: double
+          readOnly: true
+        key_messages:
+          type: string
+          description: What the team agreed to pass on to the rest of the organisation.
+        created_by:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - agenda
+      - average_rating
+      - created_at
+      - created_by
+      - current_position
+      - duration_minutes
+      - id
+      - key_messages
+      - notes
+      - ratings
+      - scheduled_date
+      - status
+      - team_id
+      - updates
+    MeetingNote:
+      type: object
+      properties:
+        position:
+          type: integer
+          description: The agenda item the note belongs to.
+        text:
+          type: string
+        updated_by:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - position
+      - text
+      - updated_at
+      - updated_by
+    MeetingRating:
+      type: object
+      properties:
+        participant:
+          $ref: '#/components/schemas/Person'
+        score:
+          type: integer
+          maximum: 10
+          minimum: 1
+        note:
+          type: string
+      required:
+      - note
+      - participant
+      - score
+    MeetingStatusEnum:
+      enum:
+      - scheduled
+      - active
+      - complete
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `active` - Active
+        * `complete` - Complete
+    MeetingUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          $ref: '#/components/schemas/MeetingUpdateTypeEnum'
+        text:
+          type: string
+        author:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        blocker_id:
+          type:
+          - integer
+          - 'null'
+          description: The blocker this update was turned into, if any.
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author
+      - blocker_id
+      - created_at
+      - id
+      - text
+      - type
+    MeetingUpdateTypeEnum:
+      enum:
+      - good
+      - bad
+      type: string
+      description: |-
+        * `good` - Good news
+        * `bad` - Concern
+    Metric:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        metrics_board_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 255
+        owner:
+          $ref: '#/components/schemas/Person'
+        type:
+          $ref: '#/components/schemas/MetricTypeEnum'
+        goal_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+        goal_direction:
+          $ref: '#/components/schemas/GoalDirectionEnum'
+        frequency:
+          $ref: '#/components/schemas/MetricFrequencyEnum'
+        order:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - frequency
+      - goal_direction
+      - goal_value
+      - id
+      - metrics_board_id
+      - name
+      - owner
+      - type
+    MetricFrequencyEnum:
+      enum:
+      - weekly
+      - monthly
+      type: string
+      description: |-
+        * `weekly` - Weekly
+        * `monthly` - Monthly
+    MetricTypeEnum:
+      enum:
+      - integer
+      - float
+      - percentage
+      type: string
+      description: |-
+        * `integer` - Whole number
+        * `float` - Decimal number
+        * `percentage` - Percentage
+    MetricsBoard:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        team_id:
+          type: integer
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - team_id
+      - updated_at
+    NullEnum:
+      type: 'null'
+    OrgChart:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgChartNode'
+          description: The top of the chart; each node carries its own children.
+      required:
+      - nodes
+    OrgChartNode:
+      type: object
+      properties:
+        id:
+          type: integer
+        parent_id:
+          type:
+          - integer
+          - 'null'
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/OrgChartNodeTypeEnum'
+        owner:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        is_vacant:
+          type: boolean
+        order:
+          type: integer
+        responsibilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Responsibility'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgChartNode'
+          readOnly: true
+          description: The nodes directly beneath this one, in chart order.
+      required:
+      - children
+      - id
+      - is_vacant
+      - name
+      - order
+      - owner
+      - parent_id
+      - responsibilities
+      - type
+    OrgChartNodeTypeEnum:
+      enum:
+      - role
+      - department
+      type: string
+      description: |-
+        * `role` - Role
+        * `department` - Department
+    Organisation:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        branding:
+          $ref: '#/components/schemas/Branding'
+        vocabulary:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Term'
+          description: What this organisation calls each building block, keyed by
+            the fixed API name.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - branding
+      - created_at
+      - id
+      - name
+      - slug
+      - updated_at
+      - vocabulary
+    PaginatedActionList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+    PaginatedBlockerList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Blocker'
+    PaginatedCheckInList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckIn'
+    PaginatedEntryList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+    PaginatedMeetingList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meeting'
+    PaginatedMetricList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Metric'
+    PaginatedMetricsBoardList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricsBoard'
+    PaginatedPriorityList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Priority'
+    PaginatedStepList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Step'
+    PaginatedTeamList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
+    Person:
+      type: object
+      description: A user, as far as another member of the organisation needs to know
+        them.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - name
+    Priority:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          description: What does "done" look like? Make it specific and measurable.
+        status:
+          $ref: '#/components/schemas/PriorityStatusEnum'
+        owner:
+          $ref: '#/components/schemas/Person'
+        team_id:
+          type: integer
+        is_company_wide:
+          type: boolean
+        quarter:
+          allOf:
+          - $ref: '#/components/schemas/QuarterEnum'
+          minimum: 0
+          maximum: 32767
+        year:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        due_date:
+          type: string
+          format: date
+        parent_id:
+          type:
+          - integer
+          - 'null'
+        created_by:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - due_date
+      - id
+      - is_company_wide
+      - owner
+      - parent_id
+      - quarter
+      - status
+      - team_id
+      - title
+      - updated_at
+      - year
+    PriorityStatusEnum:
+      enum:
+      - on_track
+      - off_track
+      - complete
+      - dropped
+      type: string
+      description: |-
+        * `on_track` - On track
+        * `off_track` - Off track
+        * `complete` - Complete
+        * `dropped` - Dropped
+    Problem:
+      type: object
+      description: RFC 9457 problem details. Every error has this shape.
+      properties:
+        type:
+          type: string
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        errors:
+          type: object
+          additionalProperties: {}
+          description: Present when a parameter was not valid.
+      required:
+      - status
+      - title
+    QuarterEnum:
+      enum:
+      - 1
+      - 2
+      - 3
+      - 4
+      type: integer
+      description: |-
+        * `1` - Q1
+        * `2` - Q2
+        * `3` - Q3
+        * `4` - Q4
+    Responsibility:
+      type: object
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        order:
+          type: integer
+      required:
+      - description
+      - id
+      - order
+    RoleEnum:
+      enum:
+      - admin
+      - leader
+      - member
+      type: string
+      description: |-
+        * `admin` - Admin
+        * `leader` - Team Leader
+        * `member` - Team Member
+    SectionFormatEnum:
+      enum:
+      - text
+      - single_line
+      - list
+      type: string
+      description: |-
+        * `text` - Paragraph
+        * `single_line` - Single line
+        * `list` - List, one item per line
+    Step:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        priority_id:
+          type: integer
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        due_date:
+          type:
+          - string
+          - 'null'
+          format: date
+        is_complete:
+          type: boolean
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        order:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - priority_id
+      - title
+    Team:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - updated_at
+    Term:
+      type: object
+      properties:
+        singular:
+          type: string
+        plural:
+          type: string
+      required:
+      - plural
+      - singular
+    Value:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        order:
+          type: integer
+      required:
+      - description
+      - id
+      - name
+      - order
+    VisionBoard:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/Value'
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisionPage'
+          description: 'The document in the organisation''s own layout: pages, groups,
+            then sections.'
+      required:
+      - pages
+      - values
+    VisionGroup:
+      type: object
+      properties:
+        label:
+          type: string
+        hint:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisionSection'
+      required:
+      - hint
+      - label
+      - sections
+    VisionPage:
+      type: object
+      properties:
+        label:
+          type: string
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/VisionGroup'
+      required:
+      - groups
+      - label
+    VisionSection:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Fixed name of the section within this organisation's document.
+        label:
+          type: string
+          description: Empty when the group's label is label enough.
+        format:
+          $ref: '#/components/schemas/SectionFormatEnum'
+        content:
+          type: string
+        last_edited_by:
+          oneOf:
+          - $ref: '#/components/schemas/Person'
+          - type: 'null'
+        last_edited_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - content
+      - format
+      - key
+      - label
+      - last_edited_at
+      - last_edited_by
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /o/authorize/
+          tokenUrl: /o/token/
+          refreshUrl: /o/token/
+          scopes:
+            organisation:read: See the organisation's name, branding and vocabulary
+            teams:read: See the organisation's teams
+            priorities:read: See priorities, their steps and check-ins
+            actions:read: See actions
+            blockers:read: See blockers
+            metrics-boards:read: See metrics boards, their metrics and the values
+              entered for them
+            meetings:read: 'See meetings: agenda, notes, updates, ratings and key
+              messages'
+            vision-board:read: See the organisation's vision document and its values
+            org-chart:read: See the organisation's chart of roles and who holds each
+              one
+      oauth2MetadataUrl: /.well-known/oauth-authorization-server
+tags:
+- name: Organisation
+  description: The organisation the token acts in, and the caller.
+- name: Teams
+- name: Priorities
+  description: Quarterly priorities.
+- name: Steps
+  parent: Priorities
+  description: The steps that make up a priority.
+- name: Check-ins
+  parent: Priorities
+  description: Weekly progress notes on a priority.
+- name: Actions
+- name: Blockers
+- name: Metrics Boards
+  description: The numbers a team watches each week or month.
+- name: Metrics
+  parent: Metrics Boards
+  description: The measures on a board, each with a goal.
+- name: Entries
+  parent: Metrics Boards
+  description: The value entered for a metric each period.
+- name: Meetings
+  description: A team's regular meetings, with what was noted and agreed.
+- name: Vision Board
+  description: The organisation's long-term vision and plan.
+- name: Org Chart
+  description: Who is responsible for what.

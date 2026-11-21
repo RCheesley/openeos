@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block page_title %}API access{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h1 class="h3 mb-0">API access</h1>
+        <p class="text-muted mt-1 mb-0">Whether applications may read data from {{ org.name }} through the API on behalf of its members.</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'accounts:org_settings' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="post" class="d-flex flex-wrap align-items-center gap-3">
+            {% csrf_token %}
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch" id="api-enabled" name="enabled" {% if api_enabled %}checked{% endif %}>
+                <label class="form-check-label" for="api-enabled">Allow members to connect applications</label>
+            </div>
+            <button type="submit" class="btn btn-dark btn-sm">Save</button>
+            <span class="text-muted small">Switching this off stops every connected application at its next request.</span>
+        </form>
+        <p class="small mb-0 mt-3"><a href="{% url 'api:docs' %}">API documentation</a></p>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom"><h2 class="h5 mb-0">Connected applications</h2></div>
+    {% include "api/includes/connection_table.html" with show_user=True %}
+</div>
+{% endblock %}

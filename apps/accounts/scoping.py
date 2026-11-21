@@ -57,6 +57,15 @@ def set_active_org(request, org):
     request._active_org = org
 
 
+def pin_active_org(request, org):
+    """Fix the request's organisation without touching the session.
+
+    For sign-in that carries its own organisation, such as an API token: every
+    helper here then scopes to ``org`` exactly as it does for a web request.
+    """
+    request._active_org = org
+
+
 def get_active_team(request):
     """Return the session-pinned team if valid, else the user's first team in the active org."""
     org = get_active_org(request)
