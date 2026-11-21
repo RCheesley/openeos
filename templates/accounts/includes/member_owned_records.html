@@ -1,0 +1,15 @@
+{% comment %}What a member still owns in this organisation. Expects ``form`` (a HandOverForm).{% endcomment %}
+<ul class="list-group list-group-flush border rounded mb-3 small">
+    {% for kind, label, count in form.owned %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ label }}</span>
+        <span class="badge bg-light text-dark border">{{ count }}</span>
+    </li>
+    {% endfor %}
+    {% if form.issues_raised %}
+    <li class="list-group-item d-flex justify-content-between align-items-center text-muted">
+        <span>Open {{ terms.issues }} they raised <span class="d-block">These stay with their team and keep the name of who raised them.</span></span>
+        <span class="badge bg-light text-dark border">{{ form.issues_raised }}</span>
+    </li>
+    {% endif %}
+</ul>

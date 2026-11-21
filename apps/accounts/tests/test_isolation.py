@@ -19,7 +19,9 @@ def build_org(label):
     org = Organization.objects.create(name=f'{label} Org')
     team = Team.objects.create(organization=org, name=f'{label} Team')
     user = User.objects.create_user(username=f'{label.lower()}admin', password='pw')
-    Membership.objects.create(user=user, organization=org, role=Membership.ROLE_ADMIN)
+    membership = Membership.objects.create(
+        user=user, organization=org, role=Membership.ROLE_ADMIN,
+    )
     user.profile.teams.add(team)
 
     rock = Rock.objects.create(
@@ -52,7 +54,7 @@ def build_org(label):
         'org': org, 'team': team, 'user': user, 'rock': rock, 'dependency': dependency,
         'milestone': milestone, 'issue': issue, 'todo': todo, 'scorecard': scorecard,
         'metric': metric, 'entry': entry, 'core_value': core_value, 'meeting': meeting,
-        'node': node, 'role': role,
+        'node': node, 'role': role, 'membership': membership,
     }
 
 
@@ -86,6 +88,9 @@ def pk_urls(f):
         f'/accountability/nodes/{f["node"].pk}/roles/add/',
         f'/accountability/roles/{f["role"].pk}/edit/',
         f'/accountability/roles/{f["role"].pk}/delete/',
+        f'/users/{f["membership"].pk}/role/',
+        f'/users/{f["membership"].pk}/reassign/',
+        f'/users/{f["membership"].pk}/remove/',
     ]
     posts = [
         (f'/rocks/{f["rock"].pk}/status/', {'status': Rock.STATUS_ON_TRACK}),
@@ -110,6 +115,9 @@ def pk_urls(f):
         (f'/teams/{f["team"].pk}/switch/', {}),
         (f'/meetings/{f["meeting"].pk}/start/', {}),
         (f'/accountability/nodes/{f["node"].pk}/move/', {'direction': 'up'}),
+        (f'/users/{f["membership"].pk}/role/', {'role': Membership.ROLE_ADMIN}),
+        (f'/users/{f["membership"].pk}/reassign/', {}),
+        (f'/users/{f["membership"].pk}/remove/', {}),
     ]
     return gets, posts
 

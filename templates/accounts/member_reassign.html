@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block page_title %}Hand over records{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="mb-4">
+            <a href="{% url 'accounts:user_list' %}" class="text-muted text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i> Users
+            </a>
+            <h1 class="h3 mt-2 mb-0">Hand over records</h1>
+            <p class="text-muted mt-1 mb-0">
+                Move what {{ member_name }} owns in <strong>{{ org.name }}</strong> to someone else.
+                {{ member_name }} stays a member.
+            </p>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                {% if form.needs_owner %}
+                <form method="post">
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger small">{{ error }}</div>
+                    {% endfor %}
+                    <fieldset class="mb-3">
+                        <legend class="form-label fw-semibold fs-6">Records to hand over</legend>
+                        <div class="border rounded p-3">
+                            {{ form.kinds }}
+                        </div>
+                        {% for error in form.kinds.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </fieldset>
+                    {% if form.issues_raised %}
+                    <p class="text-muted small">
+                        {{ member_name }} also raised {{ form.issues_raised }} open
+                        {% if form.issues_raised == 1 %}{{ terms.issue }}{% else %}{{ terms.issues }}{% endif %}.
+                        These stay with their team and keep the name of who raised them.
+                    </p>
+                    {% endif %}
+                    {% include "accounts/includes/member_new_owner_field.html" %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-arrow-left-right me-1"></i>Hand over
+                        </button>
+                        <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+                {% else %}
+                <p class="mb-3">
+                    {{ member_name }} owns no open {{ terms.rocks }}, open {{ terms.todos }}, active metrics
+                    or {{ terms.seats }} on the {{ terms.accountability_chart }} in {{ org.name }}, so there is nothing to hand over.
+                </p>
+                <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">Back to users</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

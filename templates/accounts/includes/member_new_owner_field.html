@@ -1,0 +1,12 @@
+{% comment %}The "who takes over" select with its errors. Expects ``form`` (a HandOverForm).{% endcomment %}
+<div class="mb-3">
+    <label for="{{ form.new_owner.id_for_label }}" class="form-label fw-semibold">Who takes over?</label>
+    {{ form.new_owner }}
+    {% for error in form.new_owner.errors %}
+    <div class="text-danger small mt-1">{{ error }}</div>
+    {% endfor %}
+    <div class="form-text">
+        Finished work is not moved: completed or dropped {{ terms.rocks }}, completed {{ terms.todos }}
+        and inactive metrics keep {{ member_name }} as their owner.
+    </div>
+</div>

@@ -56,10 +56,23 @@
                             <span class="text-muted small">No teams</span>
                             {% endfor %}
                         </td>
-                        <td class="text-end">
-                            <a href="{% url 'admin:auth_user_change' profile.user.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit in admin">
-                                <i class="bi bi-pencil"></i>
+                        <td class="text-end text-nowrap">
+                            <a href="{% url 'accounts:member_role' membership.pk %}" class="btn btn-sm btn-outline-secondary" title="Change role" aria-label="Change role of {{ profile.display_name }}">
+                                <i class="bi bi-person-gear" aria-hidden="true"></i>
                             </a>
+                            <a href="{% url 'accounts:member_reassign' membership.pk %}" class="btn btn-sm btn-outline-secondary" title="Hand over records" aria-label="Hand over records of {{ profile.display_name }}">
+                                <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                            </a>
+                            {% if profile.user != request.user %}
+                            <a href="{% url 'accounts:member_remove' membership.pk %}" class="btn btn-sm btn-outline-danger" title="Remove from organisation" aria-label="Remove {{ profile.display_name }} from {{ org.name }}">
+                                <i class="bi bi-person-dash" aria-hidden="true"></i>
+                            </a>
+                            {% endif %}
+                            {% if request.user.is_staff %}
+                            <a href="{% url 'admin:auth_user_change' profile.user.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit in admin" aria-label="Edit {{ profile.display_name }} in admin">
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                            </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endwith %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block page_title %}Remove member{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-person-dash display-4 text-danger"></i>
+                    </div>
+                    <h1 class="h4 mb-2">Remove {{ member_name }} from {{ org.name }}?</h1>
+                    <p class="text-muted mb-3">
+                        They will lose access to {{ org.name }} and leave its teams straight away.
+                        Their account is not deleted, and any other organisation they belong to is not affected.
+                    </p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger small">{{ error }}</div>
+                    {% endfor %}
+
+                    {% if form.owned or form.issues_raised %}
+                    <h2 class="h6">What {{ member_name }} still owns</h2>
+                    {% include "accounts/includes/member_owned_records.html" %}
+                    {% else %}
+                    <p class="text-muted small text-center">{{ member_name }} owns nothing open in {{ org.name }}, so there is nothing to hand over.</p>
+                    {% endif %}
+
+                    {% if form.needs_owner %}
+                    {% include "accounts/includes/member_new_owner_field.html" %}
+                    {% if form.vacate_seats %}
+                    <div class="form-check mb-3">
+                        {{ form.vacate_seats }}
+                        <label class="form-check-label" for="{{ form.vacate_seats.id_for_label }}">{{ form.vacate_seats.label }}</label>
+                        <div class="form-text">Otherwise they pass to the new owner.</div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <p class="text-danger small text-center mb-4">
+                        They can only come back if an admin adds them to {{ org.name }} again.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-person-dash me-1"></i>Remove from {{ org.name }}
+                        </button>
+                        <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.urls import include, path
 from . import views
 from .views_export import OrganizationExportView
+from .views_members import MemberReassignView, MemberRemoveView, MemberRoleView
 
 app_name = 'accounts'
 
@@ -20,6 +21,9 @@ urlpatterns = [
     path('accounts/2fa/', include('apps.accounts.two_factor.urls')),
     path('profile/edit/', views.ProfileEditView.as_view(), name='profile_edit'),
     path('media/avatars/<path:name>', views.MediaAvatarView.as_view(), name='media_avatar'),
+    path('users/<int:pk>/role/', MemberRoleView.as_view(), name='member_role'),
+    path('users/<int:pk>/reassign/', MemberReassignView.as_view(), name='member_reassign'),
+    path('users/<int:pk>/remove/', MemberRemoveView.as_view(), name='member_remove'),
     path('users/', views.UserListView.as_view(), name='user_list'),
     path('users/invite/', views.UserInviteView.as_view(), name='user_invite'),
     path('teams/<int:pk>/switch/', views.TeamSwitchView.as_view(), name='team_switch'),
