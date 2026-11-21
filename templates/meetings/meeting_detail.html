@@ -275,4 +275,10 @@
 {% block extra_js %}
 {% load static %}
 <script src="{% static 'js/meeting-timer.js' %}"></script>
+{% if keepalive_seconds %}
+<script src="{% static 'js/session-keepalive.js' %}"
+        data-keepalive-url="{% url 'meetings:keepalive' meeting.pk %}"
+        data-keepalive-seconds="{{ keepalive_seconds }}"
+        data-csrf-token="{{ csrf_token }}"></script>
+{% endif %}
 {% endblock %}

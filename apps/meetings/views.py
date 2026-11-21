@@ -1,4 +1,8 @@
+from datetime import timedelta
+
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.utils import timezone
 from django.views.generic import View, ListView
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
@@ -9,6 +13,11 @@ from .segments import resolve_agenda
 from .forms import MeetingCreateForm, SegueEntryForm, HeadlineForm, MeetingRatingForm, CascadingMessagesForm
 from apps.accounts.scoping import get_active_org, get_active_team
 from apps.accounts.terminology import get_terms
+from apps.security.middleware import keepalive_interval_seconds
+
+
+# A running meeting keeps its facilitator signed in for at most this long.
+KEEPALIVE_MAX_MEETING_LENGTH = timedelta(hours=4)
 
 
 def _get_org(request):
@@ -212,7 +221,29 @@ class MeetingDetailView(LoginRequiredMixin, View):
         if not org:
             return redirect('accounts:org_setup')
         ctx = _build_runner_context(meeting, request.user, get_terms(request))
+        ctx['keepalive_seconds'] = keepalive_interval_seconds() if meeting.is_active else 0
         return render(request, self.template_name, ctx)
+
+
+class MeetingKeepAliveView(LoginRequiredMixin, View):
+    """Called by the runner page while a meeting is running, so the idle timeout
+    does not sign the facilitator out part-way through a long agenda section.
+
+    It only counts as activity for a meeting that is running and started
+    recently; a runner tab left open overnight stops extending the session.
+    """
+
+    def post(self, request, pk):
+        org = _get_org(request)
+        if not org:
+            return redirect('accounts:org_setup')
+        meeting = get_object_or_404(Meeting, pk=pk, team__organization=org)
+        running = bool(
+            meeting.is_active and meeting.started_at
+            and timezone.now() - meeting.started_at < KEEPALIVE_MAX_MEETING_LENGTH
+        )
+        request.counts_as_activity = running
+        return JsonResponse({'active': running})
 
 
 class MeetingPrintView(LoginRequiredMixin, View):

@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'apps.accountability',
     'apps.meetings',
     'apps.notifications',
+    'apps.security',
     # 'apps.todos',
     # 'apps.vision',
     # 'apps.scorecards',
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'apps.accounts.middleware.OrganizationDomainMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'apps.security.middleware.IdleSessionTimeoutMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_otp.middleware.OTPMiddleware',
     'apps.accounts.two_factor.middleware.TwoFactorRequiredMiddleware',
@@ -129,6 +131,41 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# ── Sign-in protection ───────────────────────────────────────────────────────
+# The username-and-password check, with a limit on wrong guesses.
+AUTHENTICATION_BACKENDS = ['apps.security.backends.ThrottledModelBackend']
+
+
+def _optional_int(value):
+    return None if value in (None, '') else int(value)
+
+
+# Reverse proxies in front of Django that append to X-Forwarded-For. Unset means
+# one when SECURE_PROXY_SSL_HEADER is set (the production settings, behind the
+# bundled Nginx) and none otherwise. Set 2 when a load balancer or tunnel sits
+# in front of that Nginx, and 0 when Django is reached directly.
+TRUSTED_PROXY_COUNT = config('TRUSTED_PROXY_COUNT', default=None, cast=_optional_int)
+
+# Wrong passwords allowed for one username, and from one address across all
+# usernames, before a lock-out. 0 switches that limit off.
+SIGN_IN_FAILURE_LIMIT = config('SIGN_IN_FAILURE_LIMIT', default=5, cast=int)
+SIGN_IN_ADDRESS_FAILURE_LIMIT = config('SIGN_IN_ADDRESS_FAILURE_LIMIT', default=20, cast=int)
+# The first lock-out lasts this long and doubles with each further failure, up
+# to the maximum. 0 switches sign-in lock-outs off altogether.
+SIGN_IN_LOCKOUT_SECONDS = config('SIGN_IN_LOCKOUT_SECONDS', default=60, cast=int)
+SIGN_IN_LOCKOUT_MAX_SECONDS = config('SIGN_IN_LOCKOUT_MAX_SECONDS', default=3600, cast=int)
+# Failures are forgotten this long after the last one (or after a lock-out ends).
+SIGN_IN_FAILURE_WINDOW_SECONDS = config('SIGN_IN_FAILURE_WINDOW_SECONDS', default=900, cast=int)
+
+# Password reset requests accepted from one address, and reset emails sent to
+# one email address, per window. 0 switches that limit off.
+PASSWORD_RESET_ADDRESS_LIMIT = config('PASSWORD_RESET_ADDRESS_LIMIT', default=10, cast=int)
+PASSWORD_RESET_EMAIL_LIMIT = config('PASSWORD_RESET_EMAIL_LIMIT', default=3, cast=int)
+PASSWORD_RESET_WINDOW_SECONDS = config('PASSWORD_RESET_WINDOW_SECONDS', default=3600, cast=int)
+
+# Sign a user out after this many minutes without a request. 0 switches it off.
+SESSION_IDLE_TIMEOUT_MINUTES = config('SESSION_IDLE_TIMEOUT_MINUTES', default=720, cast=int)
 
 # Shown as the account label in authenticator apps.
 OTP_TOTP_ISSUER = config('OTP_TOTP_ISSUER', default='Empresadence')

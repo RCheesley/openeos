@@ -10,10 +10,17 @@
                 <div class="card-body p-4">
                     <h2 class="h5 card-title mb-4">Sign in to your account</h2>
 
+                    {% for message in messages %}
+                    <div class="alert alert-info" role="status">
+                        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+
                     {% if form.errors %}
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger" role="alert">
                         <i class="bi bi-exclamation-circle me-1"></i>
-                        Invalid username or password. Please try again.
+                        {% if form.throttled %}{{ form.non_field_errors.0 }}{% else %}Invalid username or password. Please try again.{% endif %}
                     </div>
                     {% endif %}
 

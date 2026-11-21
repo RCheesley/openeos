@@ -4,8 +4,12 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 
 def too_many_attempts_message(seconds):
-    unit = 'second' if seconds == 1 else 'seconds'
-    return f'Too many failed attempts. Please wait {seconds} {unit} before trying again.'
+    if seconds >= 120:
+        # Longer waits (sign-in lock-outs) read better in whole minutes, rounded up.
+        amount, unit = -(-seconds // 60), 'minutes'
+    else:
+        amount, unit = seconds, 'second' if seconds == 1 else 'seconds'
+    return f'Too many failed attempts. Please wait {amount} {unit} before trying again.'
 
 
 def _throttle_message(device):

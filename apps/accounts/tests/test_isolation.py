@@ -108,6 +108,7 @@ def pk_urls(f):
         (f'/scorecards/entry/{f["entry"].pk}/escalate/', {}),
         (f'/teams/{f["team"].pk}/members/', {'users': [f['user'].pk]}),
         (f'/teams/{f["team"].pk}/switch/', {}),
+        (f'/meetings/{f["meeting"].pk}/keepalive/', {}),
         (f'/meetings/{f["meeting"].pk}/start/', {}),
         (f'/accountability/nodes/{f["node"].pk}/move/', {'direction': 'up'}),
     ]

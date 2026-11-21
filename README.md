@@ -87,6 +87,16 @@ cp .env.example .env
 | `SECURE_SSL_REDIRECT` | `False` | Set `True` when TLS terminates at Nginx |
 | `SECURE_HSTS_SECONDS` | `0` | HSTS max-age in seconds (e.g. `31536000`) |
 | `MEDIA_ACCEL_REDIRECT` | `False` | Set `True` behind the bundled Nginx so it sends avatar files after Django has checked the request |
+| `SIGN_IN_FAILURE_LIMIT` | `5` | Wrong passwords allowed for one username before a lock-out (`0` = no limit) |
+| `SIGN_IN_ADDRESS_FAILURE_LIMIT` | `20` | Wrong passwords allowed from one address, across all usernames, before a lock-out (`0` = no limit) |
+| `SIGN_IN_LOCKOUT_SECONDS` | `60` | Length of the first lock-out; it doubles with each further failure (`0` = no lock-outs) |
+| `SIGN_IN_LOCKOUT_MAX_SECONDS` | `3600` | Longest a lock-out can grow to |
+| `SIGN_IN_FAILURE_WINDOW_SECONDS` | `900` | Failures are forgotten this long after the last one or after a lock-out ends |
+| `PASSWORD_RESET_ADDRESS_LIMIT` | `10` | Password reset requests accepted from one address per window (`0` = no limit) |
+| `PASSWORD_RESET_EMAIL_LIMIT` | `3` | Reset emails sent to one email address per window (`0` = no limit) |
+| `PASSWORD_RESET_WINDOW_SECONDS` | `3600` | Length of the password reset window |
+| `SESSION_IDLE_TIMEOUT_MINUTES` | `720` | Sign a user out after this many minutes without activity (`0` = never) |
+| `TRUSTED_PROXY_COUNT` | *(unset)* | Reverse proxies in front of Django that add to `X-Forwarded-For`; see [Sign-in protection](#7-sign-in-protection) |
 
 ---
 
@@ -164,6 +174,20 @@ development.
 
 The production image (the `production` stage of the `Dockerfile`, which `docker-compose.prod.yml` builds) runs as an unprivileged user, uid 1000 (`app`), rather than root. The named `static_volume` and `media_volume` volumes pick up the right ownership automatically; if you swap them for bind-mounted host directories, those directories must be writable by uid 1000. The development stack in `docker-compose.yml` builds the `development` stage, which stays root because it bind-mounts your checkout over `/app` and has to write `staticfiles/` there whoever owns the clone.
 
+### 7. Sign-in protection
+
+**Wrong passwords.** After 5 wrong passwords for one username, or 20 from one address across any usernames, further attempts are refused for a minute. Each further wrong password after that doubles the wait, up to an hour. While a lock-out lasts even the correct password is refused, and the message is the same whether or not the username exists. A successful sign-in clears the count for that username; failures are otherwise forgotten 15 minutes after the last one or after the lock-out ends. The limit applies to the Django admin sign-in too. Each lock-out is written to the audit log as `user.sign_in_locked`. A superuser can lift a lock-out early by deleting the counter under **Sign-in protection → Throttle counters** in the Django admin (counters hold a keyed hash, not the username or address, so clear them all if you cannot tell which one it is).
+
+**Password resets.** One address may ask for 10 resets an hour, and at most 3 reset emails an hour go to any one email address. Past the email limit the visitor still sees the usual "check your inbox" page, so the form never shows whether an address has an account.
+
+**Idle sessions.** A user who makes no request for `SESSION_IDLE_TIMEOUT_MINUTES` (default 720, i.e. 12 hours) is signed out on their next request, sent to the sign-in page and returned to where they were afterwards. The default is long on purpose: a form submitted after the timeout is not saved, so a short timeout can cost someone a long piece of writing. Choose a shorter value, such as 60, if your policies call for it. The meeting runner reports in every few minutes while a meeting is running (for up to four hours from its start), so a facilitator who stays on one agenda section is not signed out mid-meeting.
+
+**Client addresses behind a proxy.** The per-address limits need the visitor's real address. `X-Forwarded-For` is only believed when a proxy is trusted, and only the entries added by your own proxies are used, because anything earlier in that header is supplied by the visitor. With the bundled Nginx and the production settings this works with no configuration. If a load balancer, CDN or tunnel sits in front of the bundled Nginx, set `TRUSTED_PROXY_COUNT=2` (one more for each further proxy); if Django is reached directly with no proxy, set `TRUSTED_PROXY_COUNT=0`. A value that is too low makes every visitor share one address limit; a value that is too high lets a visitor choose the address they are counted under.
+
+All limits are tuned through the variables in the Configuration table, and each can be switched off by setting it to `0`.
+
+---
+
 ## Running Tests
 
 ```bash
@@ -188,6 +212,7 @@ docker compose exec web coverage report
 │   ├── meetings/       # Weekly Meeting runner
 │   ├── rocks/          # Quarterly Priorities
 │   ├── scorecards/     # Weekly Metrics Boards
+│   ├── security/       # Sign-in and password reset limits, idle session timeout
 │   ├── todos/          # Actions
 │   └── vision/         # Vision and Delivery Board
 ├── config/

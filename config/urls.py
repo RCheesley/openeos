@@ -4,10 +4,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from apps.accounts.views import HealthzView, HomeView
+from apps.security.views import SignInView, ThrottledPasswordResetView
 
 urlpatterns = [
     path('healthz/', HealthzView.as_view(), name='healthz'),
     path('admin/', admin.site.urls),
+    # Listed before Django's own so sign-in and password reset are rate limited.
+    path('accounts/login/', SignInView.as_view(), name='login'),
+    path('accounts/password_reset/', ThrottledPasswordResetView.as_view(), name='password_reset'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('apps.accounts.urls', namespace='accounts')),
     path('', include('apps.audit.urls')),
