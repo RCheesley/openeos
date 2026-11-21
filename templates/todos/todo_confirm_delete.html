@@ -13,6 +13,22 @@
                 <p class="text-muted mb-1">You're about to permanently delete:</p>
                 <p class="fw-semibold mb-3">{{ object.title }}</p>
 
+                {% if object.is_recurring %}
+                <div class="alert alert-info text-start small">
+                    <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>
+                    <strong>{{ object.recurrence_label }}.</strong>
+                    {% if next_occurrence %}
+                    Only this occurrence will be deleted. The next one, due
+                    {{ next_occurrence.due_date|date:"j F Y" }}, already exists and is not affected.
+                    {% elif object.is_complete %}
+                    Only this occurrence will be deleted. It has no next occurrence.
+                    {% else %}
+                    Only this occurrence will be deleted, and the series ends with it:
+                    no further occurrences will be created. Earlier occurrences are kept.
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 {% if object.linked_rock %}
                 <div class="alert alert-warning text-start small">
                     <i class="bi bi-gem me-1 text-success"></i>

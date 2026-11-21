@@ -108,6 +108,32 @@
                         {% endfor %}
                     </div>
 
+                    {# Repeats #}
+                    <div class="mb-3">
+                        <label for="{{ form.recurrence.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Repeats
+                        </label>
+                        <select name="{{ form.recurrence.html_name }}"
+                                id="{{ form.recurrence.id_for_label }}"
+                                class="form-select {% if form.recurrence.errors %}is-invalid{% endif %}"
+                                aria-describedby="{{ form.recurrence.id_for_label }}_help">
+                            {% for val, label in form.recurrence.field.choices %}
+                            <option value="{{ val }}" {% if form.recurrence.value|default:'' == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% for error in form.recurrence.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text" id="{{ form.recurrence.id_for_label }}_help">
+                            {% if form.instance.pk and form.instance.is_recurring %}
+                            <strong>{{ form.instance.recurrence_label }}.</strong>
+                            To stop it, choose "Does not repeat" and save.
+                            {% endif %}
+                            When a repeating {{ terms.todo }} is marked complete, the next one is
+                            created straight away, due one interval after this due date.
+                        </div>
+                    </div>
+
                     {# Links #}
                     <div class="row g-3 mb-4">
                         {% if form.linked_rock.field.queryset.exists %}

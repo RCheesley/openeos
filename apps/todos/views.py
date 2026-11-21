@@ -5,6 +5,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, V
 from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
+from django.utils.formats import date_format
 
 from .models import ToDo
 from .forms import ToDoForm
@@ -155,6 +156,11 @@ class ToDoDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
         messages.success(self.request, f'{terms.todo} "{self.object.title}" deleted.')
         return super().form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['next_occurrence'] = ToDo.objects.filter(previous_occurrence=self.object).first()
+        return ctx
+
 
 # ---------------------------------------------------------------------------
 # Complete toggle
@@ -165,10 +171,21 @@ class ToDoCompleteView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         todo = get_org_object_or_404(request, ToDo, pk=pk)
+        terms = get_terms(request)
         if todo.is_complete:
-            todo.mark_open()
+            if todo.mark_open():
+                messages.info(
+                    request,
+                    f'"{todo.title}" is open again, so its next occurrence was removed.',
+                )
         else:
-            todo.mark_complete()
+            next_todo = todo.mark_complete()
+            if next_todo:
+                messages.success(
+                    request,
+                    f'{terms.todo} "{todo.title}" {todo.recurrence_label.lower()}: '
+                    f'the next one is due {date_format(next_todo.due_date, "j F Y")}.',
+                )
         next_url = request.POST.get('next') or reverse('todos:list')
         return redirect(next_url)
 

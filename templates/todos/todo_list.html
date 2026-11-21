@@ -99,6 +99,11 @@
                         {{ todo.title }}
                     </span>
                     <div class="d-flex gap-2 mt-1 flex-wrap align-items-center">
+                        {% if todo.is_recurring %}
+                        <span class="badge bg-light text-dark border">
+                            <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>{{ todo.recurrence_label }}
+                        </span>
+                        {% endif %}
                         {% if todo.linked_rock %}
                         <a href="{{ todo.linked_rock.get_absolute_url }}" class="badge bg-success text-decoration-none">
                             <i class="bi bi-gem me-1"></i>{{ todo.linked_rock.title|truncatechars:30 }}

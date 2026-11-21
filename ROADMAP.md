@@ -106,7 +106,7 @@ A living checklist of what's been built and what's coming next. PRs welcome for 
 ## 💡 Backlog (unscheduled ideas)
 
 - [ ] Dark mode toggle
-- [ ] Recurring To-Dos (weekly/monthly)
+- [x] Recurring To-Dos (weekly, every two weeks, monthly, quarterly; next one created on completion)
 - [ ] Rock progress percentage (manual 0–100% slider)
 - [ ] Issue voting / priority scoring in IDS
 - [ ] VTO section permissions (lock sections to leadership only)

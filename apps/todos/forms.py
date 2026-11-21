@@ -13,7 +13,8 @@ class ToDoForm(forms.ModelForm):
     class Meta:
         model = ToDo
         # team excluded: always set to the user's active team in the view
-        fields = ['title', 'description', 'owner', 'due_date', 'linked_rock', 'linked_issue']
+        fields = ['title', 'description', 'owner', 'due_date', 'linked_rock', 'linked_issue',
+                  'recurrence']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
             'due_date': forms.DateInput(attrs={'type': 'date'}),
@@ -49,6 +50,7 @@ class ToDoForm(forms.ModelForm):
         self.fields['description'].required = False
         self.fields['linked_rock'].required = False
         self.fields['linked_issue'].required = False
+        self.fields['recurrence'].label = 'Repeats'
 
     def clean_due_date(self):
         d = self.cleaned_data.get('due_date')

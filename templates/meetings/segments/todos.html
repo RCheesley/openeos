@@ -13,6 +13,7 @@
                 {{ todo.owner.get_full_name|default:todo.owner.username }}
                 · Due {{ todo.due_date|date:"N j" }}
                 · {{ todo.days_open }} day{{ todo.days_open|pluralize }} open
+                {% if todo.is_recurring %}· <i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ todo.recurrence_label }}{% endif %}
             </div>
         </div>
         <form method="post" action="{% url 'todos:complete' todo.pk %}" class="flex-shrink-0">
