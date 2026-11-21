@@ -31,11 +31,11 @@
                     <span class="flex-shrink-0">•</span>
                     <span>{{ role.description }}</span>
                     <a href="{% url 'accountability:role_edit' role.pk %}"
-                       class="text-muted ms-auto flex-shrink-0" style="font-size:.55rem">
+                       class="text-muted ms-auto flex-shrink-0 icon-target" style="font-size:.55rem" aria-label="Edit accountability {{ role.description }}">
                         <i class="bi bi-pencil"></i>
                     </a>
                     <a href="{% url 'accountability:role_delete' role.pk %}"
-                       class="text-danger flex-shrink-0" style="font-size:.55rem">
+                       class="text-danger flex-shrink-0 icon-target" style="font-size:.55rem" aria-label="Delete accountability {{ role.description }}">
                         <i class="bi bi-x-lg"></i>
                     </a>
                 </li>

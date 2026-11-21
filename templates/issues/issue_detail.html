@@ -9,7 +9,7 @@
 
         {# Header #}
         <div class="d-flex align-items-start gap-3 mb-4">
-            <a href="{% url 'issues:list' %}" class="btn btn-sm btn-outline-secondary mt-1">
+            <a href="{% url 'issues:list' %}" class="btn btn-sm btn-outline-secondary mt-1" aria-label="Back to {{ terms.issues }}">
                 <i class="bi bi-arrow-left"></i>
             </a>
             <div class="flex-grow-1">
@@ -42,7 +42,7 @@
             </div>
             {% if can_edit %}
             <div class="dropdown">
-                <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+                <button class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-label="Options for {{ issue.title }}">
                     <i class="bi bi-three-dots"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -108,7 +108,7 @@
                     <h6 class="text-muted text-uppercase fw-semibold mb-0" style="font-size:.7rem;letter-spacing:.05em">
                         <i class="bi bi-check2-square me-1 text-primary"></i>{{ terms.todos }}
                     </h6>
-                    <a href="{% url 'todos:create' %}?issue={{ issue.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+                    <a href="{% url 'todos:create' %}?issue={{ issue.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary border-0 py-0" aria-label="Add {{ terms.todo }} for {{ issue.title }}">
                         <i class="bi bi-plus"></i>
                     </a>
                 </div>
@@ -180,7 +180,7 @@
                         <textarea name="{{ comment_form.notes.html_name }}"
                                   class="form-control form-control-sm"
                                   rows="2"
-                                  placeholder="Add a comment…"></textarea>
+                                  placeholder="Add a comment…" aria-label="Comment"></textarea>
                     </div>
                     <button type="submit" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-chat-left me-1"></i>Post Comment
@@ -258,7 +258,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="status" value="resolved">
                     <div class="mb-2">
-                        <textarea name="resolution_notes" class="form-control form-control-sm" rows="3"
+                        <textarea name="resolution_notes" class="form-control form-control-sm" rows="3" aria-label="Resolution notes"
                                   placeholder="How was this resolved? (required)" required></textarea>
                     </div>
                     <button type="submit" class="btn btn-success w-100 mb-2">
@@ -286,7 +286,7 @@
                 <form method="post" action="{% url 'issues:delegate' issue.pk %}">
                     {% csrf_token %}
                     <div class="mb-2">
-                        <select name="{{ delegate_form.delegated_to_team.html_name }}"
+                        <select name="{{ delegate_form.delegated_to_team.html_name }}" aria-label="Delegate to team"
                                 class="form-select form-select-sm">
                             <option value="">— Remove delegation —</option>
                             {% for val, label in delegate_form.delegated_to_team.field.choices %}

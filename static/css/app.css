@@ -48,6 +48,53 @@
 .scorecard-off-track { background-color: rgba(var(--bs-danger-rgb), 0.1); }
 .scorecard-missing   { background-color: rgba(var(--bs-secondary-rgb), 0.1); color: var(--bs-secondary); }
 
+/* Outline buttons in the warning and info colours. Bootstrap's yellow and cyan
+   are 1.6:1 and 1.9:1 against white, so the resting text and border use the
+   darker shade of each (8.5:1 and 9.4:1). Hover and pressed states are
+   Bootstrap's own: dark text on the solid yellow or cyan. */
+.btn-outline-warning {
+    --bs-btn-color: var(--bs-warning-text-emphasis);
+    --bs-btn-border-color: var(--bs-warning-text-emphasis);
+}
+
+.btn-outline-info {
+    --bs-btn-color: var(--bs-info-text-emphasis);
+    --bs-btn-border-color: var(--bs-info-text-emphasis);
+}
+
+/* Small icon-only links: the icon keeps its size, the area that can be
+   clicked or tapped grows to the 24 by 24 CSS pixels WCAG 2.2 asks for. */
+.icon-target {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+/* The "Long-term" badge in the meeting agenda asks for bg-purple, which
+   Bootstrap does not have, so its white text had no background. Same purple
+   as the badge on the list and detail pages (5.7:1 with white). */
+.bg-purple {
+    background-color: #7c3aed;
+}
+
+/* Finished segments in the meeting agenda: the minutes were the grey of the
+   struck-through name faded by a further quarter, 2.9:1 against white. They
+   now match the name. */
+.segment-sidebar .segment-item.done .opacity-75 {
+    opacity: 1 !important;
+}
+
+/* The top bar holds the organisation's name and its own words for each
+   module, so it can outgrow one row. The team and account menus then drop
+   to a second row of the bar instead of running off its end onto the page. */
+@media (min-width: 992px) {
+    .navbar-expand-lg .navbar-collapse {
+        flex-wrap: wrap;
+    }
+}
+
 /* IDS columns */
 .ids-identify { border-left: 4px solid var(--bs-warning); }
 .ids-discuss  { border-left: 4px solid var(--bs-info); }

@@ -7,9 +7,11 @@
     {% csrf_token %}
     <div class="row g-2 align-items-end">
         <div class="col-sm-3">
+            <label for="{{ headline_form.headline_type.id_for_label }}" class="visually-hidden">{{ terms.headline }} type</label>
             {{ headline_form.headline_type }}
         </div>
         <div class="col-sm-7">
+            <label for="{{ headline_form.text.id_for_label }}" class="visually-hidden">{{ terms.headline }}</label>
             {{ headline_form.text }}
         </div>
         <div class="col-sm-2">

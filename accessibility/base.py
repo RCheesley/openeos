@@ -6,8 +6,9 @@ Run with ``python manage.py test accessibility``. It is not part of
 import os
 import unittest
 
+from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from django.test import tag
+from django.test import override_settings, tag
 
 from . import seed
 
@@ -17,7 +18,17 @@ except ImportError:  # requirements-dev.txt is not installed
     sync_playwright = None
 
 
+# The live test server finds static files by their plain names. The project's
+# manifest storage would link to hashed names instead, which that server
+# answers with a 404, leaving every page without static/css/app.css.
+PLAIN_STATIC_FILES = {
+    **settings.STORAGES,
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+
+
 @tag('accessibility')
+@override_settings(STORAGES=PLAIN_STATIC_FILES)
 class BrowserTestCase(StaticLiveServerTestCase):
     """Seeds the demo organisation and opens a page in a headless Chromium."""
 
@@ -69,10 +80,14 @@ class BrowserTestCase(StaticLiveServerTestCase):
         self.assertEqual(landed, path, f'{path} redirected to {landed}')
         # Colour contrast and focus results mean nothing on an unstyled page.
         # This holds whether the stylesheets come from a CDN or from static/.
-        missing = self.page.evaluate(
-            '[...document.querySelectorAll("link[rel=stylesheet]")]'
-            '.filter(link => !link.sheet).map(link => link.href)'
-        )
+        # A stylesheet that answered with an error page still gets a sheet,
+        # but an empty one. Rules of a sheet from another host cannot be read.
+        missing = self.page.evaluate('''
+            [...document.querySelectorAll("link[rel=stylesheet]")].filter(link => {
+                if (!link.sheet) return true;
+                try { return link.sheet.cssRules.length === 0; } catch (error) { return false; }
+            }).map(link => link.href)
+        ''')
         self.assertEqual(missing, [], f'{path}: stylesheets did not load, so the page is unstyled')
 
     def sign_in(self):

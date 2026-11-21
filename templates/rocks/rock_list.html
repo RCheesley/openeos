@@ -39,7 +39,7 @@
 
 {# ── Quarter nav ── #}
 <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-    <a href="?quarter={{ prev_q.0 }}&year={{ prev_q.1 }}" class="btn btn-sm btn-outline-secondary">
+    <a href="?quarter={{ prev_q.0 }}&year={{ prev_q.1 }}" class="btn btn-sm btn-outline-secondary" aria-label="Previous quarter">
         <i class="bi bi-chevron-left"></i>
     </a>
 
@@ -50,7 +50,7 @@
     </a>
     {% endfor %}
 
-    <a href="?quarter={{ next_q.0 }}&year={{ next_q.1 }}" class="btn btn-sm btn-outline-secondary">
+    <a href="?quarter={{ next_q.0 }}&year={{ next_q.1 }}" class="btn btn-sm btn-outline-secondary" aria-label="Next quarter">
         <i class="bi bi-chevron-right"></i>
     </a>
 </div>
@@ -90,7 +90,7 @@
             <input type="hidden" name="quarter" value="{{ quarter }}">
             <input type="hidden" name="year" value="{{ year }}">
             {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
-            <select name="team" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto">
+            <select name="team" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto" aria-label="Filter by team">
                 <option value="">All teams</option>
                 {% for team in teams %}
                 <option value="{{ team.pk }}" {% if request.GET.team == team.pk|stringformat:"s" %}selected{% endif %}>
@@ -182,7 +182,7 @@
 
                         {# Actions #}
                         <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown" aria-label="Options for {{ rock.title }}">
                                 <i class="bi bi-three-dots"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">

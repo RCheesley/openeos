@@ -27,7 +27,7 @@
             <i class="bi bi-arrow-up-circle" style="font-size:.75rem"></i>
         </a>
         {% endif %}
-        <a href="{{ todo.get_absolute_url }}" class="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0">
+        <a href="{{ todo.get_absolute_url }}" class="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0" title="Open {{ terms.todo|lower }}" aria-label="Open {{ terms.todo|lower }} {{ todo.title }}">
             <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
         </a>
     </div>

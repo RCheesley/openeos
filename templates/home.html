@@ -128,7 +128,7 @@
                 </div>
                 {% if open_issues is not None %}
                 <div class="mb-3">
-                    <div class="fs-4 fw-bold {% if open_issues > 10 %}text-danger{% elif open_issues > 5 %}text-warning{% else %}text-success{% endif %}">
+                    <div class="fs-4 fw-bold {% if open_issues > 10 %}text-danger{% elif open_issues > 5 %}text-warning-emphasis{% else %}text-success{% endif %}">
                         {{ open_issues }}
                     </div>
                     <div class="text-muted small">Open {{ terms.issues|lower }}</div>
@@ -156,7 +156,7 @@
                 </div>
                 {% if open_todos is not None %}
                 <div class="mb-3">
-                    <div class="fs-4 fw-bold text-info">{{ open_todos }}</div>
+                    <div class="fs-4 fw-bold text-info-emphasis">{{ open_todos }}</div>
                     <div class="text-muted small">Open {{ terms.todos|lower }}</div>
                 </div>
                 {% endif %}

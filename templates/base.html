@@ -24,7 +24,7 @@
                 {% endif %}
                 {{ brand.name }}
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarMain">
@@ -89,7 +89,7 @@
                 {# Global search #}
                 <form method="get" action="{% url 'accounts:search' %}" class="d-flex me-2 my-1 my-lg-0" role="search">
                     <div class="input-group input-group-sm" style="width:220px">
-                        <input type="search" name="q" id="global-search-input"
+                        <input type="search" name="q" id="global-search-input" aria-label="Search"
                                class="form-control bg-dark text-white border-secondary"
                                placeholder="Search… (/)"
                                value="{{ request.GET.q|default:'' }}"
@@ -199,7 +199,7 @@
                     {% for message in messages %}
                     <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     {% endfor %}
                 </div>

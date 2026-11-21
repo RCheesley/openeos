@@ -10,6 +10,8 @@ import tomllib
 from collections import defaultdict
 from pathlib import Path
 
+from apps.meetings.models import Meeting
+
 from .base import BrowserTestCase
 
 try:
@@ -53,6 +55,41 @@ def signed_in_pages(ids):
         ('organisation-settings', '/org/settings/'),
         ('terminology', '/org/settings/terminology/'),
         ('profile', '/profile/'),
+        # Pages that repeat controls from the pages above: the other forms,
+        # delete confirmations, print views and search results.
+        ('search-results', '/search/?q=depot'),
+        ('priorities-archive', '/rocks/archive/'),
+        ('priority-delete', f'/rocks/{ids["rock"]}/delete/'),
+        ('milestone-edit', f'/rocks/milestones/{ids["milestone"]}/edit/'),
+        ('blocker-delete', f'/issues/{ids["issue"]}/delete/'),
+        ('action-delete', f'/todos/{ids["todo"]}/delete/'),
+        ('metrics-board-form', '/scorecards/new/'),
+        ('metrics-board-delete', f'/scorecards/{ids["scorecard"]}/delete/'),
+        ('metric-form', f'/scorecards/{ids["scorecard"]}/metrics/add/'),
+        ('meeting-form', '/meetings/create/'),
+        ('meeting-summary', f'/meetings/{ids["past_meeting"]}/'),
+        ('meeting-print', f'/meetings/{ids["past_meeting"]}/print/'),
+        ('vision-print', '/vision/print/'),
+        ('vision-section-form', '/vision/edit/core_focus_purpose/'),
+        ('core-value-form', '/vision/core-values/add/'),
+        ('core-value-delete', f'/vision/core-values/{ids["core_value"]}/delete/'),
+        ('role-form', '/accountability/nodes/add/'),
+        ('role-delete', f'/accountability/nodes/{ids["node"]}/delete/'),
+        ('accountability-form', f'/accountability/nodes/{ids["node"]}/roles/add/'),
+        ('accountability-delete', f'/accountability/roles/{ids["role"]}/delete/'),
+    ]
+
+
+def meeting_segment_pages(ids):
+    """The meeting runner once more for each agenda segment after the first.
+
+    The runner shows one segment at a time at the same address, so the test
+    advances the meeting before it opens each of these.
+    """
+    meeting = Meeting.objects.get(pk=ids['meeting'])
+    return [
+        (f'meeting-runner-{entry["segment_type"].replace("_", "-")}', meeting.get_absolute_url())
+        for entry in meeting.agenda[1:]
     ]
 
 
@@ -88,7 +125,8 @@ class PageAccessibilityTest(BrowserTestCase):
         # A11Y_PAGES=sign-in,dashboard checks just those pages, for a quick
         # local run while fixing one of them.
         only = {name.strip() for name in os.environ.get('A11Y_PAGES', '').split(',') if name.strip()}
-        everything = SIGNED_OUT_PAGES + signed_in_pages(self.ids)
+        segment_pages = meeting_segment_pages(self.ids)
+        everything = SIGNED_OUT_PAGES + signed_in_pages(self.ids) + segment_pages
         unknown = only - {name for name, _ in everything}
         self.assertFalse(unknown, f'A11Y_PAGES names pages that do not exist: {sorted(unknown)}')
 
@@ -98,6 +136,10 @@ class PageAccessibilityTest(BrowserTestCase):
                 response = check(name, path)
         self.sign_in()
         for name, path in signed_in_pages(self.ids):
+            if not only or name in only:
+                response = check(name, path)
+        for name, path in segment_pages:
+            Meeting.objects.get(pk=self.ids['meeting']).advance()
             if not only or name in only:
                 response = check(name, path)
         engine = response['testEngine']['version']

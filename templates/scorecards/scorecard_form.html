@@ -5,7 +5,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-6">
         <div class="d-flex align-items-center mb-4">
-            <a href="{% url 'scorecards:list' %}" class="btn btn-sm btn-outline-secondary me-3">
+            <a href="{% url 'scorecards:list' %}" class="btn btn-sm btn-outline-secondary me-3" aria-label="Back to {{ terms.scorecards }}">
                 <i class="bi bi-arrow-left"></i>
             </a>
             <h1 class="h3 mb-0"><i class="bi bi-bar-chart-line me-2 text-info"></i>{{ action }} {{ terms.scorecard }}</h1>

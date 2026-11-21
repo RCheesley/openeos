@@ -4,7 +4,7 @@
 {% block content %}
 {# ── Header ── #}
 <div class="d-flex align-items-start gap-3 mb-4">
-    <a href="{% url 'scorecards:list' %}" class="btn btn-sm btn-outline-secondary mt-1">
+    <a href="{% url 'scorecards:list' %}" class="btn btn-sm btn-outline-secondary mt-1" aria-label="Back to {{ terms.scorecards }}">
         <i class="bi bi-arrow-left"></i>
     </a>
     <div class="flex-grow-1">
@@ -26,7 +26,7 @@
             <i class="bi bi-download me-1"></i>Export CSV
         </a>
         <div class="dropdown">
-            <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+            <button class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-label="Options for {{ scorecard.name }}">
                 <i class="bi bi-three-dots"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
@@ -70,7 +70,7 @@
                             <div class="d-flex align-items-center justify-content-between gap-1">
                                 <span class="small fw-semibold">{{ row.metric.name }}</span>
                                 <div class="dropdown">
-                                    <button class="btn btn-sm border-0 p-0 text-muted" data-bs-toggle="dropdown">
+                                    <button class="btn btn-sm border-0 p-0 text-muted" data-bs-toggle="dropdown" aria-label="Options for {{ row.metric.name }}">
                                         <i class="bi bi-three-dots-vertical" style="font-size:.7rem"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">

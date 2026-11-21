@@ -9,7 +9,7 @@
 
         {# Header #}
         <div class="d-flex align-items-start gap-3 mb-4">
-            <a href="{% url 'rocks:list' %}?quarter={{ rock.quarter }}&year={{ rock.year }}" class="btn btn-sm btn-outline-secondary mt-1">
+            <a href="{% url 'rocks:list' %}?quarter={{ rock.quarter }}&year={{ rock.year }}" class="btn btn-sm btn-outline-secondary mt-1" aria-label="Back to {{ terms.rocks }}">
                 <i class="bi bi-arrow-left"></i>
             </a>
             <div class="flex-grow-1">
@@ -42,7 +42,7 @@
             </div>
             {% if can_edit %}
             <div class="dropdown">
-                <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+                <button class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-label="Options for {{ rock.title }}">
                     <i class="bi bi-three-dots"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -115,7 +115,7 @@
 
                 {% if rock.milestone_count %}
                 <div class="progress mb-3" style="height:6px">
-                    <div class="progress-bar bg-success" role="progressbar"
+                    <div class="progress-bar bg-success" role="progressbar" aria-label="{{ terms.milestones }} completed"
                          style="width:{{ rock.milestone_progress_pct }}%"
                          aria-valuenow="{{ rock.milestone_progress_pct }}"
                          aria-valuemin="0" aria-valuemax="100"></div>
@@ -168,13 +168,13 @@
                 <form method="post" action="{% url 'rocks:milestone_add' rock.pk %}">
                     {% csrf_token %}
                     <div class="d-flex gap-2 align-items-start mb-2">
-                        <input type="text" name="title" class="form-control form-control-sm" placeholder="Add a {{ terms.milestone|lower }}…" required>
-                        <input type="date" name="due_date" class="form-control form-control-sm" style="max-width:140px">
+                        <input type="text" name="title" class="form-control form-control-sm" placeholder="Add a {{ terms.milestone|lower }}…" aria-label="{{ terms.milestone }} title" required>
+                        <input type="date" name="due_date" class="form-control form-control-sm" style="max-width:140px" aria-label="{{ terms.milestone }} due date">
                         <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">
                             <i class="bi bi-plus"></i> Add
                         </button>
                     </div>
-                    <textarea name="description" class="form-control form-control-sm" rows="2"
+                    <textarea name="description" class="form-control form-control-sm" rows="2" aria-label="{{ terms.milestone }} description"
                               placeholder="Description (optional)…"></textarea>
                 </form>
                 {% elif not rock.milestone_count %}
@@ -199,7 +199,7 @@
                         <input type="radio" class="btn-check" name="confidence" value="off_track" id="checkin-off-{{ rock.pk }}">
                         <label class="btn btn-outline-danger" for="checkin-off-{{ rock.pk }}">Off Track</label>
                     </div>
-                    <textarea name="note" class="form-control form-control-sm mb-2" rows="2"
+                    <textarea name="note" class="form-control form-control-sm mb-2" rows="2" aria-label="Check-in note"
                               placeholder="What's the progress this week? (optional)"></textarea>
                     <button type="submit" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-plus"></i> Add Check-in
@@ -378,7 +378,7 @@
                     <h6 class="text-muted text-uppercase fw-semibold mb-0" style="font-size:.7rem;letter-spacing:.05em">
                         <i class="bi bi-check2-square me-1 text-primary"></i>{{ terms.todos }}
                     </h6>
-                    <a href="{% url 'todos:create' %}?rock={{ rock.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+                    <a href="{% url 'todos:create' %}?rock={{ rock.pk }}&next={{ request.get_full_path }}" class="btn btn-sm btn-outline-secondary border-0 py-0" aria-label="Add {{ terms.todo }} for {{ rock.title }}">
                         <i class="bi bi-plus"></i>
                     </a>
                 </div>
@@ -456,7 +456,7 @@
                     {% csrf_token %}
                     {% if dependency_form.depends_on_rock.field.queryset.exists %}
                     <div class="mb-2">
-                        <select name="{{ dependency_form.depends_on_rock.html_name }}"
+                        <select name="{{ dependency_form.depends_on_rock.html_name }}" aria-label="{{ terms.rock }} this one depends on"
                                 class="form-select form-select-sm {% if dependency_form.depends_on_rock.errors %}is-invalid{% endif %}">
                             <option value="">— Select a {{ terms.rock }} —</option>
                             {% for val, label in dependency_form.depends_on_rock.field.choices %}
@@ -473,7 +473,7 @@
                         <input type="text"
                                name="{{ dependency_form.description.html_name }}"
                                class="form-control form-control-sm"
-                               placeholder="Why does this depend on it? (optional)">
+                               placeholder="Why does this depend on it? (optional)" aria-label="Why it depends on it">
                     </div>
                     <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
                         <i class="bi bi-link me-1"></i>Add Dependency
@@ -497,7 +497,7 @@
                 <form method="post" action="{% url 'rocks:issue_link' rock.pk %}">
                     {% csrf_token %}
                     <div class="mb-2">
-                        <select name="issue_id" class="form-select form-select-sm">
+                        <select name="issue_id" class="form-select form-select-sm" aria-label="{{ terms.issue }} to link">
                             <option value="">— Select an {{ terms.issue }} —</option>
                             {% for issue in linkable_issues %}
                             <option value="{{ issue.pk }}">[{{ issue.get_status_display }}] {{ issue.title }}</option>

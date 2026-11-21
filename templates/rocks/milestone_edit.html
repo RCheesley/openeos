@@ -6,7 +6,7 @@
     <div class="col-lg-6">
 
         <div class="d-flex align-items-center gap-3 mb-4">
-            <a href="{{ milestone.rock.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">
+            <a href="{{ milestone.rock.get_absolute_url }}" class="btn btn-sm btn-outline-secondary" aria-label="Back to {{ milestone.rock.title }}">
                 <i class="bi bi-arrow-left"></i>
             </a>
             <div>
@@ -21,20 +21,20 @@
                     {% csrf_token %}
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control"
+                        <label for="milestone-title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                        <input type="text" name="title" id="milestone-title" class="form-control"
                                value="{{ milestone.title }}" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Description</label>
-                        <textarea name="description" class="form-control" rows="4"
+                        <label for="milestone-description" class="form-label fw-semibold">Description</label>
+                        <textarea name="description" id="milestone-description" class="form-control" rows="4"
                                   placeholder="Add context, success criteria, or notes…">{{ milestone.description }}</textarea>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Due Date</label>
-                        <input type="date" name="due_date" class="form-control"
+                        <label for="milestone-due-date" class="form-label fw-semibold">Due Date</label>
+                        <input type="date" name="due_date" id="milestone-due-date" class="form-control"
                                value="{{ milestone.due_date|date:'Y-m-d' }}">
                     </div>
 

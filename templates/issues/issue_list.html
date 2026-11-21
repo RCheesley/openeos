@@ -57,7 +57,7 @@
     <form method="get" class="d-flex gap-2 align-items-center">
         {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
         {% if type_filter %}<input type="hidden" name="type" value="{{ type_filter }}">{% endif %}
-        <select name="team" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto">
+        <select name="team" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto" aria-label="Filter by team">
             <option value="">All teams</option>
             {% for team in teams %}
             <option value="{{ team.pk }}" {% if team_filter == team.pk|stringformat:"s" %}selected{% endif %}>
@@ -131,7 +131,7 @@
 
                 {# Actions #}
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown" aria-label="Options for {{ issue.title }}">
                         <i class="bi bi-three-dots"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
@@ -145,7 +145,7 @@
                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                 <input type="hidden" name="status" value="in_ids">
                                 <input type="hidden" name="resolution_notes" value="">
-                                <button type="submit" class="dropdown-item text-warning">
+                                <button type="submit" class="dropdown-item text-warning-emphasis">
                                     <i class="bi bi-arrow-repeat me-2"></i>Move to {{ terms.ids }}
                                 </button>
                             </form>

@@ -5,7 +5,7 @@
 {% block content %}
 {# ── Header ── #}
 <div class="d-flex align-items-center gap-3 mb-4">
-    <a href="{% url 'rocks:list' %}?quarter={{ quarter }}&year={{ year }}" class="btn btn-sm btn-outline-secondary">
+    <a href="{% url 'rocks:list' %}?quarter={{ quarter }}&year={{ year }}" class="btn btn-sm btn-outline-secondary" aria-label="Back to {{ terms.rocks }}">
         <i class="bi bi-arrow-left"></i>
     </a>
     <div>
@@ -41,7 +41,7 @@
     </div>
     <div class="col-sm-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-2 fw-bold {% if completion_pct >= 80 %}text-success{% elif completion_pct >= 50 %}text-warning{% else %}text-danger{% endif %}">
+            <div class="fs-2 fw-bold {% if completion_pct >= 80 %}text-success{% elif completion_pct >= 50 %}text-warning-emphasis{% else %}text-danger{% endif %}">
                 {{ completion_pct }}%
             </div>
             <div class="text-muted small">Completion Rate</div>
@@ -52,7 +52,7 @@
 {# Progress bar #}
 <div class="mb-4">
     <div class="progress" style="height:12px">
-        <div class="progress-bar bg-success" role="progressbar"
+        <div class="progress-bar bg-success" role="progressbar" aria-label="{{ terms.rocks }} completed"
              style="width:{{ completion_pct }}%"
              aria-valuenow="{{ completion_pct }}" aria-valuemin="0" aria-valuemax="100">
         </div>

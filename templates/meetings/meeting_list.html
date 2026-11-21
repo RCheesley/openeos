@@ -48,7 +48,7 @@
                     <td>
                         {% with avg=m.average_rating %}
                         {% if avg %}
-                        <span class="fw-semibold {% if avg >= 8 %}text-success{% elif avg >= 6 %}text-warning{% else %}text-danger{% endif %}">
+                        <span class="fw-semibold {% if avg >= 8 %}text-success{% elif avg >= 6 %}text-warning-emphasis{% else %}text-danger{% endif %}">
                             {{ avg }}/10
                         </span>
                         {% else %}—{% endif %}

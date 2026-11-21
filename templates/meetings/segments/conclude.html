@@ -18,14 +18,14 @@
         <form method="post" action="{% url 'meetings:rate' meeting.pk %}" class="mb-3">
             {% csrf_token %}
             <div class="mb-2">
-                <label class="form-label small">Score (1–10) <span class="text-danger">*</span></label>
+                <label for="{{ rating_form.score.id_for_label }}" class="form-label small">Score (1–10) <span class="text-danger">*</span></label>
                 {{ rating_form.score }}
                 {% if my_rating %}
                 <div class="form-text text-success">Current: {{ my_rating.score }}/10</div>
                 {% endif %}
             </div>
             <div class="mb-2">
-                <label class="form-label small">What would make next week better?
+                <label for="{{ rating_form.improvement_note.id_for_label }}" class="form-label small">What would make next week better?
                     <span class="text-muted">(if score &lt; 8)</span>
                 </label>
                 {{ rating_form.improvement_note }}
@@ -50,7 +50,7 @@
             {% if avg_rating %}
             <div class="d-flex justify-content-between fw-semibold pt-1">
                 <span>Average</span>
-                <span class="{% if avg_rating >= 8 %}text-success{% elif avg_rating >= 6 %}text-warning{% else %}text-danger{% endif %}">
+                <span class="{% if avg_rating >= 8 %}text-success{% elif avg_rating >= 6 %}text-warning-emphasis{% else %}text-danger{% endif %}">
                     {{ avg_rating }}/10
                 </span>
             </div>
@@ -91,7 +91,7 @@
     <form method="post" action="{% url 'meetings:complete' meeting.pk %}">
         {% csrf_token %}
         <div class="mb-3">
-            <label class="form-label small fw-semibold">{{ terms.cascading_messages }}</label>
+            <label for="{{ cascading_form.cascading_messages.id_for_label }}" class="form-label small fw-semibold">{{ terms.cascading_messages }}</label>
             {{ cascading_form.cascading_messages }}
         </div>
         {% with word=terms.meeting|lower|escapejs %}

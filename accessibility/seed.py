@@ -60,7 +60,7 @@ def seed():
     ]
     rock = rocks[0]
     RockMilestone.objects.create(rock=rock, title='Sign the lease', is_complete=True, order=1)
-    RockMilestone.objects.create(
+    milestone = RockMilestone.objects.create(
         rock=rock, title='Fit out the workshop', due_date=today + timedelta(days=21), order=2,
     )
     RockCheckin.objects.create(rock=rock, note='Lease signed, fit-out quotes are in.', created_by=admin)
@@ -83,7 +83,7 @@ def seed():
     ]
     issues[0].linked_rocks.add(rocks[1])
 
-    ToDo.objects.create(
+    todo = ToDo.objects.create(
         title='Send the fit-out quotes to finance', owner=admin, team=leadership,
         due_date=today + timedelta(days=3), linked_rock=rock,
     )
@@ -135,7 +135,9 @@ def seed():
     )
 
     vto = VTO.for_org(org)
-    VTOCoreValue.objects.create(vto=vto, name='Do it properly', description='No shortcuts on safety.', order=1)
+    core_value = VTOCoreValue.objects.create(
+        vto=vto, name='Do it properly', description='No shortcuts on safety.', order=1,
+    )
     VTOCoreValue.objects.create(vto=vto, name='Say it straight', order=2)
     for key, content in [
         ('core_focus_purpose', 'Keep working harbours safely lit.'),
@@ -149,7 +151,7 @@ def seed():
         VTOSection.objects.create(vto=vto, key=key, content=content)
 
     visionary = AccountabilityNode.objects.create(organization=org, name='Managing Director', owner=admin)
-    AccountabilityRole.objects.create(node=visionary, description='Sets direction', order=1)
+    role = AccountabilityRole.objects.create(node=visionary, description='Sets direction', order=1)
     AccountabilityRole.objects.create(node=visionary, description='Key customer relationships', order=2)
     ops = AccountabilityNode.objects.create(
         organization=org, parent=visionary, name='Operations', owner=colleague, order=1,
@@ -162,4 +164,10 @@ def seed():
         'issue': issues[0].pk,
         'scorecard': scorecard.pk,
         'meeting': meeting.pk,
+        'past_meeting': past_meeting.pk,
+        'milestone': milestone.pk,
+        'todo': todo.pk,
+        'core_value': core_value.pk,
+        'node': ops.pk,
+        'role': role.pk,
     }

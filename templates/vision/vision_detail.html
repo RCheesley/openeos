@@ -33,7 +33,7 @@
                 <span class="fw-semibold small">{{ terms.core_values }}</span>
                 <div class="text-muted" style="font-size:.7rem">3–7 timeless guiding principles</div>
             </div>
-            <a href="{% url 'vision:cv_add' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+            <a href="{% url 'vision:cv_add' %}" class="btn btn-sm btn-outline-secondary border-0 py-0" aria-label="Add {{ terms.core_value }}">
                 <i class="bi bi-plus"></i>
             </a>
         </div>
@@ -42,13 +42,13 @@
             <div class="d-flex flex-wrap gap-2">
                 {% for cv in core_values %}
                 <div class="border rounded p-2 position-relative" style="min-width:150px;max-width:210px">
-                    <div class="fw-semibold small">{{ cv.name }}</div>
+                    <div class="fw-semibold small pe-5">{{ cv.name }}</div>
                     {% if cv.description %}
                     <div class="text-muted" style="font-size:.72rem">{{ cv.description|truncatewords:12 }}</div>
                     {% endif %}
-                    <div class="position-absolute top-0 end-0 p-1 d-flex gap-1">
-                        <a href="{% url 'vision:cv_edit' cv.pk %}" class="text-muted" style="font-size:.7rem"><i class="bi bi-pencil"></i></a>
-                        <a href="{% url 'vision:cv_delete' cv.pk %}" class="text-danger" style="font-size:.7rem"><i class="bi bi-x-lg"></i></a>
+                    <div class="position-absolute top-0 end-0 d-flex">
+                        <a href="{% url 'vision:cv_edit' cv.pk %}" class="text-muted icon-target" style="font-size:.7rem" aria-label="Edit {{ terms.core_value }} {{ cv.name }}"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'vision:cv_delete' cv.pk %}" class="text-danger icon-target" style="font-size:.7rem" aria-label="Delete {{ terms.core_value }} {{ cv.name }}"><i class="bi bi-x-lg"></i></a>
                     </div>
                 </div>
                 {% endfor %}
@@ -96,7 +96,7 @@
                 <span class="fw-semibold small"><i class="bi bi-gem me-1 text-success"></i>Company {{ terms.rocks }}</span>
                 <div class="text-muted" style="font-size:.7rem">{{ rock_quarter }} · live from {{ terms.rocks }} module</div>
             </div>
-            <a href="{% url 'rocks:list' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+            <a href="{% url 'rocks:list' %}" class="btn btn-sm btn-outline-secondary border-0 py-0" aria-label="Open {{ terms.rocks }}">
                 <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
             </a>
         </div>
@@ -124,7 +124,7 @@
                 <span class="fw-semibold small"><i class="bi bi-exclamation-triangle me-1 text-warning"></i>Company {{ terms.issues }} List</span>
                 <div class="text-muted" style="font-size:.7rem">Long-term strategic {{ terms.issues|lower }} · live from {{ terms.issues }} module</div>
             </div>
-            <a href="{% url 'issues:create' %}" class="btn btn-sm btn-outline-secondary border-0 py-0">
+            <a href="{% url 'issues:create' %}" class="btn btn-sm btn-outline-secondary border-0 py-0" aria-label="New {{ terms.issue }}">
                 <i class="bi bi-plus" style="font-size:.8rem"></i>
             </a>
         </div>
