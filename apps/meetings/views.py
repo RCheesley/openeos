@@ -1,3 +1,5 @@
+from itertools import groupby
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import View, ListView
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,7 +11,12 @@ from .models import Meeting, MeetingNote, SegueEntry, Headline, MeetingRating
 from .segments import resolve_agenda
 from .forms import MeetingCreateForm, SegueEntryForm, HeadlineForm, MeetingRatingForm, CascadingMessagesForm
 from apps.accounts.scoping import get_active_org, get_active_team
+from apps.accounts.team_scope import (
+    SCOPE_ALL, count_other_teams, get_scope, get_visible_teams, summarise_other_teams,
+)
 from apps.accounts.terminology import get_terms
+
+SCOPE_SESSION_KEY = 'meetings_scope'
 
 
 def _get_org(request):
@@ -151,24 +158,56 @@ def _build_runner_context(meeting, user, terms):
 # ---------------------------------------------------------------------------
 
 class MeetingListView(LoginRequiredMixin, View):
+    """The active team's meetings, or every visible team's with ``?scope=all``.
+
+    The scope works as on the Rocks and Scorecards lists (see
+    ``apps.accounts.team_scope``) and is kept in the session under its own
+    key. The default is the active team, as before.
+    """
     template_name = 'meetings/meeting_list.html'
 
     def get(self, request):
         team = get_active_team(request)
         terms = get_terms(request)
-        if not team:
+        visible_teams = list(get_visible_teams(request))
+        if not team and not visible_teams:
             messages.warning(request, f'Join a team to see {terms.get("meeting", plural=True, lower=True)}.')
             return redirect('home')
+        scope = get_scope(request, SCOPE_SESSION_KEY)
+        if not team:
+            # An organisation admin on no team has no single team to show.
+            scope = SCOPE_ALL
+        other_team_counts = []
+        if scope == SCOPE_ALL:
+            scoped_teams = visible_teams
+            team_filter = {'team__in': visible_teams}
+        else:
+            scoped_teams = [team]
+            team_filter = {'team': team}
+            other_team_counts = count_other_teams(Meeting.objects.all(), team, visible_teams)
         meetings = list(
             Meeting.objects
-            .filter(team=team)
+            .filter(**team_filter)
             .select_related('team')
-            .order_by('-scheduled_date')
+            .order_by('team__name', 'team_id', '-scheduled_date')
         )
         for meeting in meetings:
             meeting.segment_label = resolve_agenda(meeting.agenda, terms)[meeting.current_segment]['name']
             meeting.can_change = meeting.can_be_changed_by(request.user)
-        return render(request, self.template_name, {'meetings': meetings, 'org': team.organization})
+        return render(request, self.template_name, {
+            'meetings': meetings,
+            'teams_meetings': [
+                (t, list(team_meetings)) for t, team_meetings in groupby(meetings, key=lambda m: m.team)
+            ],
+            'org': get_active_org(request),
+            'scope': scope,
+            'active_team': team,
+            'visible_teams': visible_teams,
+            'scoped_teams': scoped_teams,
+            'other_team_counts': other_team_counts,
+            'other_meetings_total': sum(n for _, n in other_team_counts),
+            'other_teams_summary': summarise_other_teams(other_team_counts),
+        })
 
 
 class MeetingCreateView(LoginRequiredMixin, View):
