@@ -71,6 +71,7 @@ The CI enforces **60% minimum coverage** on the model layer. New features should
 - **Python**: follow PEP 8. No external linter is enforced yet, but keep lines under 100 characters.
 - **Django**: class-based views, `LoginRequiredMixin` on everything, no raw SQL.
 - **Templates**: Bootstrap 5 only — no additional CSS frameworks. Minimal vanilla JS; no frontend build step.
+- **No requests to other hosts**: scripts, styles, fonts and images are all served from `static/`, never from a CDN. Bootstrap and Bootstrap Icons live in `static/vendor/`; its `README.md` records where each file came from, its SHA-256, and how to update to a newer version. A test (`apps/accounts/tests/test_static_assets.py`) fails if a template or stylesheet loads anything from another host.
 - **No comments** that explain *what* the code does — only *why* if the reason is non-obvious.
 - **No print statements** — use Django's logging if you need debug output.
 - **Migrations**: always commit migrations alongside model changes. CI will fail if migrations are missing.
@@ -140,7 +141,7 @@ config/
     production.py   # Production hardening
 
 templates/        # All Django templates (per-app subdirectories)
-static/           # CSS and JS
+static/           # CSS and JS (vendor/ = Bootstrap and Bootstrap Icons)
 nginx/            # Nginx config for production
 ```
 

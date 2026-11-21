@@ -199,7 +199,7 @@ docker compose exec web coverage report
 │   └── wsgi.py
 ├── nginx/
 │   └── nginx.conf
-├── static/             # Source static files (CSS, JS)
+├── static/             # Source static files (CSS, JS; vendor/ holds Bootstrap and Bootstrap Icons)
 ├── staticfiles/        # Collected static files (git-ignored)
 ├── templates/          # Django HTML templates
 ├── docker-compose.yml          # Development
@@ -215,7 +215,7 @@ docker compose exec web coverage report
 
 - **Python 3.11+** / **Django 5.x**
 - **PostgreSQL 15**
-- **Bootstrap 5.3** + Bootstrap Icons (CDN)
+- **Bootstrap 5.3** + Bootstrap Icons, shipped in `static/vendor/` and served by the app itself (no CDN, so pages make no request to any other host)
 - **Gunicorn** (production WSGI)
 - **Whitenoise** (static file serving / compression)
 - **Nginx** (production reverse proxy)
