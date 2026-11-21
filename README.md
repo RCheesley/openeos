@@ -19,7 +19,7 @@ Built with Django, Bootstrap 5, PostgreSQL, and Docker. No JavaScript frameworks
 | **Audit log** | Logins, logouts, failed logins and administrative actions recorded per organisation; admins see their organisation's log, superusers see everything in the Django admin |
 | **Data export** | Organisation admins can download everything that belongs to their organisation as one archive (JSON for importing, CSV for spreadsheets, logo and avatars); operators can export one or every organisation from the command line. Every export is written to the audit log; an archive can be loaded into another instance with `import_organization` |
 | **Weekly Meeting** | Guided 90-minute meeting runner with timed segments, check-in entries, updates, PRS integration, ratings, and key messages |
-| **Two-factor authentication** | Optional per user: an authenticator app (TOTP) plus ten single-use backup codes, set up from **My Profile**. Set `OTP_TOTP_ISSUER` to change the name shown in authenticator apps; a later change lets an organisation require it for its members |
+| **Two-factor authentication** | An authenticator app (TOTP) plus ten single-use backup codes, set up from **My Profile**. Optional per user unless an organisation admin switches on **Require two-step sign-in** in **Organisation settings**: members without it are then taken to the set-up page the next time they open a page in that organisation, and nobody in it can switch theirs off. The **Users** page shows admins who has it on. Set `OTP_TOTP_ISSUER` to change the name shown in authenticator apps |
 
 ---
 

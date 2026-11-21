@@ -11,6 +11,15 @@
             <h1 class="h3 mt-2 mb-0">Set up two-factor authentication</h1>
         </div>
 
+        {% if required_by and not already_enabled %}
+        <div class="alert alert-info">
+            <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>
+            <strong>{{ required_by.name }}</strong> requires two-step sign-in for everyone.
+            Set it up here to carry on; it takes about a minute and you need your phone.
+            Until then you can still reach your profile and sign out.
+        </div>
+        {% endif %}
+
         {% if already_enabled %}
         <div class="alert alert-warning">
             <i class="bi bi-exclamation-triangle me-1"></i>

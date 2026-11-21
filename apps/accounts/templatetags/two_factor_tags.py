@@ -2,6 +2,7 @@ from django import template
 
 from apps.accounts.two_factor import backup_code_count, get_totp_device
 from apps.accounts.two_factor.forms import PasswordConfirmForm
+from apps.accounts.two_factor.policy import organizations_requiring_two_factor
 
 register = template.Library()
 
@@ -13,4 +14,5 @@ def two_factor_status(user):
         'device': get_totp_device(user),
         'backup_code_count': backup_code_count(user),
         'password_form': PasswordConfirmForm(user=user),
+        'required_by': list(organizations_requiring_two_factor(user)),
     }

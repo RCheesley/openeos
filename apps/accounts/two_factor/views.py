@@ -10,6 +10,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import FormView, View
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from apps.accounts.scoping import get_active_org
+
 from . import (
     TOTP_DEVICE_NAME, backup_code_count, disable_two_factor, get_totp_device, manual_key,
     qr_code_data_uri, regenerate_backup_codes,
@@ -17,6 +19,7 @@ from . import (
 from .forms import (
     PasswordConfirmForm, TwoFactorSetupForm, TwoFactorVerifyForm, too_many_attempts_message,
 )
+from .policy import organizations_requiring_two_factor, requires_two_factor
 
 VERIFY_FAILURE_LIMIT = 5
 VERIFY_WAIT_SECONDS = 30
@@ -36,6 +39,18 @@ class VerifiedRequiredMixin(LoginRequiredMixin):
             messages.info(request, 'Two-factor authentication is not enabled yet.')
             return redirect('accounts:profile')
         return super().dispatch(request, *args, **kwargs)
+
+
+def next_or(request, fallback):
+    """The ``next`` address when it stays on this host, else ``fallback``."""
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
+    if url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return fallback
 
 
 class TwoFactorSetupView(LoginRequiredMixin, FormView):
@@ -71,6 +86,8 @@ class TwoFactorSetupView(LoginRequiredMixin, FormView):
         ctx['qr_code'] = qr_code_data_uri(device.config_url)
         ctx['manual_key'] = manual_key(device)
         ctx['already_enabled'] = get_totp_device(self.request.user) is not None
+        org = get_active_org(self.request)
+        ctx['required_by'] = org if requires_two_factor(org) else None
         return ctx
 
     def form_valid(self, form):
@@ -84,6 +101,7 @@ class TwoFactorSetupView(LoginRequiredMixin, FormView):
         return render(self.request, 'accounts/two_factor/backup_codes.html', {
             'backup_codes': codes,
             'just_enabled': True,
+            'continue_url': next_or(self.request, fallback=''),
         })
 
 
@@ -143,20 +161,21 @@ class TwoFactorVerifyView(LoginRequiredMixin, FormView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        next_url = self.request.POST.get('next') or self.request.GET.get('next') or ''
-        if url_has_allowed_host_and_scheme(
-            next_url,
-            allowed_hosts={self.request.get_host()},
-            require_https=self.request.is_secure(),
-        ):
-            return next_url
-        return settings.LOGIN_REDIRECT_URL
+        return next_or(self.request, fallback=settings.LOGIN_REDIRECT_URL)
 
 
 class TwoFactorDisableView(VerifiedRequiredMixin, View):
     """POST-only: remove the authenticator and backup codes after a password check."""
 
     def post(self, request):
+        required_by = organizations_requiring_two_factor(request.user).first()
+        if required_by is not None:
+            messages.error(
+                request,
+                f'Two-factor authentication was not disabled: {required_by.name} requires it '
+                'for everyone in the organisation.',
+            )
+            return redirect('accounts:profile')
         form = PasswordConfirmForm(request.POST, user=request.user)
         if not form.is_valid():
             messages.error(

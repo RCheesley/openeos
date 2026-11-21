@@ -27,7 +27,7 @@ class OrganizationSettingsForm(forms.ModelForm):
         model = Organization
         fields = [
             'name', 'display_name', 'tagline', 'logo', 'favicon', 'primary_color',
-            'navbar_style', 'support_email', 'email_from_name',
+            'navbar_style', 'support_email', 'email_from_name', 'require_two_factor',
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -41,6 +41,7 @@ class OrganizationSettingsForm(forms.ModelForm):
             'navbar_style': forms.Select(attrs={'class': 'form-select'}),
             'support_email': forms.EmailInput(attrs={'class': 'form-control'}),
             'email_from_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'require_two_factor': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         help_texts = {
             'tagline': 'Shown under the name on the sign-in page and in the footer.',
@@ -50,10 +51,26 @@ class OrganizationSettingsForm(forms.ModelForm):
             'email_from_name': 'Sender name on emails. Defaults to the display name.',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
         if not self.initial.get('primary_color'):
             self.initial['primary_color'] = self.BOOTSTRAP_PRIMARY
+
+    def clean_require_two_factor(self):
+        required = self.cleaned_data['require_two_factor']
+        # Whoever switches the requirement on must already meet it, so they have
+        # been through the set-up themselves and are not the first one held by it.
+        if required and not self.instance.require_two_factor and not self._user_has_two_factor():
+            raise forms.ValidationError(
+                'Set up two-factor authentication on your own account first, from My Profile, '
+                'then switch this on.'
+            )
+        return required
+
+    def _user_has_two_factor(self):
+        from .two_factor import get_totp_device
+        return self.user is not None and get_totp_device(self.user) is not None
 
     def clean_primary_color(self):
         color = (self.cleaned_data.get('primary_color') or '').lower()

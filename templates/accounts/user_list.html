@@ -5,7 +5,9 @@
 <div class="row mb-4 align-items-center">
     <div class="col">
         <h1 class="h3 mb-0"><i class="bi bi-person-lines-fill me-2"></i>Users</h1>
-        <p class="text-muted mt-1 mb-0">Everyone in {{ org.name }}</p>
+        <p class="text-muted mt-1 mb-0">
+            Everyone in {{ org.name }}{% if org.require_two_factor %}. Two-step sign-in is required for everyone.{% endif %}
+        </p>
     </div>
     <div class="col-auto">
         <a href="{% url 'accounts:user_invite' %}" class="btn btn-dark">
@@ -25,6 +27,7 @@
                         <th>Email</th>
                         <th>Role</th>
                         <th>Teams</th>
+                        <th>Two-factor authentication</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -55,6 +58,13 @@
                             {% empty %}
                             <span class="text-muted small">No teams</span>
                             {% endfor %}
+                        </td>
+                        <td>
+                            {% if membership.has_two_factor %}
+                            <span class="badge bg-success"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>On</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark border"><i class="bi bi-shield-slash me-1" aria-hidden="true"></i>Not set up</span>
+                            {% endif %}
                         </td>
                         <td class="text-end">
                             <a href="{% url 'admin:auth_user_change' profile.user.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit in admin">

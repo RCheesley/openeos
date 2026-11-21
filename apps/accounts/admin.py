@@ -1,4 +1,5 @@
 from django.contrib import admin
+from .two_factor.policy import record_two_factor_requirement
 from .models import (
     Membership, Organization, OrganizationDomain, OrganizationInvitation, Team, UserProfile,
 )
@@ -23,6 +24,11 @@ class OrganizationAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ['created_at', 'updated_at']
     inlines = [OrganizationDomainInline, MembershipInline]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if 'require_two_factor' in form.changed_data:
+            record_two_factor_requirement(obj, request=request)
 
 
 @admin.register(OrganizationDomain)

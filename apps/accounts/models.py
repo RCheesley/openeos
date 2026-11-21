@@ -49,6 +49,12 @@ class Organization(models.Model):
         help_text='Words this organisation uses instead of the shipped defaults, '
                   'e.g. {"rock": "Priority", "rocks": "Priorities"}. Only overrides are stored.',
     )
+    require_two_factor = models.BooleanField(
+        'Require two-step sign-in for everyone in this organisation',
+        default=False,
+        help_text='Anyone who has not set up two-factor authentication is asked to do so '
+                  'the next time they open a page in this organisation.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

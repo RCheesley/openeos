@@ -22,7 +22,7 @@
                     <button type="button" class="btn btn-outline-dark" id="copy-backup-codes">
                         <i class="bi bi-clipboard me-1"></i> Copy codes
                     </button>
-                    <a href="{% url 'accounts:profile' %}" class="btn btn-dark">
+                    <a href="{% if continue_url %}{{ continue_url }}{% else %}{% url 'accounts:profile' %}{% endif %}" class="btn btn-dark">
                         <i class="bi bi-check-lg me-1"></i> I've saved them
                     </a>
                 </div>

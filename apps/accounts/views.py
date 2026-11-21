@@ -32,6 +32,7 @@ from .scoping import (
 )
 from .team_scope import SCOPE_ALL, get_scope, get_visible_teams
 from .terminology import get_terms
+from .two_factor.policy import record_two_factor_requirement, with_two_factor_status
 
 
 class AdminRequiredMixin(UserPassesTestMixin):
@@ -237,6 +238,11 @@ class OrgSettingsView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
         # values into the brand the navbar and <head> are rendered from.
         return get_object_or_404(Organization, pk=org.pk if org else None)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         form = ctx['form']
@@ -246,11 +252,28 @@ class OrgSettingsView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
             ('Appearance', 'bi-palette', [form['primary_color'], form['navbar_style']]),
             ('Email', 'bi-envelope', [form['support_email'], form['email_from_name']]),
         ]
+        ctx['security_field'] = form['require_two_factor']
+        members = with_two_factor_status(Membership.objects.filter(organization=self.object))
+        ctx['member_count'] = members.count()
+        ctx['members_without_two_factor'] = members.filter(has_two_factor=False).count()
         return ctx
 
     def form_valid(self, form):
-        messages.success(self.request, 'Branding updated.')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        changed = set(form.changed_data)
+        if changed != {'require_two_factor'}:
+            messages.success(self.request, 'Branding updated.')
+        if 'require_two_factor' in changed:
+            record_two_factor_requirement(self.object, request=self.request)
+            if self.object.require_two_factor:
+                messages.success(
+                    self.request,
+                    'Two-step sign-in is now required. Anyone who has not set it up is asked '
+                    'to the next time they open a page.',
+                )
+            else:
+                messages.success(self.request, 'Two-step sign-in is no longer required.')
+        return response
 
 
 class OrgTerminologyView(LoginRequiredMixin, AdminRequiredMixin, FormView):
@@ -487,7 +510,7 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
         if not org:
             return Membership.objects.none()
         org_teams = Team.objects.filter(organization=org)
-        return (
+        return with_two_factor_status(
             Membership.objects
             .filter(organization=org)
             .select_related('user', 'user__profile')

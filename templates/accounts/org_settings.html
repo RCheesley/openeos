@@ -5,7 +5,7 @@
 <div class="row mb-4 align-items-center">
     <div class="col">
         <h1 class="h3 mb-0">Organisation settings</h1>
-        <p class="text-muted mt-1 mb-0">Name, logo, colours and email sender for {{ org.name }}.</p>
+        <p class="text-muted mt-1 mb-0">Name, logo, colours, email sender and sign-in security for {{ org.name }}.</p>
     </div>
     <div class="col-auto d-flex gap-2">
         <a href="{% url 'accounts:org_terminology' %}" class="btn btn-outline-dark">
@@ -48,6 +48,36 @@
             </div>
         </div>
         {% endfor %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock me-2" aria-hidden="true"></i>Security</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check">
+                        {{ security_field }}
+                        <label for="{{ security_field.id_for_label }}" class="form-check-label fw-semibold">{{ security_field.label }}</label>
+                    </div>
+                    {% for error in security_field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    <div class="form-text">
+                        Two-step sign-in is the two-factor authentication each person sets up from
+                        My Profile: a code from an authenticator app after the password.
+                        {{ security_field.help_text }}
+                        They can still reach their profile and sign out, and nobody who has it on
+                        can switch it off while this is required.
+                    </div>
+                    <p class="small mt-2 mb-0">
+                        {% if members_without_two_factor %}
+                        {{ members_without_two_factor }} of {{ member_count }} member{{ member_count|pluralize }}
+                        {{ members_without_two_factor|pluralize:"has,have" }} not set it up yet.
+                        {% else %}
+                        Everyone in {{ org.name }} has set it up.
+                        {% endif %}
+                        <a href="{% url 'accounts:user_list' %}">See who has it on</a>
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="mt-4">
