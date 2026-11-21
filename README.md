@@ -18,6 +18,7 @@ Built with Django, Bootstrap 5, PostgreSQL, and Docker. No JavaScript frameworks
 | **Actions** | Weekly action items with escalation levels, due dates, and Priority/Blocker linking |
 | **Audit log** | Logins, logouts, failed logins and administrative actions recorded per organisation; admins see their organisation's log, superusers see everything in the Django admin |
 | **Data export** | Organisation admins can download everything that belongs to their organisation as one archive (JSON for importing, CSV for spreadsheets, logo and avatars); operators can export one or every organisation from the command line. Every export is written to the audit log; an archive can be loaded into another instance with `import_organization` |
+| **Personal data** | Anyone can download a copy of their own data from their profile; operators can erase a person with `erase_user`, which anonymises them and keeps the organisation's history (see [Personal data](#personal-data)) |
 | **Weekly Meeting** | Guided 90-minute meeting runner with timed segments, check-in entries, updates, PRS integration, ratings, and key messages |
 | **Two-factor authentication** | Optional per user: an authenticator app (TOTP) plus ten single-use backup codes, set up from **My Profile**. Set `OTP_TOTP_ISSUER` to change the name shown in authenticator apps; a later change lets an organisation require it for its members |
 
@@ -163,6 +164,38 @@ development.
 ### 6. Running as a non-root user
 
 The production image (the `production` stage of the `Dockerfile`, which `docker-compose.prod.yml` builds) runs as an unprivileged user, uid 1000 (`app`), rather than root. The named `static_volume` and `media_volume` volumes pick up the right ownership automatically; if you swap them for bind-mounted host directories, those directories must be writable by uid 1000. The development stack in `docker-compose.yml` builds the `development` stage, which stays root because it bind-mounts your checkout over `/app` and has to write `staticfiles/` there whoever owns the clone.
+
+## Personal data
+
+Two tools help whoever runs an instance answer a person who asks for a copy of their data or for it to be erased. Neither needs database access.
+
+**A copy of a person's data.** Every signed-in person can download their own from **My Profile → Your data** after entering their password again. For someone who cannot sign in, run it for them:
+
+```bash
+docker compose -f docker-compose.prod.yml exec web python manage.py export_personal_data <username or email> --out /tmp
+```
+
+The zip holds a README and JSON files: the account (username, name, email, sign-in dates), profile and avatar, whether two-factor sign-in is on, notification preferences, memberships, roles and teams, every record that names the person in the organisations they belong to (as owner, creator, author, participant, rater, the one who entered a figure or last edited a section), and the audit and admin-site log entries of what they did. For an organisation they have left it gives the number of records that still name them, not the content. It never contains the password hash, two-factor secrets, backup codes or sessions, and it leaves other people's names out. Each download is written to the audit log.
+
+**Erasure.** Look first, then run it:
+
+```bash
+docker compose -f docker-compose.prod.yml exec web python manage.py erase_user <username or email> --dry-run
+docker compose -f docker-compose.prod.yml exec web python manage.py erase_user <username or email>
+```
+
+`--dry-run` lists exactly what would change and writes nothing. Without it the command asks you to type the username (`--yes` skips the question for scripts). It refuses to erase the only admin of an organisation or a superuser unless you add `--allow-last-admin` or `--allow-superuser`; hand the organisation to another admin first where you can. It cannot be undone, and it is safe to run again on an account that is already erased.
+
+What is removed: the name, email and username, the password (which also ends any outstanding invite or password-reset link), the avatar file, two-factor devices and backup codes, sign-in sessions, every membership and team membership, site-wide groups and permissions, and the notification preferences (all switched off). On audit events the person caused, the username, IP address and browser are removed; events that name them lose the name and email.
+
+What is retained, and why:
+
+- **The account row**, switched off and renamed `erased-<id>` with the display name "Former member". It cannot sign in. It stays because each meeting keeps one check-in and one rating per participant; those rows remain on this empty account so the meeting's history and average are unchanged. The date the account was created also stays.
+- **The organisation's records.** Priorities, Actions and metrics the person owned, and anything they created, wrote or last edited, now show a single shared account called "Former member" (`former-member`, created the first time it is needed, switched off, a member of nothing). Reassign open work to a current member afterwards.
+- **What the person wrote.** Notes, comments, check-ins and updates are the organisation's record and are kept word for word, without the author's name. If the text itself mentions the person, edit it by hand.
+- **An audit event** (`user.erased`) for the instance and for each organisation the person belonged to, recording that an erasure happened and how many records changed, with no name or email.
+
+**Backups are outside its reach.** Database dumps, media backups and organisation export archives made before the erasure still contain the person. Let them expire on your retention schedule, and if you ever restore one, run `erase_user` again for everyone erased since it was taken (keep that list somewhere other than the instance).
 
 ## Running Tests
 

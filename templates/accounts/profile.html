@@ -117,6 +117,18 @@
                 </a>
             </div>
         </div>
+
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-body d-flex align-items-center justify-content-between gap-3">
+                <div>
+                    <h5 class="mb-1"><i class="bi bi-file-earmark-zip me-2"></i>Your data</h5>
+                    <p class="text-muted small mb-0">Download a copy of the personal data held about you.</p>
+                </div>
+                <a href="{% url 'accounts:personal_data_export' %}" class="btn btn-outline-dark btn-sm text-nowrap">
+                    Download
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

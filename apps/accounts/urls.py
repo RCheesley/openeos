@@ -1,6 +1,7 @@
 from django.urls import include, path
 from . import views
 from .views_export import OrganizationExportView
+from .views_personal_data import PersonalDataExportView
 
 app_name = 'accounts'
 
@@ -19,6 +20,7 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('accounts/2fa/', include('apps.accounts.two_factor.urls')),
     path('profile/edit/', views.ProfileEditView.as_view(), name='profile_edit'),
+    path('profile/data/', PersonalDataExportView.as_view(), name='personal_data_export'),
     path('media/avatars/<path:name>', views.MediaAvatarView.as_view(), name='media_avatar'),
     path('users/', views.UserListView.as_view(), name='user_list'),
     path('users/invite/', views.UserInviteView.as_view(), name='user_invite'),

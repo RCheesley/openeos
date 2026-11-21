@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block page_title %}Your data{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="mb-4">
+            <a href="{% url 'accounts:profile' %}" class="text-muted text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i> My Profile
+            </a>
+            <h1 class="h3 mt-2 mb-0"><i class="bi bi-file-earmark-zip me-2"></i>Your data</h1>
+            <p class="text-muted mt-1">
+                Download a copy of the personal data held about you as one zip archive.
+            </p>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h2 class="h6 fw-semibold">What the archive contains</h2>
+                <ul class="mb-3">
+                    <li><strong>Your account</strong>: username, name, email, sign-in dates, your
+                        profile, whether two-factor sign-in is on, and your notification preferences.</li>
+                    <li><strong>Your memberships</strong>: each organisation you belong to, your role
+                        and your teams.</li>
+                    <li><strong>Records that name you</strong>: every {{ terms.rock }}, {{ terms.todo }},
+                        {{ terms.issue }}, metric, meeting entry, note and edit where you are the owner,
+                        creator, author or participant, with its team, organisation and dates.</li>
+                    <li><strong>Your activity</strong>: sign-ins and other actions recorded under your
+                        account.</li>
+                    <li><strong>Your avatar</strong>, and a <strong>README</strong> that explains the files.</li>
+                </ul>
+                <p class="small text-muted mb-3">
+                    Your password, two-factor secrets, backup codes and sign-in sessions are never
+                    included, and other people's names are left out.
+                </p>
+                <h2 class="h6 fw-semibold">Organisations covered</h2>
+                <ul class="mb-0">
+                    {% for membership in memberships %}
+                    <li>{{ membership.organization.name }}
+                        <span class="text-muted small">({{ membership.get_role_display }})</span></li>
+                    {% empty %}
+                    <li class="text-muted">You do not belong to an organisation, so the archive holds your account only.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors.0 }}</div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label fw-semibold">
+                            Confirm your password
+                            <span class="text-muted fw-normal">(this download is recorded in the audit log)</span>
+                        </label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                        <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="bi bi-download me-1"></i> Download my data
+                        </button>
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
