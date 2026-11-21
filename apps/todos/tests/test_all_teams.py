@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 
 from apps.accounts.models import Membership, Organization, Team
+from apps.accounts.scoping import SESSION_ORG_KEY, SESSION_TEAM_KEY
 from apps.todos.models import ToDo
 from apps.todos.views import SCOPE_SESSION_KEY
 
@@ -319,3 +320,50 @@ class ScopeHintTest(AllTeamsScopeTestBase):
         resp = self.client.get(LIST_URL, {'status': 'overdue'})
         self.assertEqual(resp.context['other_todos_total'], 0)
         self.assertNotContains(resp, 'more on other teams')
+
+
+class OverdueBadgeScopeTest(TestCase):
+    """The red badge beside the heading counts what the Overdue filter would list."""
+
+    def setUp(self):
+        self.org = Organization.objects.create(name='Badge Org')
+        self.alpha = Team.objects.create(organization=self.org, name='Alpha')
+        self.beta = Team.objects.create(organization=self.org, name='Beta')
+        self.elsewhere = Organization.objects.create(name='Elsewhere Org')
+        self.far = Team.objects.create(organization=self.elsewhere, name='Far')
+        self.user = User.objects.create_user(username='badge', password='pw')
+        self.mate = User.objects.create_user(username='badgemate', password='pw')
+        for org in (self.org, self.elsewhere):
+            Membership.objects.create(user=self.user, organization=org)
+        Membership.objects.create(user=self.mate, organization=self.org)
+        self.user.profile.teams.add(self.alpha, self.beta, self.far)
+        self.mate.profile.teams.add(self.alpha)
+        late = date.today() - timedelta(days=3)
+        ToDo.objects.create(title='Mine on Alpha', owner=self.user, team=self.alpha, due_date=late)
+        ToDo.objects.create(title='Mate on Alpha', owner=self.mate, team=self.alpha, due_date=late)
+        ToDo.objects.create(title='Mine on Beta', owner=self.user, team=self.beta, due_date=late)
+        ToDo.objects.create(title='Mine elsewhere', owner=self.user, team=self.far, due_date=late)
+        self.client.force_login(self.user)
+        session = self.client.session
+        session[SESSION_ORG_KEY] = self.org.pk
+        session[SESSION_TEAM_KEY] = self.alpha.pk
+        session.save()
+
+    def count(self, query):
+        return self.client.get(f'/todos/?{query}').context['overdue_count']
+
+    def test_single_team_mine_counts_only_my_overdue_on_that_team(self):
+        self.assertEqual(self.count('scope=team&view=mine'), 1)
+
+    def test_single_team_tab_counts_everyone_on_that_team(self):
+        self.assertEqual(self.count('scope=team&view=team'), 2)
+
+    def test_all_teams_never_reaches_another_organisation(self):
+        self.assertEqual(self.count('scope=all&view=mine'), 2)
+        self.assertEqual(self.count('scope=all&view=team'), 3)
+
+    def test_badge_matches_the_overdue_filter(self):
+        for query in ('scope=team&view=mine', 'scope=team&view=team', 'scope=all&view=mine', 'scope=all&view=team'):
+            with self.subTest(query=query):
+                resp = self.client.get(f'/todos/?{query}&status=overdue')
+                self.assertEqual(resp.context['overdue_count'], len(resp.context['todos']))

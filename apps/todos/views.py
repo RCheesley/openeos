@@ -102,14 +102,14 @@ class ToDoListView(LoginRequiredMixin, ListView):
             'other_todos_total': sum(n for _, n in other_team_counts),
             'other_teams_summary': summarise_other_teams(other_team_counts),
         })
-        try:
-            ctx['overdue_count'] = (
-                ToDo.objects
-                .filter(owner=self.request.user, status=ToDo.STATUS_OPEN, due_date__lt=today)
-                .count()
-            )
-        except Exception:
-            ctx['overdue_count'] = 0
+        # The badge counts what the Overdue filter would list here: the same
+        # teams and the same Mine / Team tab, never another organisation.
+        overdue = ToDo.objects.filter(
+            team__in=scoped_teams, status=ToDo.STATUS_OPEN, due_date__lt=today,
+        )
+        if view == 'mine':
+            overdue = overdue.filter(owner=self.request.user)
+        ctx['overdue_count'] = overdue.count()
         return ctx
 
 
