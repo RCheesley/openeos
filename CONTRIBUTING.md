@@ -64,6 +64,23 @@ docker compose exec web coverage report
 
 The CI enforces **60% minimum coverage** on the model layer. New features should include model tests.
 
+### Accessibility check
+
+A separate check opens the main pages in a headless browser and runs the [axe-core](https://github.com/dequelabs/axe-core) rules for WCAG 2.2 levels A and AA over them, then presses Tab through the sign-in, Priority and Action forms to confirm the focus order. It is not part of `manage.py test apps`, because it needs a browser. It is driven from Python by [Playwright](https://playwright.dev/python/), so there is still no Node.js and no build step in the project.
+
+```bash
+# One-off set-up (inside the dev container, or any environment that can reach the database)
+pip install -r requirements-dev.txt
+playwright install --with-deps --only-shell chromium
+
+python manage.py collectstatic --noinput
+python manage.py test accessibility
+```
+
+Problems that are known and not yet fixed are listed in `accessibility/known_violations.toml`, one entry per rule and page, each with a reason. The check fails when it finds a violation that is not on that list, and also when a listed one has gone away, so fix the page and delete the entry in the same PR. Add an entry only when the fix does not belong in your PR, and say why in the reason.
+
+CI runs this as the **Accessibility check** job and attaches the full report to the run summary. For now the job reports without blocking a merge.
+
 ---
 
 ## Code style

@@ -125,6 +125,81 @@ jobs:
           ALLOWED_HOSTS: localhost,127.0.0.1
         run: python manage.py makemigrations --check --dry-run
 
+  accessibility:
+    name: Accessibility check
+    runs-on: ubuntu-latest
+    # Report only to begin with, as agreed in discussion #33: a failure here is
+    # visible on the run but does not block a pull request. Delete this line to
+    # make the check a required one.
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: epd_test
+          POSTGRES_USER: epd_user
+          POSTGRES_PASSWORD: epd_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Install headless Chromium
+        run: playwright install --with-deps --only-shell chromium
+
+      - name: Collect static files
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.development
+          SECRET_KEY: ci-secret-key-not-used-in-production
+        run: python manage.py collectstatic --noinput
+
+      - name: Run axe-core and focus-order checks
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.development
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: epd_test
+          DB_USER: epd_user
+          DB_PASSWORD: epd_password
+          SECRET_KEY: ci-secret-key-not-used-in-production
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          A11Y_REPORT_DIR: a11y-report
+        run: python manage.py test accessibility --verbosity=2
+
+      - name: Add the report to the run summary
+        if: always()
+        run: |
+          if [ ! -f a11y-report/accessibility-report.md ]; then
+            echo "The accessibility check did not write a report, so it did not run."
+            exit 1
+          fi
+          cat a11y-report/accessibility-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: accessibility-report
+          path: a11y-report/
+          if-no-files-found: ignore
+
   smoke-test:
     name: Prod stack smoke-test
     runs-on: ubuntu-latest

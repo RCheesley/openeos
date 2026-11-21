@@ -30,6 +30,11 @@ env/
 coverage.xml
 htmlcov/
 .pytest_cache/
+a11y-report/
+
+# Development and CI-only checks (the dev stack bind-mounts the checkout, so they still run there)
+accessibility/
+requirements-dev.txt
 
 # Editor and OS files
 .idea/

@@ -1,0 +1,9 @@
+# Development and CI-only tools. Nothing here is installed in the Docker image:
+# the Dockerfile installs requirements.txt alone.
+# Versions are pinned so every run installs the same packages; Dependabot opens PRs for bumps.
+-r requirements.txt
+
+# Accessibility check (see accessibility/README.md). Playwright drives a headless
+# Chromium from Python; axe-playwright-python bundles the axe-core rules engine.
+playwright==1.65.2
+axe-playwright-python==0.1.8

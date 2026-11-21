@@ -20,6 +20,7 @@ db.sqlite3
 coverage.xml
 htmlcov/
 .pytest_cache/
+a11y-report/
 
 # Environment
 .env
