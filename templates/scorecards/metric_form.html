@@ -79,6 +79,20 @@
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="{{ form.warning_value.id_for_label }}" class="form-label fw-semibold">Warning Value</label>
+                        <input type="number" step="any" name="{{ form.warning_value.html_name }}" id="{{ form.warning_value.id_for_label }}"
+                               value="{{ form.warning_value.value|default_if_none:'' }}"
+                               aria-describedby="{{ form.warning_value.id_for_label }}_help"
+                               class="form-control {% if form.warning_value.errors %}is-invalid{% endif %}">
+                        {% for e in form.warning_value.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+                        <div class="form-text" id="{{ form.warning_value.id_for_label }}_help">
+                            Optional. A value that misses the goal but is no worse than this shows as a warning (amber)
+                            instead of off track. For a goal of at least 10, a warning value of 8 means 8 to under 10 is a warning.
+                            For an "equal to" goal the same distance applies either side of the goal.
+                        </div>
+                    </div>
+
                     <div class="row g-3 mb-4">
                         <div class="col-sm-6">
                             <label for="{{ form.frequency.id_for_label }}" class="form-label fw-semibold">Frequency</label>

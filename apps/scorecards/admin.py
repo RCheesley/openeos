@@ -6,7 +6,7 @@ from .models import Scorecard, ScorecardMetric, ScorecardEntry
 class ScorecardMetricInline(admin.TabularInline):
     model = ScorecardMetric
     extra = 1
-    fields = ('name', 'owner', 'metric_type', 'goal_value', 'goal_direction', 'frequency', 'order', 'is_active')
+    fields = ('name', 'owner', 'metric_type', 'goal_value', 'goal_direction', 'warning_value', 'frequency', 'order', 'is_active')
 
 
 @admin.register(Scorecard)
@@ -27,7 +27,7 @@ class ScorecardMetricAdmin(admin.ModelAdmin):
 
 @admin.register(ScorecardEntry)
 class ScorecardEntryAdmin(admin.ModelAdmin):
-    list_display = ('metric', 'period_start', 'value', 'on_track', 'entered_by', 'created_at')
-    list_filter = ('on_track', 'period_start')
-    readonly_fields = ('on_track', 'created_at')
+    list_display = ('metric', 'period_start', 'value', 'on_track', 'in_warning', 'entered_by', 'created_at')
+    list_filter = ('on_track', 'in_warning', 'period_start')
+    readonly_fields = ('on_track', 'in_warning', 'created_at')
     date_hierarchy = 'period_start'

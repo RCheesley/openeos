@@ -4,23 +4,34 @@
 </p>
 
 {% if scorecards %}
-{% for sc in scorecards %}
+{% for review in scorecard_review %}
+{% with sc=review.scorecard %}
 <div class="mb-3">
     <div class="fw-semibold small mb-2">{{ sc.name }}</div>
-    {% for metric in sc.active_metrics %}
+    {% for row in review.rows %}
+    {% with metric=row.metric entry=row.entry %}
     <div class="d-flex align-items-center gap-2 py-1 border-bottom small">
         <div class="flex-grow-1">
             <span>{{ metric.name }}</span>
-            <span class="text-muted ms-1">({{ metric.get_goal_direction_display }} {{ metric.goal_value }})</span>
+            <span class="text-muted ms-1">({{ metric.get_goal_direction_display }} {{ metric.goal_value }}{% if metric.warning_value is not None %}; {{ metric.format_warning|lower }}{% endif %})</span>
         </div>
+        {% if entry %}
+        <span class="badge {{ entry.badge_class }}">
+            <i class="bi {{ entry.status_icon }} me-1" aria-hidden="true"></i>{{ entry.status_label }}: {{ row.value }}
+        </span>
+        {% else %}
+        <span class="text-muted">Not entered</span>
+        {% endif %}
         <a href="{% url 'scorecards:detail' sc.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Enter value">
             <i class="bi bi-pencil" style="font-size:.7rem"></i>
         </a>
     </div>
+    {% endwith %}
     {% empty %}
     <p class="text-muted small">No active metrics.</p>
     {% endfor %}
 </div>
+{% endwith %}
 {% endfor %}
 {% else %}
 <div class="text-center py-4 text-muted">

@@ -45,6 +45,24 @@ def _build_runner_context(meeting, user, terms):
             period_start=week_start,
         ).select_related('metric')
     }
+    # Each metric with the value for its own current period (week, month, ...),
+    # so the segment can show whether it is on track, a warning or off track.
+    from apps.scorecards.views import _current_entries
+    scorecard_review = []
+    for sc in scorecards:
+        sc_metrics = list(sc.active_metrics)
+        current = _current_entries(sc_metrics)
+        scorecard_review.append({
+            'scorecard': sc,
+            'rows': [
+                {
+                    'metric': m,
+                    'entry': current.get(m.pk),
+                    'value': m.format_value(current[m.pk].value) if m.pk in current else '',
+                }
+                for m in sc_metrics
+            ],
+        })
 
     # Rocks
     from apps.rocks.models import Rock
@@ -127,6 +145,7 @@ def _build_runner_context(meeting, user, terms):
         # Segment data
         'scorecards': scorecards,
         'week_entries': week_entries,
+        'scorecard_review': scorecard_review,
         'rocks': rocks,
         'rock_quarter': f'Q{q} {y}',
         'issues': issues,

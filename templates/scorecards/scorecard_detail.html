@@ -59,6 +59,7 @@
                         <th style="min-width:180px">Metric</th>
                         <th class="text-center" style="min-width:60px">Goal</th>
                         <th class="text-center text-muted small" style="min-width:40px">Owner</th>
+                        <th class="text-center small" style="min-width:112px">Trend</th>
                         {% for column in section.columns %}
                         {% with period=column.period %}
                         <th class="text-center small {% if period == current_week %}table-primary{% endif %}" style="min-width:60px">
@@ -98,7 +99,7 @@
                         </td>
 
                         {# Goal #}
-                        <td class="text-center small text-muted">{{ row.metric.format_goal }}</td>
+                        <td class="text-center small text-muted">{{ row.metric.format_goal }}{% if row.metric.warning_value is not None %}<div style="font-size:.65rem">{{ row.metric.format_warning }}</div>{% endif %}</td>
 
                         {# Owner avatar #}
                         <td class="text-center">
@@ -110,6 +111,8 @@
                                title="{{ row.metric.owner.get_full_name|default:row.metric.owner.username }}"></i>
                             {% endif %}
                         </td>
+                        {# Trend over the periods shown #}
+                        <td class="text-center">{% include "scorecards/_sparkline.html" with trend=row.trend %}</td>
 
                         {# Weekly cells #}
                         {% for period, cell in row.period_cells %}
@@ -118,7 +121,8 @@
                             {% if cell %}
                                 <a href="{% url 'scorecards:enter' scorecard.pk %}?frequency={{ section.frequency }}&amp;period={{ period|date:'Y-m-d' }}&amp;metric={{ row.metric.pk }}"
                                    class="text-reset"
-                                   title="{% if cell.entered_by %}Entered by {{ cell.entered_by.get_full_name|default:cell.entered_by.username }}, {{ cell.entered_at|date:'j M Y' }}. {% endif %}{% if cell.notes %}{{ cell.notes }} {% endif %}Select to correct.">
+                                   title="{{ cell.status_label }}. {% if cell.entered_by %}Entered by {{ cell.entered_by.get_full_name|default:cell.entered_by.username }}, {{ cell.entered_at|date:'j M Y' }}. {% endif %}{% if cell.notes %}{{ cell.notes }} {% endif %}Select to correct.">
+                                    <i class="bi {{ cell.status_icon }}" style="font-size:.7rem" aria-hidden="true"></i><span class="visually-hidden">{{ cell.status_label }}:</span>
                                     {{ row.metric.format_value|default:'' }}
                                     {# Render value through metric's formatter #}
                                     {% if row.metric.metric_type == 'integer' %}{{ cell.value|floatformat:"0g" }}
@@ -126,7 +130,7 @@
                                     {% else %}{{ cell.value|floatformat:"2g" }}
                                     {% endif %}
                                 </a>
-                                {% if not cell.on_track %}
+                                {% if cell.is_off_track %}
                                 <form method="post" action="{% url 'scorecards:entry_escalate' cell.pk %}" class="d-inline">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger border-0 p-0 ms-1"
@@ -154,10 +158,12 @@
 
 {# Legend #}
 <div class="d-flex flex-wrap gap-3 text-muted small mb-4">
-    <span><span class="badge bg-success">&nbsp;</span> On track</span>
-    <span><span class="badge bg-danger">&nbsp;</span> Off track — click <i class="bi bi-exclamation-triangle"></i> to escalate to {{ terms.issues }}</span>
+    <span><span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i></span> On track</span>
+    <span><span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span> Warning: missed the goal, inside the warning value</span>
+    <span><span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i></span> Off track — click <i class="bi bi-exclamation-triangle"></i> to escalate to {{ terms.issues }}</span>
     <span><span class="badge bg-secondary">&nbsp;</span> Not entered</span>
     <span>Select a value, a dash or a column heading to enter or correct that period.</span>
+    <span>Trend: the solid line is the values, the dashed line the goal, the dotted line the warning value; a break in the line is a period with no value.</span>
 </div>
 
 {% else %}

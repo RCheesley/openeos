@@ -24,9 +24,10 @@ class ScorecardForm(forms.ModelForm):
 class ScorecardMetricForm(forms.ModelForm):
     class Meta:
         model = ScorecardMetric
-        fields = ['name', 'owner', 'metric_type', 'goal_value', 'goal_direction', 'frequency', 'order', 'is_active']
+        fields = ['name', 'owner', 'metric_type', 'goal_value', 'goal_direction', 'warning_value', 'frequency', 'order', 'is_active']
         widgets = {
             'goal_value': forms.NumberInput(attrs={'step': 'any'}),
+            'warning_value': forms.NumberInput(attrs={'step': 'any'}),
         }
 
     def __init__(self, *args, organization=None, **kwargs):

@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -66,6 +67,34 @@ def period_column_label(frequency, start):
     if frequency == FREQ_MONTHLY:
         return start.strftime('%b %Y')
     return period_label(frequency, start)
+
+
+# How an entry was judged against its metric when it was saved.
+STATUS_ON_TRACK = 'on_track'
+STATUS_WARNING = 'warning'
+STATUS_OFF_TRACK = 'off_track'
+STATUS_LABELS = {
+    STATUS_ON_TRACK: 'On track',
+    STATUS_WARNING: 'Warning',
+    STATUS_OFF_TRACK: 'Off track',
+}
+# Each state has its own icon as well as its own colour, so it never rests on colour alone.
+_STATUS_ICONS = {
+    STATUS_ON_TRACK: 'bi-check-circle',
+    STATUS_WARNING: 'bi-exclamation-circle',
+    STATUS_OFF_TRACK: 'bi-x-circle',
+}
+_STATUS_CELL_CLASSES = {
+    STATUS_ON_TRACK: 'table-success',
+    STATUS_WARNING: 'table-warning',
+    STATUS_OFF_TRACK: 'table-danger',
+}
+# White on Bootstrap's amber fails contrast, so the warning badge has dark text.
+_STATUS_BADGE_CLASSES = {
+    STATUS_ON_TRACK: 'bg-success',
+    STATUS_WARNING: 'bg-warning text-dark',
+    STATUS_OFF_TRACK: 'bg-danger',
+}
 
 
 class Scorecard(models.Model):
@@ -136,6 +165,15 @@ class ScorecardMetric(models.Model):
     metric_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=TYPE_INTEGER)
     goal_value = models.DecimalField(max_digits=12, decimal_places=4)
     goal_direction = models.CharField(max_length=10, choices=DIR_CHOICES, default=DIR_ABOVE)
+    # Optional. Where the warning band ends: values between this and the goal
+    # are neither on track nor off track. See compute_status().
+    warning_value = models.DecimalField(
+        max_digits=12, decimal_places=4, null=True, blank=True,
+        help_text=(
+            'Optional. A value that misses the goal but is no worse than this is '
+            'shown as a warning instead of off track.'
+        ),
+    )
     frequency = models.CharField(max_length=10, choices=FREQ_CHOICES, default=FREQ_WEEKLY)
     order = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -160,6 +198,37 @@ class ScorecardMetric(models.Model):
         label = {self.DIR_ABOVE: '≥', self.DIR_BELOW: '≤', self.DIR_EQUAL: '='}[self.goal_direction]
         return f'{label} {self.format_value(self.goal_value)}'
 
+    def format_warning(self):
+        """The warning band in a few words, or '' when the metric has none."""
+        if self.warning_value is None:
+            return ''
+        if self.goal_direction == self.DIR_ABOVE:
+            return f'Warning from {self.format_value(self.warning_value)}'
+        if self.goal_direction == self.DIR_BELOW:
+            return f'Warning up to {self.format_value(self.warning_value)}'
+        return f'Warning within {self.format_value(self.warning_tolerance)}'
+
+    @property
+    def warning_tolerance(self):
+        """For an "equal to" goal: how far either side of the goal still counts as a warning."""
+        if self.warning_value is None:
+            return None
+        return abs(self.goal_value - self.warning_value)
+
+    def clean(self):
+        super().clean()
+        if self.warning_value is None or self.goal_value is None:
+            return
+        if self.goal_direction == self.DIR_ABOVE and self.warning_value >= self.goal_value:
+            message = 'For a goal of "at or above", the warning value must be below the goal.'
+        elif self.goal_direction == self.DIR_BELOW and self.warning_value <= self.goal_value:
+            message = 'For a goal of "at or below", the warning value must be above the goal.'
+        elif self.warning_value == self.goal_value:
+            message = 'The warning value must differ from the goal.'
+        else:
+            return
+        raise ValidationError({'warning_value': message})
+
     def compute_on_track(self, value):
         v, g = Decimal(str(value)), self.goal_value
         if self.goal_direction == self.DIR_ABOVE:
@@ -167,6 +236,33 @@ class ScorecardMetric(models.Model):
         if self.goal_direction == self.DIR_BELOW:
             return v <= g
         return v == g
+
+    def compute_status(self, value):
+        """Judge a value as on track, warning or off track.
+
+        Without a warning value there are two states, as before. With one, a
+        value that misses the goal but stays inside the band is a warning:
+
+        * at or above 10, warning 8: 10 and over on track, 8 to under 10
+          warning, under 8 off track;
+        * at or below 10, warning 12: 10 and under on track, over 10 to 12
+          warning, over 12 off track;
+        * equal to 10, warning 8 (or 12): exactly 10 on track, anything else
+          from 8 to 12 warning, the rest off track. An exact goal has no better
+          side, so the band reaches the same distance either way.
+        """
+        if self.compute_on_track(value):
+            return STATUS_ON_TRACK
+        if self.warning_value is None:
+            return STATUS_OFF_TRACK
+        v, w = Decimal(str(value)), self.warning_value
+        if self.goal_direction == self.DIR_ABOVE:
+            in_band = v >= w
+        elif self.goal_direction == self.DIR_BELOW:
+            in_band = v <= w
+        else:
+            in_band = abs(v - self.goal_value) <= self.warning_tolerance
+        return STATUS_WARNING if in_band else STATUS_OFF_TRACK
 
     def current_period_start(self):
         return period_start_for(self.frequency, date.today())
@@ -182,7 +278,12 @@ class ScorecardEntry(models.Model):
     metric = models.ForeignKey(ScorecardMetric, on_delete=models.CASCADE, related_name='entries')
     period_start = models.DateField()
     value = models.DecimalField(max_digits=12, decimal_places=4)
+    # The judgement made when the value was saved. ``on_track`` says whether the
+    # goal was met; ``in_warning`` marks a miss that stayed inside the metric's
+    # warning band. Both false is off track. Entries saved before warning bands
+    # existed have ``in_warning`` false, so they stay on track or off track.
     on_track = models.BooleanField(default=True)
+    in_warning = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     entered_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name='scorecard_entries'
@@ -199,8 +300,28 @@ class ScorecardEntry(models.Model):
         return f'{self.metric.name} @ {self.period_start}: {self.value}'
 
     def save(self, *args, **kwargs):
-        self.on_track = self.metric.compute_on_track(self.value)
+        status = self.metric.compute_status(self.value)
+        self.on_track = status == STATUS_ON_TRACK
+        self.in_warning = status == STATUS_WARNING
         super().save(*args, **kwargs)
+
+    @property
+    def status(self):
+        if self.on_track:
+            return STATUS_ON_TRACK
+        return STATUS_WARNING if self.in_warning else STATUS_OFF_TRACK
+
+    @property
+    def status_label(self):
+        return STATUS_LABELS[self.status]
+
+    @property
+    def status_icon(self):
+        return _STATUS_ICONS[self.status]
+
+    @property
+    def is_off_track(self):
+        return self.status == STATUS_OFF_TRACK
 
     @property
     def entered_at(self):
@@ -209,4 +330,8 @@ class ScorecardEntry(models.Model):
 
     @property
     def cell_class(self):
-        return 'table-success' if self.on_track else 'table-danger'
+        return _STATUS_CELL_CLASSES[self.status]
+
+    @property
+    def badge_class(self):
+        return _STATUS_BADGE_CLASSES[self.status]

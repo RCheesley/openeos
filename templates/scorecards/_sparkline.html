@@ -1,0 +1,24 @@
+{# One metric's trend over the periods the board shows. ``trend`` comes from apps.scorecards.trends.build_trend. #}
+{# The goal is the dashed line and the warning value the dotted one; gaps in the line are periods with no value. #}
+<svg class="metric-trend" role="img" aria-label="{{ trend.text }}" focusable="false"
+     width="{{ trend.width }}" height="{{ trend.height }}" viewBox="0 0 {{ trend.width }} {{ trend.height }}"
+     xmlns="http://www.w3.org/2000/svg" style="color:#212529;vertical-align:middle">
+    <title>{{ trend.text }}</title>
+    <line class="metric-trend-goal" x1="{{ trend.x1 }}" x2="{{ trend.x2 }}" y1="{{ trend.goal_y }}" y2="{{ trend.goal_y }}"
+          stroke="#565e64" stroke-width="1" stroke-dasharray="4 2"/>
+    {% for y in trend.warning_ys %}
+    <line class="metric-trend-warning" x1="{{ trend.x1 }}" x2="{{ trend.x2 }}" y1="{{ y }}" y2="{{ y }}"
+          stroke="#7a5c00" stroke-width="1" stroke-dasharray="1 2"/>
+    {% endfor %}
+    {% for points in trend.lines %}
+    <polyline class="metric-trend-line" points="{{ points }}" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    {% endfor %}
+    {% for dot in trend.dots %}
+    <circle class="metric-trend-dot" cx="{{ dot.x }}" cy="{{ dot.y }}" r="1.5" fill="currentColor"/>
+    {% endfor %}
+    {% if trend.latest %}
+    <circle class="metric-trend-latest" cx="{{ trend.latest.x }}" cy="{{ trend.latest.y }}" r="2.5" fill="currentColor"
+            stroke="#fff" stroke-width="1"/>
+    {% endif %}
+</svg>

@@ -12,10 +12,12 @@ from django.utils.text import slugify
 from django.contrib import messages
 
 from .models import (
+    STATUS_LABELS, STATUS_OFF_TRACK, STATUS_ON_TRACK, STATUS_WARNING,
     Scorecard, ScorecardMetric, ScorecardEntry, _current_week_start,
     build_periods, period_column_label, period_label, period_start_for, shift_period,
 )
 from .forms import ScorecardForm, ScorecardMetricForm
+from .trends import build_trend
 from apps.accounts.scoping import (
     OrgScopedMixin, get_active_org, get_active_team, get_org_object_or_404,
 )
@@ -70,8 +72,8 @@ def _build_scorecard_table(scorecard, frequency=ScorecardMetric.FREQ_WEEKLY):
     """Build the 13 periods and per-metric cell table for the metrics of one cadence.
 
     Returns (periods, table) where periods is oldest→newest period-start dates and
-    table is [{'metric': m, 'cells': [entry|None, ...], 'period_cells': [(period, entry|None), ...]}]
-    aligned to those periods.
+    table is [{'metric': m, 'cells': [entry|None, ...], 'period_cells': [(period, entry|None), ...],
+    'trend': {...}}] aligned to those periods; 'trend' is the row's sparkline (see trends.py).
     """
     metrics = list(
         scorecard.active_metrics.filter(frequency=frequency).select_related('owner', 'owner__profile')
@@ -82,7 +84,12 @@ def _build_scorecard_table(scorecard, frequency=ScorecardMetric.FREQ_WEEKLY):
     table = []
     for m in metrics:
         cells = [entry_map.get((m.pk, p)) for p in periods]
-        table.append({'metric': m, 'cells': cells, 'period_cells': list(zip(periods, cells))})
+        table.append({
+            'metric': m,
+            'cells': cells,
+            'period_cells': list(zip(periods, cells)),
+            'trend': build_trend(m, periods, cells),
+        })
     return periods, table
 
 
@@ -185,14 +192,17 @@ class ScorecardListView(LoginRequiredMixin, ListView):
             metrics = list(sc.active_metrics)
             # Each metric is judged on its own current period (week, month, ...).
             entries = _current_entries(metrics)
-            on_track = sum(1 for m in metrics if entries.get(m.pk) and entries[m.pk].on_track)
-            off_track = sum(1 for m in metrics if entries.get(m.pk) and not entries[m.pk].on_track)
+            statuses = [entries[m.pk].status for m in metrics if m.pk in entries]
+            on_track = statuses.count(STATUS_ON_TRACK)
+            warning = statuses.count(STATUS_WARNING)
+            off_track = statuses.count(STATUS_OFF_TRACK)
             missing = sum(1 for m in metrics if m.pk not in entries)
             summaries.append({
                 'scorecard': sc,
                 'metrics': metrics,
                 'entries': entries,
                 'on_track': on_track,
+                'warning': warning,
                 'off_track': off_track,
                 'missing': missing,
                 'total': len(metrics),
@@ -292,6 +302,11 @@ class ScorecardCsvExportView(LoginRequiredMixin, View):
 
     A board with one cadence is one table. A board that mixes cadences has one
     table per cadence, each with its own heading row, separated by a blank row.
+
+    The columns that were there before keep their places. After them come the
+    metric's warning band and one status column per period ("On track",
+    "Warning" or "Off track", as judged when the value was entered), so the
+    values stay plain numbers for a spreadsheet.
     """
 
     def get(self, request, pk):
@@ -310,7 +325,10 @@ class ScorecardCsvExportView(LoginRequiredMixin, View):
             if index:
                 writer.writerow([])
             writer.writerow(
-                ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in section['periods']]
+                ['Metric', 'Owner', 'Goal']
+                + [p.isoformat() for p in section['periods']]
+                + ['Warning']
+                + [f'{p.isoformat()} status' for p in section['periods']]
             )
             for row in section['table']:
                 metric = row['metric']
@@ -319,7 +337,11 @@ class ScorecardCsvExportView(LoginRequiredMixin, View):
                     metric.format_value(entry.value) if entry else ''
                     for entry in row['cells']
                 ]
-                writer.writerow([metric.name, owner_name, metric.format_goal()] + cells)
+                statuses = [STATUS_LABELS[entry.status] if entry else '' for entry in row['cells']]
+                writer.writerow(
+                    [metric.name, owner_name, metric.format_goal()]
+                    + cells + [metric.format_warning()] + statuses
+                )
         return response
 
 

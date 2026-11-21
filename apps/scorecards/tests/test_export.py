@@ -82,8 +82,9 @@ class ScorecardCsvExportViewTest(TestCase):
         rows = resp.content.decode().splitlines()
         data_row = next(r for r in rows[1:] if self.metric.name in r)
         data_cells = data_row.split(',')
-        # Metric, Owner, Goal + 13 period columns, all empty since no entries exist
-        self.assertEqual(len(data_cells), 3 + len(self.periods))
+        # Metric, Owner, Goal + 13 period columns, then the warning band and 13
+        # status columns, all empty since no entries exist
+        self.assertEqual(len(data_cells), 3 + len(self.periods) + 1 + len(self.periods))
         self.assertTrue(all(cell == '' for cell in data_cells[3:]))
 
     def test_cannot_export_another_organisations_scorecard(self):

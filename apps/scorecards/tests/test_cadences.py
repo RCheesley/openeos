@@ -131,7 +131,7 @@ class WeeklyOnlyBoardTest(BoardBase):
         self.metric('Berths occupied')
         rows = self.export_rows()
         self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in build_periods(WEEKLY)])
+        self.assertEqual(rows[0][:16], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in build_periods(WEEKLY)])
 
 
 class MixedBoardTest(BoardBase):
@@ -210,13 +210,13 @@ class MixedBoardTest(BoardBase):
             metric=self.monthly, period_start=self.months[2], value=Decimal('1250'), entered_by=self.user,
         )
         rows = self.export_rows()
-        self.assertEqual(rows[0], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in self.weeks])
+        self.assertEqual(rows[0][:16], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in self.weeks])
         self.assertEqual(rows[1][0], 'Berths occupied')
         self.assertEqual(rows[2], [])
-        self.assertEqual(rows[3], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in self.months])
+        self.assertEqual(rows[3][:16], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in self.months])
         self.assertEqual(rows[4][:3], ['Fuel sold', 'Priya Owner', '≥ 10'])
         self.assertEqual(rows[4][3 + 2], '1,250')
-        self.assertEqual([c for c in rows[4][3:] if c], ['1,250'])
+        self.assertEqual([c for c in rows[4][3:16] if c], ['1,250'])
         self.assertEqual(len(rows), 5)
 
 
@@ -237,8 +237,8 @@ class MonthlyOnlyBoardTest(BoardBase):
             metric=self.monthly, period_start=self.months[-1], value=Decimal('12'), entered_by=self.user,
         )
         rows = self.export_rows()
-        self.assertEqual(rows[0], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in self.months])
-        self.assertEqual(rows[1][-1], '12')
+        self.assertEqual(rows[0][:16], ['Metric', 'Owner', 'Goal'] + [p.isoformat() for p in self.months])
+        self.assertEqual(rows[1][15], '12')
         self.assertEqual(len(rows), 2)
 
     def test_entry_form_saves_against_the_first_of_the_month(self):

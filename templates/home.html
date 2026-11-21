@@ -210,6 +210,12 @@
                         <div class="fs-4 fw-bold">{{ scorecard_total }}</div>
                         <div class="text-muted small">Entries this week</div>
                     </div>
+                    {% if scorecard_warning %}
+                    <div class="text-center">
+                        <div class="fs-4 fw-bold text-warning-emphasis">{{ scorecard_warning }}</div>
+                        <div class="text-muted small"><i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>Warning</div>
+                    </div>
+                    {% endif %}
                     {% if scorecard_off_track %}
                     <div class="text-center">
                         <div class="fs-4 fw-bold text-danger">{{ scorecard_off_track }}</div>

@@ -138,11 +138,17 @@ class HomeView(LoginRequiredMixin, TemplateView):
             total_entries = ScorecardEntry.objects.filter(
                 metric__scorecard__team__in=teams, period_start=week_start
             ).count()
+            # A miss inside the metric's warning band is counted apart from off track.
             off_track_entries = ScorecardEntry.objects.filter(
-                metric__scorecard__team__in=teams, period_start=week_start, on_track=False
+                metric__scorecard__team__in=teams, period_start=week_start,
+                on_track=False, in_warning=False,
+            ).count()
+            warning_entries = ScorecardEntry.objects.filter(
+                metric__scorecard__team__in=teams, period_start=week_start, in_warning=True
             ).count()
             ctx['scorecard_total'] = total_entries
             ctx['scorecard_off_track'] = off_track_entries
+            ctx['scorecard_warning'] = warning_entries
 
         return ctx
 

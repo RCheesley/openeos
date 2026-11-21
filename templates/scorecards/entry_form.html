@@ -37,6 +37,7 @@
                                 <td>
                                     <div class="fw-semibold small">{{ row.metric.name }}{% if show_row_periods %} <span class="fw-normal text-muted">· {{ row.period_label }}</span>{% endif %}</div>
                                     <div class="text-muted" style="font-size:.7rem">{{ row.metric.get_metric_type_display }}</div>
+                                    {% if row.metric.warning_value is not None %}<div class="text-muted" style="font-size:.7rem">{{ row.metric.format_warning }}</div>{% endif %}
                                 </td>
                                 <td class="text-center text-muted small">{{ row.metric.format_goal }}</td>
                                 <td class="text-center">
@@ -64,12 +65,14 @@
                                 </td>
                                 <td class="text-center">
                                     {% if row.entry %}
-                                    <span class="badge {% if row.entry.on_track %}bg-success{% else %}bg-danger{% endif %}">
+                                    <span class="badge {{ row.entry.badge_class }}">
+                                        <i class="bi {{ row.entry.status_icon }} me-1" aria-hidden="true"></i>
                                         {% if row.metric.metric_type == 'integer' %}{{ row.entry.value|floatformat:"0g" }}
                                         {% elif row.metric.metric_type == 'percentage' %}{{ row.entry.value|floatformat:1 }}%
                                         {% else %}{{ row.entry.value|floatformat:"2g" }}
                                         {% endif %}
                                     </span>
+                                    <div class="small">{{ row.entry.status_label }}</div>
                                     {% if row.entry.entered_by %}
                                     <div class="text-muted" style="font-size:.7rem">{{ row.entry.entered_by.get_full_name|default:row.entry.entered_by.username }}, {{ row.entry.entered_at|date:"j M Y" }}</div>
                                     {% endif %}
