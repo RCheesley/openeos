@@ -20,6 +20,7 @@ from apps.accounts.team_scope import (
     SCOPE_ALL, count_other_teams, get_scope, get_visible_teams, summarise_other_teams,
 )
 from apps.accounts.terminology import get_terms
+from apps.audit.services import deletion_details, record, snapshot
 
 SCOPE_SESSION_KEY = 'scorecards_scope'
 
@@ -208,8 +209,18 @@ class ScorecardDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
 
     def form_valid(self, form):
         terms = get_terms(self.request)
-        messages.success(self.request, f'{terms.scorecard} "{self.object.name}" deleted.')
-        return super().form_valid(form)
+        scorecard = self.object
+        target, org = snapshot(scorecard), scorecard.team.organization
+        details = deletion_details(
+            scorecard.name, scorecard.team, metrics=scorecard.metrics.count(),
+        )
+        messages.success(self.request, f'{terms.scorecard} "{scorecard.name}" deleted.')
+        response = super().form_valid(form)
+        record(
+            'scorecard.deleted', request=self.request, organization=org, target=target,
+            details=details,
+        )
+        return response
 
 
 # ---------------------------------------------------------------------------
@@ -325,6 +336,15 @@ class MetricDeleteView(LoginRequiredMixin, View):
         scorecard_pk = metric.scorecard_id
         metric.is_active = False
         metric.save(update_fields=['is_active'])
+        scorecard = metric.scorecard
+        record(
+            'scorecard.metric_removed', request=request,
+            organization=scorecard.team.organization, target=metric,
+            details=deletion_details(
+                metric.name, scorecard.team,
+                scorecard_id=scorecard.pk, scorecard=scorecard.name,
+            ),
+        )
         messages.success(request, f'Metric "{metric.name}" removed.')
         return redirect('scorecards:detail', pk=scorecard_pk)
 

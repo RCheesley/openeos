@@ -10,6 +10,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import FormView, View
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from apps.audit.services import record_for_user
+
 from . import (
     TOTP_DEVICE_NAME, backup_code_count, disable_two_factor, get_totp_device, manual_key,
     qr_code_data_uri, regenerate_backup_codes,
@@ -75,11 +77,16 @@ class TwoFactorSetupView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         device = self.get_device()
+        replaced = get_totp_device(self.request.user) is not None
         TOTPDevice.objects.devices_for_user(self.request.user, confirmed=True).delete()
         device.confirmed = True
         device.save(update_fields=['confirmed'])
         codes = regenerate_backup_codes(self.request.user)
         django_otp.login(self.request, device)
+        record_for_user(
+            'user.two_factor_enabled', self.request.user, request=self.request,
+            details={'replaced_existing': replaced},
+        )
         messages.success(self.request, 'Two-factor authentication is now enabled.')
         return render(self.request, 'accounts/two_factor/backup_codes.html', {
             'backup_codes': codes,
@@ -166,6 +173,7 @@ class TwoFactorDisableView(VerifiedRequiredMixin, View):
             return redirect('accounts:profile')
         disable_two_factor(request.user)
         request.session.pop(django_otp.DEVICE_ID_SESSION_KEY, None)
+        record_for_user('user.two_factor_disabled', request.user, request=request)
         messages.success(request, 'Two-factor authentication is disabled.')
         return redirect('accounts:profile')
 
@@ -188,6 +196,7 @@ class TwoFactorBackupCodesView(VerifiedRequiredMixin, FormView):
 
     def form_valid(self, form):
         codes = regenerate_backup_codes(self.request.user)
+        record_for_user('user.backup_codes_regenerated', self.request.user, request=self.request)
         messages.success(self.request, 'New backup codes generated. The old ones no longer work.')
         return render(self.request, 'accounts/two_factor/backup_codes.html', {
             'backup_codes': codes,

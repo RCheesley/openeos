@@ -21,6 +21,7 @@ from apps.accounts.scoping import (
     OrgScopedMixin, get_active_team, get_org_object_or_404, is_org_admin,
 )
 from apps.accounts.terminology import get_terms
+from apps.audit.services import deletion_details, record, snapshot
 from apps.issues.models import Issue, IssueActivity
 
 SCOPE_SESSION_KEY = 'rocks_scope'
@@ -275,8 +276,13 @@ class RockDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
 
     def form_valid(self, form):
         terms = get_terms(self.request)
-        messages.success(self.request, f'{terms.rock} "{self.object.title}" deleted.')
-        return super().form_valid(form)
+        rock = self.object
+        target, org = snapshot(rock), rock.team.organization
+        details = deletion_details(rock.title, rock.team)
+        messages.success(self.request, f'{terms.rock} "{rock.title}" deleted.')
+        response = super().form_valid(form)
+        record('rock.deleted', request=self.request, organization=org, target=target, details=details)
+        return response
 
 
 # ---------------------------------------------------------------------------

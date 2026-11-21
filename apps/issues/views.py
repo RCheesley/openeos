@@ -13,6 +13,7 @@ from apps.accounts.scoping import (
     OrgScopedMixin, get_active_team, get_org_object_or_404, is_org_admin,
 )
 from apps.accounts.terminology import get_terms
+from apps.audit.services import deletion_details, record, snapshot
 
 ISSUE_ORG_LOOKUP = 'originating_team__organization'
 
@@ -182,8 +183,17 @@ class IssueDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
 
     def form_valid(self, form):
         terms = get_terms(self.request)
-        messages.success(self.request, f'{terms.issue} "{self.object.title}" deleted.')
-        return super().form_valid(form)
+        issue = self.object
+        team = issue.originating_team
+        target, org = snapshot(issue), team.organization
+        details = deletion_details(issue.title, team)
+        if issue.delegated_to_team_id:
+            details['delegated_to_team_id'] = issue.delegated_to_team_id
+            details['delegated_to_team'] = issue.delegated_to_team.name
+        messages.success(self.request, f'{terms.issue} "{issue.title}" deleted.')
+        response = super().form_valid(form)
+        record('issue.deleted', request=self.request, organization=org, target=target, details=details)
+        return response
 
 
 # ---------------------------------------------------------------------------

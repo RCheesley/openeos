@@ -7,23 +7,36 @@
         <h1 class="h3 mb-0"><i class="bi bi-journal-text me-2"></i>Audit log</h1>
         <p class="text-muted mt-1 mb-0">What has happened in {{ org.name }}</p>
     </div>
-    <div class="col-auto">
-        <form method="get" class="d-flex align-items-center gap-2">
-            <label for="audit-action" class="form-label mb-0 text-muted small">Action</label>
-            <select id="audit-action" name="action" class="form-select form-select-sm"
-                    onchange="this.form.submit()">
-                <option value="">All actions</option>
-                {% for action in actions %}
-                <option value="{{ action }}"
-                        {% if action == selected_action %}selected{% endif %}>
-                    {{ action }}
-                </option>
-                {% endfor %}
-            </select>
-            <noscript><button type="submit" class="btn btn-sm btn-dark">Filter</button></noscript>
-        </form>
-    </div>
 </div>
+
+<form method="get" class="row g-2 align-items-end mb-3" role="search" aria-label="Filter the audit log">
+    <div class="col-12 col-md-5">
+        <label for="audit-q" class="form-label mb-1 text-muted small">Search</label>
+        <input type="search" id="audit-q" name="q" value="{{ query }}" maxlength="100"
+               class="form-control form-control-sm"
+               placeholder="A person, a team or a title">
+    </div>
+    <div class="col-12 col-md-4">
+        <label for="audit-action" class="form-label mb-1 text-muted small">Action</label>
+        <select id="audit-action" name="action" class="form-select form-select-sm">
+            <option value="">All actions</option>
+            {% for action, description in action_choices %}
+            <option value="{{ action }}"
+                    {% if action == selected_action %}selected{% endif %}>
+                {% if description %}{{ description }} ({{ action }}){% else %}{{ action }}{% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-12 col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-dark">
+            <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+        {% if is_filtered %}
+        <a href="{% url 'audit:event_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+        {% endif %}
+    </div>
+</form>
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
@@ -58,7 +71,10 @@
                             <span class="text-muted">—</span>
                             {% endif %}
                         </td>
-                        <td><code>{{ event.action }}</code></td>
+                        <td>
+                            {% if event.description %}{{ event.description }}{% endif %}
+                            <code class="small d-block">{{ event.action }}</code>
+                        </td>
                         <td>
                             {% if event.target_label or event.target_type %}
                             {{ event.target_label }}
@@ -88,14 +104,14 @@
         {% else %}
         <div class="p-5 text-center text-muted">
             <i class="bi bi-journal-text display-3 d-block mb-3"></i>
-            {% if selected_action %}
-            <h5>No events for this action</h5>
+            {% if is_filtered %}
+            <h5>No events match this filter</h5>
             <a href="{% url 'audit:event_list' %}" class="btn btn-outline-secondary mt-2">
-                Show all actions
+                Show all events
             </a>
             {% else %}
             <h5>Nothing recorded yet</h5>
-            <p class="mb-0">Logins, logouts and administrative actions will appear here.</p>
+            <p class="mb-0">Sign-ins, changes to members, teams and settings, and deletions will appear here.</p>
             {% endif %}
         </div>
         {% endif %}

@@ -4,10 +4,17 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from apps.accounts.views import HealthzView, HomeView
+from apps.accounts.views_password import PasswordChangeView, PasswordResetConfirmView
 
 urlpatterns = [
     path('healthz/', HealthzView.as_view(), name='healthz'),
     path('admin/', admin.site.urls),
+    # Ahead of Django's own routes of the same name, so password changes are audited.
+    path('accounts/password_change/', PasswordChangeView.as_view(), name='password_change'),
+    path(
+        'accounts/reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(),
+        name='password_reset_confirm',
+    ),
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('apps.accounts.urls', namespace='accounts')),
     path('', include('apps.audit.urls')),

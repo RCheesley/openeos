@@ -10,6 +10,7 @@ from .models import ToDo
 from .forms import ToDoForm
 from apps.accounts.scoping import OrgScopedMixin, get_active_team, get_org_object_or_404
 from apps.accounts.terminology import get_terms
+from apps.audit.services import deletion_details, record, snapshot
 
 
 # ---------------------------------------------------------------------------
@@ -152,8 +153,13 @@ class ToDoDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
 
     def form_valid(self, form):
         terms = get_terms(self.request)
-        messages.success(self.request, f'{terms.todo} "{self.object.title}" deleted.')
-        return super().form_valid(form)
+        todo = self.object
+        target, org = snapshot(todo), todo.team.organization
+        details = deletion_details(todo.title, todo.team)
+        messages.success(self.request, f'{terms.todo} "{todo.title}" deleted.')
+        response = super().form_valid(form)
+        record('todo.deleted', request=self.request, organization=org, target=target, details=details)
+        return response
 
 
 # ---------------------------------------------------------------------------

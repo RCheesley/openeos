@@ -7,6 +7,7 @@ from django.contrib import messages
 from .models import AccountabilityNode, AccountabilityRole
 from .forms import NodeForm, RoleForm
 from apps.accounts.scoping import get_active_org
+from apps.audit.services import deletion_details, record, snapshot
 
 
 def _get_org(request):
@@ -32,6 +33,17 @@ def _build_tree(org):
         else:
             roots.append(n)
     return roots
+
+
+def _count_descendants(node):
+    """How many nodes sit beneath ``node`` at any depth."""
+    count, parents = 0, [node.pk]
+    while parents:
+        parents = list(
+            AccountabilityNode.objects.filter(parent_id__in=parents).values_list('pk', flat=True)
+        )
+        count += len(parents)
+    return count
 
 
 # ---------------------------------------------------------------------------
@@ -142,8 +154,19 @@ class NodeDeleteView(LoginRequiredMixin, DeleteView):
         return AccountabilityNode.objects.filter(organization=org)
 
     def form_valid(self, form):
-        messages.success(self.request, f'"{self.object.name}" removed from the chart.')
-        return super().form_valid(form)
+        node = self.object
+        target, org = snapshot(node), node.organization
+        # Deleting a node takes everything beneath it too, so say how much went.
+        details = deletion_details(
+            node.name, node_type=node.node_type, nodes_beneath=_count_descendants(node),
+        )
+        messages.success(self.request, f'"{node.name}" removed from the chart.')
+        response = super().form_valid(form)
+        record(
+            'chart.node_deleted', request=self.request, organization=org, target=target,
+            details=details,
+        )
+        return response
 
 
 class NodeMoveView(LoginRequiredMixin, View):
@@ -241,5 +264,14 @@ class RoleDeleteView(LoginRequiredMixin, DeleteView):
         return AccountabilityRole.objects.filter(node__organization=org)
 
     def form_valid(self, form):
+        role = self.object
+        node = role.node
+        target, org = snapshot(role), node.organization
+        details = deletion_details(role.description, node_id=node.pk, node=node.name)
         messages.success(self.request, 'Accountability removed.')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        record(
+            'chart.role_deleted', request=self.request, organization=org, target=target,
+            details=details,
+        )
+        return response

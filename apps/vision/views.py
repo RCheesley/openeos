@@ -9,6 +9,7 @@ from .forms import VTOSectionForm, VTOCoreValueForm
 from .structure import section_specs_for, structure_for
 from apps.accounts.scoping import OrgScopedMixin, get_active_org
 from apps.accounts.terminology import get_terms
+from apps.audit.services import deletion_details, record, snapshot
 from apps.rocks.models import Rock
 
 
@@ -172,7 +173,15 @@ class VTOSectionEditView(LoginRequiredMixin, View):
         section = self._get_or_create_section(vto, key)
         form = VTOSectionForm(request.POST, spec=spec)
         if form.is_valid():
+            had_content = bool(section.content.strip())
             section.save_content(form.cleaned_data['content'], request.user)
+            if had_content and not section.content.strip():
+                # Emptying a section is the nearest thing to deleting it. The
+                # text is not copied here; the section history keeps it.
+                record(
+                    'vision.section_cleared', request=request, organization=org,
+                    target=section, details=deletion_details(spec.edit_label, key=key),
+                )
             messages.success(request, f'"{spec.edit_label}" updated.')
             return redirect('vision:detail')
         history = section.history.select_related('edited_by')[:5]
@@ -237,5 +246,13 @@ class CoreValueDeleteView(LoginRequiredMixin, OrgScopedMixin, DeleteView):
 
     def form_valid(self, form):
         terms = get_terms(self.request)
-        messages.success(self.request, f'{terms.core_value} "{self.object.name}" removed.')
-        return super().form_valid(form)
+        core_value = self.object
+        target, org = snapshot(core_value), core_value.vto.organization
+        details = deletion_details(core_value.name)
+        messages.success(self.request, f'{terms.core_value} "{core_value.name}" removed.')
+        response = super().form_valid(form)
+        record(
+            'vision.core_value_deleted', request=self.request, organization=org,
+            target=target, details=details,
+        )
+        return response

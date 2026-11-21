@@ -16,7 +16,7 @@ Built with Django, Bootstrap 5, PostgreSQL, and Docker. No JavaScript frameworks
 | **Metrics Boards** | Weekly measurables with above/below/equal goal directions and colour-coded status cells |
 | **Blockers** | PRS (Problem, Solve, Resolve) list with short-term / long-term types, cross-team delegation, and activity history |
 | **Actions** | Weekly action items with escalation levels, due dates, and Priority/Blocker linking |
-| **Audit log** | Logins, logouts, failed logins and administrative actions recorded per organisation; admins see their organisation's log, superusers see everything in the Django admin |
+| **Audit log** | Sign-ins, account security changes, invitations, member, team and organisation settings changes, exports and deletions of records, recorded per organisation with who did it and when; admins search and filter their organisation's log, superusers see everything in the Django admin. See [Audit log](#audit-log) for the full list |
 | **Data export** | Organisation admins can download everything that belongs to their organisation as one archive (JSON for importing, CSV for spreadsheets, logo and avatars); operators can export one or every organisation from the command line. Every export is written to the audit log; an archive can be loaded into another instance with `import_organization` |
 | **Weekly Meeting** | Guided 90-minute meeting runner with timed segments, check-in entries, updates, PRS integration, ratings, and key messages |
 | **Two-factor authentication** | Optional per user: an authenticator app (TOTP) plus ten single-use backup codes, set up from **My Profile**. Set `OTP_TOTP_ISSUER` to change the name shown in authenticator apps; a later change lets an organisation require it for its members |
@@ -63,6 +63,59 @@ python manage.py create_organization --name "Acme Ltd" --domain acme.example.com
 ### Organisation domains
 
 An organisation can own one or more hostnames (for example `acme.example.com`), set under **Organization domains** in the Django admin or inline on the organisation itself. A request on one of those hostnames is pinned to that organisation: the switcher collapses to it, the session choice is ignored, and `/org/setup/` redirects home. A logged-in user who is not a member of that organisation gets a 403 page with a log-out button (superusers are exempt, as are `/accounts/`, `/admin/` and `/healthz/`). Mark one hostname as primary and emails for that organisation will link to it instead of `SITE_URL`. Every hostname must also appear in `ALLOWED_HOSTS`; a leading-dot entry such as `.example.com` covers all of its subdomains. Hosts with no domain record keep the session-based switcher.
+
+---
+
+### Audit log
+
+Organisation admins open the log from **Organisation → Administration → Audit log**
+(`/org/audit/`) and can search it (a person, a team, a deleted record's title) or filter it
+by action. Superusers see every organisation's events in the Django admin. Each event keeps
+who did it, when, from which IP address, what it was done to, and a few details.
+
+The log never holds passwords, reset tokens, two-factor secrets or backup codes, and for
+free-text fields it keeps the fact that they changed, not what they said. A deleted
+record's title and team are kept so the entry can still be understood.
+
+| Event | Recorded when | Details kept |
+|---|---|---|
+| `user.login`, `user.logout` | Someone signs in or out | |
+| `user.login_failed` | A sign-in fails | The username tried |
+| `user.password_changed` | A signed-in user changes their password | |
+| `user.password_reset` | A password is set from an emailed link (a reset, or an invited user's first password) | |
+| `user.email_changed` | A user changes their own email address | |
+| `user.two_factor_enabled`, `user.two_factor_disabled` | A user turns two-factor authentication on or off | Whether an existing authenticator was replaced |
+| `user.backup_codes_regenerated` | A user replaces their backup codes | |
+| `user.invited` | An admin invites a user | Username, role, teams |
+| `member.role_changed` | An admin changes a member's role | Old and new role |
+| `member.records_reassigned` | A member's records are handed to someone else | New owner, how many of each kind |
+| `member.removed` | An admin removes a member | Their role at the time |
+| `team.created`, `team.updated` | An admin creates, renames or edits a team | Which fields changed; old and new name |
+| `team.member_added`, `team.member_removed` | An admin adds a member to a team or takes them off it (one event per person) | Team, username |
+| `organization.created` | An organisation is set up | |
+| `organization.settings_changed` | An admin changes the name or branding | Which fields changed; old and new name |
+| `organization.terminology_changed` | An admin changes or resets the terminology | Which terms changed |
+| `organization.exported` | An organisation's data is exported, from the page or the command line | Size, record counts |
+| `organization.imported` | An organisation is created from an archive with `import_organization` | Source organisation, record counts, users created or reused, anything skipped |
+| `rock.deleted`, `todo.deleted`, `issue.deleted` | A Priority, Action or Blocker is deleted | Title, team |
+| `scorecard.deleted` | A Metrics Board is deleted | Title, team, number of metrics |
+| `scorecard.metric_removed` | A metric is removed from a Metrics Board | Title, team, Metrics Board |
+| `chart.node_deleted`, `chart.role_deleted` | A role, department or accountability is deleted from the Org Chart | Title, how many nodes beneath went with it |
+| `vision.core_value_deleted` | A Value is deleted from the Vision document | Title |
+| `vision.section_cleared` | A Vision document section is emptied | Section |
+
+A change to a user's own account (password, email address, two-factor) is shown to every
+organisation that user belongs to. A sign-in is shown to the one organisation it can be
+tied to.
+
+Events are kept until you remove them. To keep a year of history, schedule the prune
+command once a day next to the notifications job:
+
+```
+30 3 * * * cd /path/to/empresadence && docker compose -f docker-compose.prod.yml exec -T web python manage.py prune_audit_log --days 365
+```
+
+---
 
 ---
 

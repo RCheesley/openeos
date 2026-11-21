@@ -29,6 +29,8 @@ from .scoping import (
     SESSION_TEAM_KEY, OrgScopedMixin, get_active_org, get_active_team, get_org_object_or_404,
     get_user_orgs, is_org_admin, set_active_org,
 )
+from apps.audit.services import record, record_for_user
+
 from .team_scope import SCOPE_ALL, get_scope, get_visible_teams
 from .terminology import get_terms
 
@@ -187,6 +189,7 @@ class OrgSetupView(LoginRequiredMixin, CreateView):
             user=self.request.user, organization=org, role=Membership.ROLE_ADMIN
         )
         set_active_org(self.request, org)
+        record('organization.created', request=self.request, organization=org, target=org)
         messages.success(self.request, f'Organisation "{org.name}" is set up. Now create your first team.')
         return redirect(reverse('accounts:team_create'))
 
@@ -248,8 +251,20 @@ class OrgSettingsView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
         return ctx
 
     def form_valid(self, form):
+        old_name = form.initial.get('name')
+        response = super().form_valid(form)
+        if form.changed_data:
+            # Which fields changed, not their contents; the name is the exception
+            # because it is how the organisation is identified everywhere else.
+            details = {'fields': sorted(form.changed_data)}
+            if 'name' in form.changed_data:
+                details.update(old_name=old_name, new_name=self.object.name)
+            record(
+                'organization.settings_changed', request=self.request,
+                organization=self.object, target=self.object, details=details,
+            )
         messages.success(self.request, 'Branding updated.')
-        return super().form_valid(form)
+        return response
 
 
 class OrgTerminologyView(LoginRequiredMixin, AdminRequiredMixin, FormView):
@@ -276,16 +291,37 @@ class OrgTerminologyView(LoginRequiredMixin, AdminRequiredMixin, FormView):
     def post(self, request, *args, **kwargs):
         if request.POST.get('reset'):
             org = self.get_org()
+            before = dict(org.terminology or {})
             org.terminology = {}
             org.save(update_fields=['terminology', 'updated_at'])
+            self.record_change(org, before, reset=True)
             messages.success(request, 'Terminology reset to defaults.')
             return redirect(self.get_success_url())
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-        form.save(self.get_org())
+        org = self.get_org()
+        before = dict(org.terminology or {})
+        form.save(org)
+        self.record_change(org, before)
         messages.success(self.request, 'Terminology updated.')
         return super().form_valid(form)
+
+    def record_change(self, org, before, reset=False):
+        """Record which terms now differ from before; nothing if none do."""
+        after = org.terminology or {}
+        changed = sorted(
+            key for key in set(before) | set(after) if before.get(key) != after.get(key)
+        )
+        if not changed:
+            return
+        details = {'terms': changed}
+        if reset:
+            details['reset'] = True
+        record(
+            'organization.terminology_changed', request=self.request,
+            organization=org, target=org, details=details,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -316,8 +352,13 @@ class TeamCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
             messages.error(self.request, 'You must belong to an organisation first.')
             return redirect('home')
         form.instance.organization = org
-        messages.success(self.request, f'Team "{form.instance.name}" created.')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        record(
+            'team.created', request=self.request, organization=org, target=self.object,
+            details={'name': self.object.name},
+        )
+        messages.success(self.request, f'Team "{self.object.name}" created.')
+        return response
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -330,6 +371,20 @@ class TeamUpdateView(LoginRequiredMixin, AdminRequiredMixin, OrgScopedMixin, Upd
     org_lookup = 'organization'
     form_class = TeamForm
     template_name = 'accounts/team_form.html'
+
+    def form_valid(self, form):
+        old_name = form.initial.get('name')
+        response = super().form_valid(form)
+        if form.changed_data:
+            # The description is free text, so only the fact that it changed is kept.
+            details = {'fields': sorted(form.changed_data)}
+            if 'name' in form.changed_data:
+                details.update(old_name=old_name, new_name=self.object.name)
+            record(
+                'team.updated', request=self.request,
+                organization=self.object.organization, target=self.object, details=details,
+            )
+        return response
 
     def get_success_url(self):
         messages.success(self.request, 'Team updated.')
@@ -385,13 +440,38 @@ class TeamMembersUpdateView(LoginRequiredMixin, AdminRequiredMixin, FormView):
         org_profiles = UserProfile.objects.filter(
             user__memberships__organization=team.organization
         )
-        for profile in org_profiles:
-            if profile.user in selected_users:
+        current = set(team.members.values_list('user_id', flat=True))
+        added, removed = [], []
+        for profile in org_profiles.select_related('user'):
+            user = profile.user
+            if user in selected_users:
                 profile.teams.add(team)
+                if user.pk not in current:
+                    added.append(user)
             else:
                 profile.teams.remove(team)
+                if user.pk in current:
+                    removed.append(user)
+        # One event per person, so "what happened to this member" is one search.
+        for user in added:
+            record(
+                'team.member_added', request=self.request, organization=team.organization,
+                target=user, details=self.audit_details(team, user),
+            )
+        for user in removed:
+            record(
+                'team.member_removed', request=self.request, organization=team.organization,
+                target=user, details=self.audit_details(team, user),
+            )
         messages.success(self.request, 'Team members updated.')
         return redirect('accounts:team_detail', pk=team.pk)
+
+    @staticmethod
+    def audit_details(team, user):
+        return {
+            'user_id': user.pk, 'username': user.username,
+            'team_id': team.pk, 'team': team.name,
+        }
 
     def form_invalid(self, form):
         return redirect('accounts:team_detail', pk=self.kwargs['pk'])
@@ -424,8 +504,13 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
         return profile
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        if 'email' in form.changed_data:
+            # Password reset links go to this address, so a change is recorded;
+            # the addresses themselves are not.
+            record_for_user('user.email_changed', self.request.user, request=self.request)
         messages.success(self.request, 'Profile updated.')
-        return super().form_valid(form)
+        return response
 
 
 class MediaAvatarView(LoginRequiredMixin, View):
@@ -519,8 +604,20 @@ class UserInviteView(LoginRequiredMixin, AdminRequiredMixin, FormView):
             password=get_random_string(20),
         )
         Membership.objects.create(user=user, organization=org, role=form.cleaned_data['role'])
-        for team in form.cleaned_data['teams']:
+        teams = list(form.cleaned_data['teams'])
+        for team in teams:
             user.profile.teams.add(team)
+        # Before the email goes out: the account and membership exist from here
+        # on whether or not the message can be sent.
+        record(
+            'user.invited', request=self.request, organization=org, target=user,
+            details={
+                'user_id': user.pk, 'username': user.username,
+                'role': form.cleaned_data['role'],
+                'team_ids': [team.pk for team in teams],
+                'teams': [team.name for team in teams],
+            },
+        )
 
         self._send_invite_email(user, org)
 

@@ -259,7 +259,7 @@ class AuditEventListViewTest(TestCase):
         resp = self.client.get(self.url, {'action': 'nothing.here'})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.context['events']), 0)
-        self.assertContains(resp, 'No events for this action')
+        self.assertContains(resp, 'No events match this filter')
 
     def test_pagination_keeps_the_action_filter(self):
         for _ in range(60):
