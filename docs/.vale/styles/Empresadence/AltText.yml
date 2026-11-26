@@ -1,0 +1,8 @@
+extends: existence
+message: "Give every image alt text that says what it shows."
+link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
+level: error
+scope: raw
+nonword: true
+tokens:
+  - '!\[\s*\]\('

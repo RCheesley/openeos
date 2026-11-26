@@ -1,0 +1,29 @@
+extends: existence
+message: "Do not use '%s'. It is a term this project has removed. Use the default vocabulary in the glossary instead."
+link: https://github.com/drikusb/empresadence/blob/main/TRADEMARK-REMEDIATION.md
+level: error
+ignorecase: true
+tokens:
+  - EOS
+  - Entrepreneurial Operating System
+  - OpenEOS
+  - Rocks?
+  - Scorecards?
+  - Level 10
+  - L10
+  - VTO
+  - V/TO
+  - Vision/Traction Organizer
+  - Traction
+  - IDS
+  - Identify, Discuss, Solve
+  - Accountability Charts?
+  - Segues?
+  - Headlines?
+  - Cascading Messages?
+  - Seats?
+  - Core Values?
+  - Core Focus
+  - Milestones?
+  - Visionary
+  - Integrator

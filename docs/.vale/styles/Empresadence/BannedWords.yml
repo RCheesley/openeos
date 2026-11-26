@@ -1,0 +1,13 @@
+extends: existence
+message: "Do not use '%s'. Say what happens instead."
+link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
+level: error
+ignorecase: true
+tokens:
+  - silently
+  - silent
+  - honest
+  - honestly
+  - genuine
+  - genuinely
+  - quietly

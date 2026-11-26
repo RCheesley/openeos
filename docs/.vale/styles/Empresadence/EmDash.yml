@@ -1,0 +1,7 @@
+extends: existence
+message: "Do not use an em dash. Use a full stop, a comma or brackets."
+link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
+level: error
+nonword: true
+tokens:
+  - '—'

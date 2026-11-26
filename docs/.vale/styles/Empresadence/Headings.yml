@@ -1,0 +1,49 @@
+extends: capitalization
+message: "Use sentence case for the heading '%s'. Only the first word and product terms take a capital."
+link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
+level: error
+scope: heading
+match: $sentence
+# Role, Value, Update and Check-in are left out on purpose: they are also
+# everyday words, and Vale cannot tell which meaning a heading intends.
+exceptions:
+  - Empresadence
+  - Priority
+  - Priorities
+  - Step
+  - Steps
+  - Action
+  - Actions
+  - Blocker
+  - Blockers
+  - Metrics Board
+  - Metrics Boards
+  - Weekly Meeting
+  - Weekly Meetings
+  - Vision and Delivery Board
+  - Org Chart
+  - PRS
+  - Key Message
+  - Key Messages
+  - Admin
+  - Admins
+  - Team Leader
+  - Team Member
+  - Dashboard
+  - Harbour Lights
+  - AI
+  - CSV
+  - TLS
+  - Docker
+  - Django
+  - GitHub
+  - Markdown
+  - MyST
+  - Nginx
+  - PostgreSQL
+  - Python
+  - Read the Docs
+  - Sphinx
+  - Vale
+  - Diátaxis
+  - I

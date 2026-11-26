@@ -1,0 +1,16 @@
+extends: substitution
+message: "Use the default product term '%s' instead of '%s'."
+link: https://github.com/drikusb/empresadence/blob/main/docs/reference/glossary.md
+level: warning
+ignorecase: true
+action:
+  name: replace
+swap:
+  to-dos?: Action
+  todos?: Action
+  measurables?: metric
+  quarterly goals?: Priority
+  log in: sign in
+  log out: sign out
+  login: sign-in
+  navbar: navigation bar

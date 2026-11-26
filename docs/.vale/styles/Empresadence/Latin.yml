@@ -1,0 +1,15 @@
+extends: substitution
+message: "Write '%s' instead of '%s'."
+link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
+level: warning
+ignorecase: true
+nonword: true
+action:
+  name: replace
+swap:
+  '\b(?:eg|e\.g\.)(?=[\s,;:)])': for example
+  '\b(?:ie|i\.e\.)(?=[\s,;:)])': that is
+  '\betc\.?(?=[\s,;:)]|$)': and so on
+  '\bviz\.': namely
+  '\bn\.b\.': note
+  '\bvs\.?(?=\s)': compared with

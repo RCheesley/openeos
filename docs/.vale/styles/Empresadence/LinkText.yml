@@ -1,0 +1,14 @@
+extends: existence
+message: "Link text should describe the destination, not say '%s'."
+link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
+level: warning
+ignorecase: true
+scope: link
+tokens:
+  - here
+  - click here
+  - this page
+  - this link
+  - link
+  - read more
+  - more

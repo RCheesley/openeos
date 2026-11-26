@@ -1,0 +1,21 @@
+extends: existence
+message: "Remove '%s'. It adds nothing, and can make a reader who is stuck feel worse."
+link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
+level: warning
+ignorecase: true
+tokens:
+  - simply
+  - just
+  - easy
+  - easily
+  - obviously
+  - obvious
+  - clearly
+  - of course
+  - basically
+  - actually
+  - very
+  - really
+  - quite
+  - straightforward
+  - as you know
