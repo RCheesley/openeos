@@ -40,3 +40,8 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Documentation build output and the Vale packages fetched by `vale sync`
+docs/_build/
+docs/.vale/styles/Google/
+docs/.vale/styles/.vale-config/

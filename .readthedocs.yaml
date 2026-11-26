@@ -1,0 +1,16 @@
+# Read the Docs configuration: https://docs.readthedocs.com/platform/stable/config-file/v2.html
+version: 2
+
+build:
+  os: ubuntu-26.04
+  tools:
+    # The newest Python that Read the Docs offers. The app itself runs on 3.15.
+    python: "3.14"
+
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: true
+
+python:
+  install:
+    - requirements: docs/requirements.txt
