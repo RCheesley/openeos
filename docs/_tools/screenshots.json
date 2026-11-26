@@ -1,0 +1,332 @@
+[
+  {
+    "file": "sign-in.png",
+    "path": "/accounts/login/",
+    "signed_in_as": "tom",
+    "shows": "The sign-in page with a username and password filled in"
+  },
+  {
+    "file": "dashboard.png",
+    "path": "/",
+    "signed_in_as": "tom",
+    "shows": "The Dashboard for a Team Member, top row of cards"
+  },
+  {
+    "file": "action-list.png",
+    "path": "/todos/",
+    "signed_in_as": "tom",
+    "shows": "My Actions, open Actions for the active team"
+  },
+  {
+    "file": "action-form.png",
+    "path": "/todos/new/",
+    "signed_in_as": "tom",
+    "shows": "The Create Action form, filled in"
+  },
+  {
+    "file": "action-created.png",
+    "path": "/todos/",
+    "signed_in_as": "tom",
+    "shows": "My Actions after creating an Action, with the confirmation message"
+  },
+  {
+    "file": "action-row.png",
+    "path": "/todos/",
+    "signed_in_as": "tom",
+    "shows": "One Action in the list: the circle, the title, the due date and the menu"
+  },
+  {
+    "file": "action-completed.png",
+    "path": "/todos/?view=mine&status=complete",
+    "signed_in_as": "tom",
+    "shows": "My Actions with the Complete filter selected"
+  },
+  {
+    "file": "priority-list.png",
+    "path": "/rocks/",
+    "signed_in_as": "tom",
+    "shows": "The Priorities list for the Operations team, current quarter"
+  },
+  {
+    "file": "priority-detail.png",
+    "path": "/rocks/3/",
+    "signed_in_as": "tom",
+    "shows": "A Priority: status, owner, due date, description and Steps"
+  },
+  {
+    "file": "priority-step-done.png",
+    "path": "/rocks/3/",
+    "signed_in_as": "tom",
+    "shows": "The Steps card after ticking a second Step"
+  },
+  {
+    "file": "priority-checkin-form.png",
+    "path": "/rocks/3/",
+    "signed_in_as": "tom",
+    "shows": "The Check-ins card with On Track chosen and a note typed"
+  },
+  {
+    "file": "priority-checkin-saved.png",
+    "path": "/rocks/3/",
+    "signed_in_as": "tom",
+    "shows": "The Check-ins card with the new check-in at the top"
+  },
+  {
+    "file": "priority-status-menu.png",
+    "path": "/rocks/3/",
+    "signed_in_as": "tom",
+    "shows": "The three-dot menu on a Priority, open"
+  },
+  {
+    "file": "team-switcher.png",
+    "path": "/",
+    "signed_in_as": "priyanka",
+    "shows": "The team menu in the navigation bar, open, with two teams"
+  },
+  {
+    "file": "priority-form.png",
+    "path": "/rocks/new/",
+    "signed_in_as": "priyanka",
+    "shows": "The Create Priority form, filled in"
+  },
+  {
+    "file": "priority-add-step.png",
+    "path": "/rocks/6/",
+    "signed_in_as": "priyanka",
+    "shows": "A new Priority with the first Step typed into the Steps card"
+  },
+  {
+    "file": "priority-steps-added.png",
+    "path": "/rocks/6/",
+    "signed_in_as": "priyanka",
+    "shows": "The Steps card with two Steps added"
+  },
+  {
+    "file": "blocker-list.png",
+    "path": "/issues/",
+    "signed_in_as": "tom",
+    "shows": "The list of open Blockers for the Operations team"
+  },
+  {
+    "file": "blocker-form.png",
+    "path": "/issues/new/",
+    "signed_in_as": "tom",
+    "shows": "The Create Blocker form, filled in"
+  },
+  {
+    "file": "blocker-detail.png",
+    "path": "/issues/6/",
+    "signed_in_as": "tom",
+    "shows": "A new Blocker with its details, activity and status buttons"
+  },
+  {
+    "file": "blocker-resolve.png",
+    "path": "/issues/6/",
+    "signed_in_as": "tom",
+    "shows": "The Update Status card with a resolution note typed"
+  },
+  {
+    "file": "blocker-resolved.png",
+    "path": "/issues/6/",
+    "signed_in_as": "tom",
+    "shows": "A resolved Blocker showing the Resolution card"
+  },
+  {
+    "file": "metrics-board-list.png",
+    "path": "/scorecards/",
+    "signed_in_as": "tom",
+    "shows": "The Metrics Boards list for the Operations team"
+  },
+  {
+    "file": "metrics-board.png",
+    "path": "/scorecards/1/",
+    "signed_in_as": "tom",
+    "shows": "A Metrics Board before this week is entered"
+  },
+  {
+    "file": "metrics-enter.png",
+    "path": "/scorecards/1/enter/",
+    "signed_in_as": "tom",
+    "shows": "The Enter Values page with this week filled in"
+  },
+  {
+    "file": "metrics-saved.png",
+    "path": "/scorecards/1/",
+    "signed_in_as": "tom",
+    "shows": "The Metrics Board with this week entered and the confirmation message"
+  },
+  {
+    "file": "meeting-schedule-form.png",
+    "path": "/meetings/create/",
+    "signed_in_as": "priyanka",
+    "shows": "The Schedule Weekly Meeting form"
+  },
+  {
+    "file": "meeting-list.png",
+    "path": "/meetings/",
+    "signed_in_as": "priyanka",
+    "shows": "The Weekly Meetings list: one scheduled, one for today, one complete"
+  },
+  {
+    "file": "meeting-ready.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "A scheduled Weekly Meeting with the agenda and the start button"
+  },
+  {
+    "file": "meeting-check-in.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "tom",
+    "shows": "The Check-in segment with one person's entry typed"
+  },
+  {
+    "file": "meeting-metrics-review.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "The Metrics Board Review segment"
+  },
+  {
+    "file": "meeting-priority-review.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "The Priority Review segment"
+  },
+  {
+    "file": "meeting-updates.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "The Updates segment with one piece of good news and one concern"
+  },
+  {
+    "file": "meeting-action-review.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "The Action Review segment"
+  },
+  {
+    "file": "meeting-prs.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "The PRS segment: the list of open Blockers and the notes box"
+  },
+  {
+    "file": "meeting-conclude.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "The Conclude segment: ratings, Actions created and Key Messages"
+  },
+  {
+    "file": "meeting-complete.png",
+    "path": "/meetings/2/",
+    "signed_in_as": "priyanka",
+    "shows": "A completed Weekly Meeting: ratings, notes, Key Messages and Actions"
+  },
+  {
+    "file": "user-menu.png",
+    "path": "/",
+    "signed_in_as": "ada",
+    "shows": "The user menu in the navigation bar, open, for an Admin"
+  },
+  {
+    "file": "users-list.png",
+    "path": "/users/",
+    "signed_in_as": "ada",
+    "shows": "The Users page listing everyone in the organisation"
+  },
+  {
+    "file": "invite-form.png",
+    "path": "/users/invite/",
+    "signed_in_as": "ada",
+    "shows": "The Invite a user form, filled in"
+  },
+  {
+    "file": "invite-done.png",
+    "path": "/users/",
+    "signed_in_as": "ada",
+    "shows": "The Users page after an invitation, with the confirmation message"
+  },
+  {
+    "file": "team-list.png",
+    "path": "/teams/",
+    "signed_in_as": "ada",
+    "shows": "The Teams page"
+  },
+  {
+    "file": "team-members.png",
+    "path": "/teams/2/",
+    "signed_in_as": "ada",
+    "shows": "A team page: the members, and the Update members tick boxes with one more person ticked"
+  },
+  {
+    "file": "organisation-page.png",
+    "path": "/org/",
+    "signed_in_as": "ada",
+    "shows": "The Organisation page for an Admin"
+  },
+  {
+    "file": "export-confirm.png",
+    "path": "/org/export/",
+    "signed_in_as": "ada",
+    "shows": "The Export data page: the password box and the download button"
+  },
+  {
+    "file": "audit-log.png",
+    "path": "/org/audit/",
+    "signed_in_as": "ada",
+    "shows": "The Audit log showing the export and the sign-ins"
+  },
+  {
+    "file": "terminology-form.png",
+    "path": "/org/settings/terminology/",
+    "signed_in_as": "ada",
+    "shows": "The Terminology page with Blocker renamed to Obstacle"
+  },
+  {
+    "file": "terminology-renamed.png",
+    "path": "/org/settings/terminology/",
+    "signed_in_as": "ada",
+    "shows": "The navigation bar after renaming Blocker to Obstacle"
+  },
+  {
+    "file": "organisation-settings.png",
+    "path": "/org/settings/",
+    "signed_in_as": "ada",
+    "shows": "The Organisation settings page with a tagline and a colour chosen"
+  },
+  {
+    "file": "organisation-settings-saved.png",
+    "path": "/org/",
+    "signed_in_as": "ada",
+    "shows": "The Organisation page in the new colour, with the tagline in the footer"
+  },
+  {
+    "file": "profile-two-factor.png",
+    "path": "/profile/",
+    "signed_in_as": "christopher",
+    "shows": "My Profile with two-factor authentication not yet enabled"
+  },
+  {
+    "file": "two-factor-setup.png",
+    "path": "/accounts/2fa/setup/",
+    "signed_in_as": "christopher",
+    "shows": "The set-up page: a QR code, the key and the box for the 6-digit code"
+  },
+  {
+    "file": "two-factor-backup-codes.png",
+    "path": "/accounts/2fa/setup/",
+    "signed_in_as": "christopher",
+    "shows": "The ten backup codes shown once after set-up"
+  },
+  {
+    "file": "profile-two-factor-enabled.png",
+    "path": "/profile/",
+    "signed_in_as": "christopher",
+    "shows": "My Profile with two-factor authentication enabled"
+  },
+  {
+    "file": "two-factor-verify.png",
+    "path": "/accounts/2fa/verify/?next=/",
+    "signed_in_as": "christopher",
+    "shows": "The second step at sign-in asking for a 6-digit code"
+  }
+]
