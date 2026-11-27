@@ -37,6 +37,8 @@ docker run --rm -v "$PWD":/work -w /work jdkato/vale:v3.29.0 --glob='!**/_build/
 
 The first command fetches the Google style package into `docs/.vale/styles/Google/`. That folder is not committed. The package version is pinned in `.vale.ini`. The house rules are committed, in `docs/.vale/styles/Empresadence/`.
 
+Spelling is checked against a British English dictionary, committed in `docs/.vale/styles/config/dictionaries/` with its licence. If Vale reports a real term as misspelt, add it to `docs/.vale/styles/config/vocabularies/Empresadence/accept.txt`.
+
 The `--glob` option skips the built site, which holds a copy of every page.
 
 Errors must be fixed. Warnings and suggestions are advice.
@@ -101,4 +103,5 @@ docker run --rm -v "$PWD":/work -w /work python:3.15-slim python docs/_tools/che
 | `_tools/` | The demo data, the screenshot script, its manifest and the image check |
 | `_ext/` | A small Sphinx extension: descriptions, `llms.txt`, screenshot sizes |
 | `.vale/styles/Empresadence/` | The house rules for Vale |
+| `.vale/styles/config/` | The British English dictionary and the list of accepted project words |
 | `conf.py`, `requirements.txt`, `Makefile` | Sphinx configuration, pinned tools and build targets |

@@ -280,7 +280,7 @@ def run(cap):
     priyanka.get_by_role('button', name='Create Action').click()
     priyanka.fill('[name=notes]', 'Crane: Bo phones the inspector on Monday. Crew cover: carry over to next week.')
     priyanka.get_by_role('button', name='Save Notes').click()
-    cap.shot(priyanka, 'meeting-prs', 'The PRS segment: the list of open Blockers and the notes box',
+    cap.shot(priyanka, 'meeting-psr', 'The PSR segment: the list of open Blockers and the notes box',
              priyanka.locator('main .list-group').first, priyanka.locator('main .card').last)
     next_segment()
     cap.go(tom, meeting_path)

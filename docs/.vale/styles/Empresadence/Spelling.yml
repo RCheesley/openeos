@@ -1,68 +1,10 @@
-extends: substitution
-message: "Use the British spelling '%s' instead of '%s'."
+# Checks every word against a British English dictionary.
+# The dictionary files are in docs/.vale/styles/config/dictionaries/.
+# Project words that are not in the dictionary go in
+# docs/.vale/styles/config/vocabularies/Empresadence/accept.txt.
+extends: spelling
+message: "'%s' is not in the British English dictionary. Fix the spelling, or add the word to accept.txt if it is a real term."
 link: https://github.com/drikusb/empresadence/blob/main/docs/contributing/style-guide.md
 level: error
-ignorecase: true
-action:
-  name: replace
-swap:
-  analyze: analyse
-  analyzed: analysed
-  analyzing: analysing
-  apologize: apologise
-  authorize: authorise
-  authorized: authorised
-  authorization: authorisation
-  behavior: behaviour
-  behaviors: behaviours
-  canceled: cancelled
-  canceling: cancelling
-  catalog: catalogue
-  center: centre
-  centered: centred
-  color: colour
-  colors: colours
-  colored: coloured
-  customize: customise
-  customized: customised
-  customizing: customising
-  customization: customisation
-  defense: defence
-  emphasize: emphasise
-  enroll: enrol
-  enrollment: enrolment
-  favor: favour
-  favorite: favourite
-  favorites: favourites
-  finalize: finalise
-  fulfill: fulfil
-  gray: grey
-  initialize: initialise
-  initialized: initialised
-  labeled: labelled
-  labeling: labelling
-  license (?:key|file|text): licence
-  maximize: maximise
-  minimize: minimise
-  modeled: modelled
-  modeling: modelling
-  neighbor: neighbour
-  optimize: optimise
-  optimized: optimised
-  organization: organisation
-  organizations: organisations
-  organizational: organisational
-  organize: organise
-  organized: organised
-  organizing: organising
-  prioritize: prioritise
-  prioritized: prioritised
-  realize: realise
-  recognize: recognise
-  recognized: recognised
-  specialize: specialise
-  standardize: standardise
-  summarize: summarise
-  summarized: summarised
-  traveling: travelling
-  utilize: use
+dictionaries:
+  - en_GB

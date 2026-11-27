@@ -5,7 +5,7 @@ Weekly Meetings?
 Org Charts?
 Key Messages?
 Vision and Delivery Board
-PRS
+PSR
 Diátaxis
 Django
 Docker
@@ -20,3 +20,8 @@ Sphinx
 Vale
 Whitenoise
 TOTP
+Authy
+alt
+crontab
+tagline
+writable
